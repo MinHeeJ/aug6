@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.organizations.OrganizationMapper">
+    <resultMap id="OrganizationRowMap" type="kr.ac.knue.commonfoundation.organizations.OrganizationRow">
+        <constructor>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="organizationName" javaType="string"/>
+            <arg column="organizationType" javaType="string"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="parentOrganizationCode" javaType="string"/>
+            <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="OrganizationRelationRowMap" type="kr.ac.knue.commonfoundation.organizations.OrganizationRelationRow">
+        <constructor>
+            <arg column="relationId" javaType="long"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="parentOrganizationCode" javaType="string"/>
+            <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="status" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="HistoryRowMap" type="kr.ac.knue.commonfoundation.organizations.OrganizationRelationHistoryRow">
+        <constructor>
+            <arg column="historyId" javaType="long"/>
+            <arg column="relationId" javaType="long"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="beforeParentOrganizationCode" javaType="string"/>
+            <arg column="afterParentOrganizationCode" javaType="string"/>
+            <arg column="beforeEffectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="beforeEffectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="afterEffectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="afterEffectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changedBy" javaType="long"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="organizationSelect">
+        select o.organization_code as "organizationCode",
+               o.organization_name as "organizationName",
+               o.organization_type as "organizationType",
+               o.system_use_yn as "systemUseYn",
+               o.status as "status",
+               r.parent_organization_code as "parentOrganizationCode",
+               r.effective_start_date as "effectiveStartDate",
+               r.effective_end_date as "effectiveEndDate",
+               o.updated_at as "updatedAt"
+        from organizations o
+        left join organization_relations r
+               on r.organization_code = o.organization_code
+              and r.status = 'ACTIVE'
+              and r.effective_start_date &lt;= CURRENT_DATE
+              and (r.effective_end_date is null or r.effective_end_date &gt;= CURRENT_DATE)
+    </sql>
+
+    <select id="searchOrganizations" resultMap="OrganizationRowMap">
+        <include refid="organizationSelect"/>
+        where o.status != 'DELETED'
+        <if test="organizationCodeFilter != null and organizationCodeFilter != ''">
+            and o.organization_code ilike concat('%', #{organizationCodeFilter}, '%')
+        </if>
+        order by o.organization_code asc
+        limit #{size} offset #{offset}
+    </select>
+
+    <select id="findOrganizationsForTree" resultMap="OrganizationRowMap">
+        <include refid="organizationSelect"/>
+        where o.status = 'ACTIVE' and o.system_use_yn = 'Y'
+        order by coalesce(r.parent_organization_code, ''), o.organization_code
+    </select>
+
+    <select id="findOrganization" resultMap="OrganizationRowMap">
+        <include refid="organizationSelect"/>
+        where o.organization_code = #{organizationCode} and o.status != 'DELETED'
+    </select>
+
+    <select id="findCurrentRelation" resultMap="OrganizationRelationRowMap">
+        select relation_id as "relationId", organization_code as "organizationCode",
+               parent_organization_code as "parentOrganizationCode", effective_start_date as "effectiveStartDate",
+               effective_end_date as "effectiveEndDate", status as "status", change_reason as "changeReason"
+        from organization_relations
+        where organization_code = #{organizationCode} and status = 'ACTIVE'
+          and effective_start_date &lt;= CURRENT_DATE
+          and (effective_end_date is null or effective_end_date &gt;= CURRENT_DATE)
+        order by effective_start_date desc, relation_id desc
+        limit 1
+    </select>
+
+    <select id="findOverlappingRelation" resultMap="OrganizationRelationRowMap">
+        select relation_id as "relationId", organization_code as "organizationCode",
+               parent_organization_code as "parentOrganizationCode", effective_start_date as "effectiveStartDate",
+               effective_end_date as "effectiveEndDate", status as "status", change_reason as "changeReason"
+        from organization_relations
+        where organization_code = #{organizationCode}
+          and status = 'ACTIVE'
+          <if test="excludeRelationId != null">
+              and relation_id != #{excludeRelationId}
+          </if>
+          <if test="endDate != null">
+              and effective_start_date &lt;= #{endDate}
+          </if>
+          and (effective_end_date is null or effective_end_date &gt;= #{startDate})
+        order by effective_start_date desc
+        limit 1
+    </select>
+
+    <update id="endRelation">
+        update organization_relations
+        set status = 'ENDED',
+            effective_end_date = #{endDate},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where relation_id = #{relationId}
+    </update>
+
+    <insert id="insertRelation">
+        insert into organization_relations
+            (organization_code, parent_organization_code, effective_start_date, effective_end_date, status, created_by, updated_by, change_reason)
+        values
+            (#{organizationCode}, #{parentOrganizationCode}, #{effectiveStartDate}, #{effectiveEndDate}, 'ACTIVE', #{createdBy}, #{createdBy}, #{changeReason})
+    </insert>
+
+    <select id="findLatestRelation" resultMap="OrganizationRelationRowMap">
+        select relation_id as "relationId", organization_code as "organizationCode",
+               parent_organization_code as "parentOrganizationCode", effective_start_date as "effectiveStartDate",
+               effective_end_date as "effectiveEndDate", status as "status", change_reason as "changeReason"
+        from organization_relations
+        where organization_code = #{organizationCode}
+        order by relation_id desc
+        limit 1
+    </select>
+
+    <insert id="insertHistory">
+        insert into organization_relation_history
+            (relation_id, organization_code, before_parent_organization_code, after_parent_organization_code,
+             before_effective_start_date, before_effective_end_date, after_effective_start_date, after_effective_end_date,
+             changed_by, change_reason)
+        values
+            (#{after.relationId}, #{organizationCode}, #{before.parentOrganizationCode}, #{after.parentOrganizationCode},
+             #{before.effectiveStartDate}, #{before.effectiveEndDate}, #{after.effectiveStartDate}, #{after.effectiveEndDate},
+             #{changedBy}, #{changeReason})
+    </insert>
+
+    <select id="findRelationHistory" resultMap="HistoryRowMap">
+        select history_id as "historyId", relation_id as "relationId", organization_code as "organizationCode",
+               before_parent_organization_code as "beforeParentOrganizationCode",
+               after_parent_organization_code as "afterParentOrganizationCode",
+               before_effective_start_date as "beforeEffectiveStartDate",
+               before_effective_end_date as "beforeEffectiveEndDate",
+               after_effective_start_date as "afterEffectiveStartDate",
+               after_effective_end_date as "afterEffectiveEndDate",
+               changed_at as "changedAt", changed_by as "changedBy", change_reason as "changeReason"
+        from organization_relation_history
+        where organization_code = #{organizationCode}
+        order by changed_at desc, history_id desc
+        limit #{size} offset #{offset}
+    </select>
+</mapper>

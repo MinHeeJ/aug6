@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.menus.MenuExecutionMapper">
+    <resultMap id="MenuExecutionRowMap" type="kr.ac.knue.commonfoundation.menus.MenuExecutionRow">
+        <constructor>
+            <arg column="menuId" javaType="long"/>
+            <arg column="parentMenuId" javaType="long"/>
+            <arg column="menuType" javaType="string"/>
+            <arg column="menuName" javaType="string"/>
+            <arg column="screenId" javaType="string"/>
+            <arg column="url" javaType="string"/>
+            <arg column="icon" javaType="string"/>
+            <arg column="businessCategory" javaType="string"/>
+            <arg column="description" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findExecution" resultMap="MenuExecutionRowMap">
+        select m.menu_id as "menuId",
+               m.parent_menu_id as "parentMenuId",
+               m.menu_type as "menuType",
+               m.menu_name as "menuName",
+               coalesce(mei.screen_id, m.screen_id) as "screenId",
+               coalesce(mei.url, m.url) as "url",
+               coalesce(mei.icon, m.icon) as "icon",
+               coalesce(mei.business_category, m.business_category) as "businessCategory",
+               coalesce(mei.description, m.description) as "description",
+               m.status as "status",
+               m.change_reason as "changeReason",
+               m.updated_by as "updatedBy",
+               greatest(m.updated_at, coalesce(mei.updated_at, m.updated_at)) as "updatedAt"
+        from menus m
+        left join menu_execution_info mei on mei.menu_id = m.menu_id and mei.status = 'ACTIVE'
+        where m.menu_id = #{menuId}
+          and m.status != 'DELETED'
+    </select>
+
+    <select id="existsActiveMenu" resultType="int">
+        select count(*) from menus where menu_id = #{menuId} and status = 'ACTIVE' and system_use_yn = 'Y'
+    </select>
+
+    <select id="countActiveScreenIdExceptMenu" resultType="int">
+        select count(*)
+        from menus
+        where screen_id = #{screenId}
+          and menu_id != #{menuId}
+          and status = 'ACTIVE'
+    </select>
+
+    <update id="updateMenuExecutionFields">
+        update menus
+        set menu_name = #{menuName},
+            screen_id = #{screenId},
+            url = #{url},
+            icon = #{icon},
+            business_category = #{businessCategory},
+            description = #{description},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where menu_id = #{menuId}
+    </update>
+
+    <insert id="upsertMenuExecutionInfo">
+        insert into menu_execution_info (menu_id, screen_id, url, icon, business_category, description, updated_by, status)
+        values (#{menuId}, #{screenId}, #{url}, #{icon}, #{businessCategory}, #{description}, #{updatedBy}, 'ACTIVE')
+        on conflict (menu_id)
+        do update set screen_id = EXCLUDED.screen_id,
+                      url = EXCLUDED.url,
+                      icon = EXCLUDED.icon,
+                      business_category = EXCLUDED.business_category,
+                      description = EXCLUDED.description,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      status = 'ACTIVE'
+    </insert>
+</mapper>

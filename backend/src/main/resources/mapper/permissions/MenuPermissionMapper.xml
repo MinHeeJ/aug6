@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.permissions.MenuPermissionMapper">
+    <resultMap id="MenuPermissionRowMap" type="kr.ac.knue.commonfoundation.permissions.MenuPermissionRow">
+        <constructor>
+            <arg column="permissionId" javaType="long"/>
+            <arg column="targetType" javaType="string"/>
+            <arg column="targetId" javaType="string"/>
+            <arg column="targetName" javaType="string"/>
+            <arg column="menuId" javaType="long"/>
+            <arg column="topMenuName" javaType="string"/>
+            <arg column="middleMenuName" javaType="string"/>
+            <arg column="screenMenuName" javaType="string"/>
+            <arg column="screenId" javaType="string"/>
+            <arg column="url" javaType="string"/>
+            <arg column="accessAllowed" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="targetNameExpression">
+        case mp.target_type
+            when 'ROLE' then (select r.role_name from roles r where r.role_code = mp.target_id)
+            when 'ORGANIZATION' then (select o.organization_name from organizations o where o.organization_code = mp.target_id)
+            when 'USER' then (select coalesce(k.name, u.login_id) from users u left join korus_personnel_snapshots k on k.employee_no = u.employee_no where cast(u.user_id as varchar) = mp.target_id)
+            else mp.target_id
+        end
+    </sql>
+
+    <sql id="menuPermissionSelect">
+        select mp.permission_id as "permissionId",
+               mp.target_type as "targetType",
+               mp.target_id as "targetId",
+               <include refid="targetNameExpression"/> as "targetName",
+               screen.menu_id as "menuId",
+               top.menu_name as "topMenuName",
+               middle.menu_name as "middleMenuName",
+               screen.menu_name as "screenMenuName",
+               screen.screen_id as "screenId",
+               screen.url as "url",
+               mp.access_allowed as "accessAllowed",
+               mp.status as "status",
+               mp.change_reason as "changeReason",
+               mp.updated_at as "updatedAt"
+        from menu_permissions mp
+        join menus screen on screen.menu_id = mp.menu_id
+        left join menus middle on middle.menu_id = screen.parent_menu_id
+        left join menus top on top.menu_id = middle.parent_menu_id
+    </sql>
+
+    <select id="listMenuPermissions" resultMap="MenuPermissionRowMap">
+        <include refid="menuPermissionSelect"/>
+        <where>
+            mp.status = 'ACTIVE'
+            and screen.status = 'ACTIVE'
+            <if test="criteria.targetType != null and criteria.targetType != ''">
+                and mp.target_type = #{criteria.targetType}
+            </if>
+            <if test="criteria.targetId != null and criteria.targetId != ''">
+                and mp.target_id = #{criteria.targetId}
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (screen.menu_name ilike concat('%', #{criteria.filter}, '%')
+                    or screen.screen_id ilike concat('%', #{criteria.filter}, '%')
+                    or screen.url ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by coalesce(top.display_order, middle.display_order, screen.display_order),
+                 coalesce(middle.display_order, screen.display_order),
+                 screen.display_order,
+                 screen.menu_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countMenuPermissions" resultType="int">
+        select count(*)
+        from menu_permissions mp
+        join menus screen on screen.menu_id = mp.menu_id
+        <where>
+            mp.status = 'ACTIVE'
+            and screen.status = 'ACTIVE'
+            <if test="criteria.targetType != null and criteria.targetType != ''">
+                and mp.target_type = #{criteria.targetType}
+            </if>
+            <if test="criteria.targetId != null and criteria.targetId != ''">
+                and mp.target_id = #{criteria.targetId}
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (screen.menu_name ilike concat('%', #{criteria.filter}, '%')
+                    or screen.screen_id ilike concat('%', #{criteria.filter}, '%')
+                    or screen.url ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="existsMenu" resultType="int">
+        select count(*) from menus where menu_id = #{menuId} and status = 'ACTIVE' and system_use_yn = 'Y'
+    </select>
+
+    <select id="existsTarget" resultType="int">
+        <choose>
+            <when test="targetType == 'ROLE'">
+                select count(*) from roles where role_code = #{targetId} and status = 'ACTIVE' and system_use_yn = 'Y'
+            </when>
+            <when test="targetType == 'ORGANIZATION'">
+                select count(*) from organizations where organization_code = #{targetId} and status != 'DELETED'
+            </when>
+            <when test="targetType == 'USER'">
+                select count(*) from users where cast(user_id as varchar) = #{targetId} and status != 'DELETED'
+            </when>
+            <otherwise>
+                select 0
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="upsertPermission">
+        insert into menu_permissions (target_type, target_id, menu_id, access_allowed, status, created_by, updated_by, change_reason)
+        values (#{targetType}, #{targetId}, #{menuId}, #{accessAllowed}, 'ACTIVE', #{updatedBy}, #{updatedBy}, #{changeReason})
+        on conflict (target_type, target_id, menu_id)
+        do update set access_allowed = EXCLUDED.access_allowed,
+                      status = 'ACTIVE',
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+
+    <select id="findPermission" resultMap="MenuPermissionRowMap">
+        <include refid="menuPermissionSelect"/>
+        where mp.target_type = #{targetType}
+          and mp.target_id = #{targetId}
+          and mp.menu_id = #{menuId}
+          and mp.status = 'ACTIVE'
+    </select>
+</mapper>

@@ -274,6 +274,67 @@ COMMENT ON COLUMN detail_codes.system_use_yn IS 'Y:사용|N:미사용';
 COMMENT ON COLUMN detail_codes.status IS 'ACTIVE:활성|INACTIVE:비활성|DELETED:삭제';
 COMMENT ON COLUMN detail_codes.additional_attributes IS '추가속성 구조 확정 시 애플리케이션 저장/검증 로직에서 갱신';
 
+CREATE TABLE IF NOT EXISTS menu_usage_settings (
+    menu_id bigint PRIMARY KEY,
+    system_use_yn varchar(1) NOT NULL CHECK (system_use_yn IN ('Y','N')),
+    exposure_start_at timestamp NOT NULL,
+    exposure_end_at timestamp NOT NULL,
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by bigint,
+    change_reason varchar(500),
+    CONSTRAINT fk_menu_usage_settings_menu FOREIGN KEY (menu_id) REFERENCES menus(menu_id),
+    CONSTRAINT fk_menu_usage_settings_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id),
+    CONSTRAINT ck_menu_usage_settings_period CHECK (exposure_end_at >= exposure_start_at)
+);
+COMMENT ON TABLE menu_usage_settings IS '메뉴별 사용여부와 노출기간 설정. 메뉴 구조·실행정보·접근권한 row는 변경하지 않고 사용자 메뉴 노출과 직접 URL 접근 차단에 사용한다.';
+COMMENT ON COLUMN menu_usage_settings.system_use_yn IS 'Y:사용|N:미사용';
+COMMENT ON COLUMN menu_usage_settings.exposure_start_at IS '서버 현재 일시가 이 값 이상이면 노출기간 판정에 포함';
+COMMENT ON COLUMN menu_usage_settings.exposure_end_at IS '서버 현재 일시가 이 값 이하이면 노출기간 판정에 포함';
+
+CREATE TABLE IF NOT EXISTS common_system_settings (
+    setting_key varchar(100) PRIMARY KEY CHECK (setting_key IN ('SESSION_IDLE_MINUTES','PAGE_SIZE','DEFAULT_SEARCH_PERIOD','BULK_QUERY_THRESHOLD','LONG_TASK_NOTICE_THRESHOLD')),
+    setting_value varchar(200) NOT NULL,
+    unit varchar(50),
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by bigint,
+    change_reason varchar(500),
+    CONSTRAINT fk_common_system_settings_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id)
+);
+COMMENT ON TABLE common_system_settings IS '시스템 전역 공통 환경설정. 사용자별 또는 업무별 개별 환경값이 아닌 단일 운영 설정값을 저장한다.';
+COMMENT ON COLUMN common_system_settings.setting_key IS 'SESSION_IDLE_MINUTES:세션유휴시간|PAGE_SIZE:페이지당조회건수|DEFAULT_SEARCH_PERIOD:기본검색기간|BULK_QUERY_THRESHOLD:대량조회기준건수|LONG_TASK_NOTICE_THRESHOLD:장시간작업안내기준';
+COMMENT ON COLUMN common_system_settings.setting_value IS '전역 설정값. 단위·범위 검증 기준 확정 전에는 애플리케이션에서 최소 문자열 값만 저장';
+COMMENT ON COLUMN common_system_settings.unit IS 'REQ-210 단위 기준 확정 시 애플리케이션에서 갱신';
+
+CREATE TABLE IF NOT EXISTS evaluation_year_settings (
+    id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    current_evaluation_year integer NOT NULL,
+    default_search_year integer NOT NULL,
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by bigint,
+    change_reason varchar(500),
+    CONSTRAINT fk_evaluation_year_settings_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id)
+);
+COMMENT ON TABLE evaluation_year_settings IS '현재 평가연도와 사용자 화면 기본 조회연도 설정. 기존 평가자료 삭제·변경 없이 초기 조회 조건으로 제공한다.';
+COMMENT ON COLUMN evaluation_year_settings.current_evaluation_year IS '현재 평가연도';
+COMMENT ON COLUMN evaluation_year_settings.default_search_year IS '사용자 화면 기본 조회연도';
+
+CREATE TABLE IF NOT EXISTS evaluation_year_preparations (
+    target_year integer PRIMARY KEY,
+    copy_requested_yn varchar(1) NOT NULL CHECK (copy_requested_yn IN ('Y','N')),
+    reset_requested_yn varchar(1) NOT NULL CHECK (reset_requested_yn IN ('Y','N')),
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by bigint,
+    change_reason varchar(500),
+    CONSTRAINT fk_evaluation_year_preparations_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id)
+);
+COMMENT ON TABLE evaluation_year_preparations IS '대상연도별 기준정보 복사·초기화 준비 상태. 실제 기준정보 값 편집이나 기존 평가자료 변경은 하지 않는다.';
+COMMENT ON COLUMN evaluation_year_preparations.copy_requested_yn IS 'Y:복사요청|N:복사미요청';
+COMMENT ON COLUMN evaluation_year_preparations.reset_requested_yn IS 'Y:초기화요청|N:초기화미요청';
+
 CREATE TABLE IF NOT EXISTS sessions (
     session_id varchar(128) PRIMARY KEY,
     user_id bigint NOT NULL,
@@ -297,3 +358,6 @@ CREATE INDEX IF NOT EXISTS idx_menus_url ON menus(url);
 CREATE INDEX IF NOT EXISTS idx_menu_permissions_lookup ON menu_permissions(menu_id, target_type, target_id, status);
 CREATE INDEX IF NOT EXISTS idx_detail_codes_group_order ON detail_codes(group_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_status ON sessions(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_menu_usage_settings_period ON menu_usage_settings(system_use_yn, exposure_start_at, exposure_end_at);
+CREATE INDEX IF NOT EXISTS idx_common_system_settings_key ON common_system_settings(setting_key);
+CREATE INDEX IF NOT EXISTS idx_evaluation_year_preparations_target_year ON evaluation_year_preparations(target_year);

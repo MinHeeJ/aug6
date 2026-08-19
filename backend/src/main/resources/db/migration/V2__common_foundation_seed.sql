@@ -76,6 +76,7 @@ INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order,
 (120,100,'MIDDLE','역할·권한 관리',2,NULL,NULL,'shield','SYSTEM','역할과 권한 관리','Y','ACTIVE',1),
 (130,100,'MIDDLE','메뉴 관리',3,NULL,NULL,'menu','SYSTEM','메뉴 구조와 정보 관리','Y','ACTIVE',1),
 (140,100,'MIDDLE','공통코드 관리',4,NULL,NULL,'codesandbox','SYSTEM','공통코드 관리','Y','ACTIVE',1),
+(150,100,'MIDDLE','환경설정 관리',5,NULL,NULL,'settings','SYSTEM','공통 환경설정과 기준연도 관리','Y','ACTIVE',1),
 (111,110,'SCREEN','사용자 관리',1,'SCR-USER-MGMT','/admin/users','user','SYSTEM','사용자 조회와 사용여부·역할 관리','Y','ACTIVE',1),
 (112,110,'SCREEN','조직 관리',2,'SCR-ORG-MGMT','/admin/organizations','building','SYSTEM','조직 조회와 관계 관리','Y','ACTIVE',1),
 (121,120,'SCREEN','역할 관리',1,'SCR-ROLE-MGMT','/admin/roles','key','SYSTEM','역할 메타정보 관리','Y','ACTIVE',1),
@@ -83,9 +84,13 @@ INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order,
 (123,120,'SCREEN','메뉴 권한 관리',3,'SCR-MENU-PERMISSION-MGMT','/admin/menu-permissions','lock','SYSTEM','메뉴 접근 권한 관리','Y','ACTIVE',1),
 (131,130,'SCREEN','메뉴 구조 관리',1,'SCR-MENU-STRUCTURE-MGMT','/admin/menu-structure','tree','SYSTEM','메뉴 부모와 정렬 관리','Y','ACTIVE',1),
 (132,130,'SCREEN','메뉴 정보 관리',2,'SCR-MENU-INFO-MGMT','/admin/menu-info','file-cog','SYSTEM','메뉴 실행 정보 관리','Y','ACTIVE',1),
+(133,130,'SCREEN','메뉴 사용 관리',3,'SCR-MENU-USAGE-MGMT','/admin/menu-usage','toggle-left','SYSTEM','메뉴별 사용여부와 노출기간 관리','Y','ACTIVE',1),
 (141,140,'SCREEN','코드그룹 관리',1,'SCR-CODE-GROUP-MGMT','/admin/code-groups','folder-code','SYSTEM','코드그룹 관리','Y','ACTIVE',1),
-(142,140,'SCREEN','상세코드 관리',2,'SCR-DETAIL-CODE-MGMT','/admin/detail-codes','list','SYSTEM','상세코드 관리','Y','ACTIVE',1)
-ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name, parent_menu_id = EXCLUDED.parent_menu_id, url = EXCLUDED.url, updated_at = CURRENT_TIMESTAMP;
+(142,140,'SCREEN','상세코드 관리',2,'SCR-DETAIL-CODE-MGMT','/admin/detail-codes','list','SYSTEM','상세코드 관리','Y','ACTIVE',1),
+(143,140,'SCREEN','코드 사용 관리',3,'SCR-CODE-USAGE-MGMT','/admin/code-usage','toggle-left','SYSTEM','상세코드별 사용여부와 적용기간 관리','Y','ACTIVE',1),
+(151,150,'SCREEN','공통 환경설정',1,'SCR-COMMON-SETTINGS-MGMT','/admin/common-settings','sliders-horizontal','SYSTEM','세션 유휴시간, 페이지당 조회건수, 기본 검색기간, 대량조회 기준건수, 장시간작업 안내 기준 관리','Y','ACTIVE',1),
+(152,150,'SCREEN','기준연도 관리',2,'SCR-EVALUATION-YEAR-MGMT','/admin/evaluation-years','calendar','SYSTEM','현재 평가연도와 기본 조회연도, 대상연도 준비 상태 관리','Y','ACTIVE',1)
+ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name, parent_menu_id = EXCLUDED.parent_menu_id, url = EXCLUDED.url, screen_id = EXCLUDED.screen_id, updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_execution_info (menu_id, screen_id, url, icon, business_category, description, updated_by)
 SELECT menu_id, screen_id, url, icon, business_category, description, 1 FROM menus WHERE screen_id IS NOT NULL
@@ -96,11 +101,36 @@ SELECT 'ROLE', 'R09', menu_id, 'ALLOW', 'ACTIVE', 1, 1, '시스템관리자 1차
 FROM menus WHERE screen_id IS NOT NULL
 ON CONFLICT (target_type, target_id, menu_id) DO UPDATE SET access_allowed = EXCLUDED.access_allowed, status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP;
 
+INSERT INTO menu_usage_settings (menu_id, system_use_yn, exposure_start_at, exposure_end_at, updated_by, change_reason)
+SELECT menu_id, 'Y', TIMESTAMP '2000-01-01 00:00:00', TIMESTAMP '2099-12-31 23:59:59', 1, '초기 메뉴 사용 설정'
+FROM menus
+WHERE screen_id IS NOT NULL
+ON CONFLICT (menu_id) DO NOTHING;
+
 INSERT INTO code_groups (group_id, group_name, description, managing_department, created_by, updated_by, system_use_yn, status)
-VALUES ('COMMON_STATUS','공통 상태','공통 상태 코드','시스템관리',1,1,'Y','ACTIVE')
+VALUES ('COMMON_STATUS','공통 상태','공통 상태 코드','시스템관리',1,1,'Y','ACTIVE'),
+       ('PROC_STATUS','처리상태','처리상태 코드','시스템관리',1,1,'Y','ACTIVE')
 ON CONFLICT (group_id) DO NOTHING;
 
-INSERT INTO detail_codes (group_id, code_value, code_name, sort_order, created_by, updated_by, system_use_yn, status)
-VALUES ('COMMON_STATUS','ACTIVE','활성',1,1,1,'Y','ACTIVE'),
-       ('COMMON_STATUS','INACTIVE','비활성',2,1,1,'Y','ACTIVE')
+INSERT INTO detail_codes (group_id, code_value, code_name, sort_order, valid_start_date, valid_end_date, created_by, updated_by, system_use_yn, status)
+VALUES ('COMMON_STATUS','ACTIVE','활성',1,DATE '2000-01-01',DATE '2099-12-31',1,1,'Y','ACTIVE'),
+       ('COMMON_STATUS','INACTIVE','비활성',2,DATE '2000-01-01',DATE '2099-12-31',1,1,'Y','ACTIVE'),
+       ('PROC_STATUS','OPEN','진행',1,DATE '2000-01-01',DATE '2099-12-31',1,1,'Y','ACTIVE'),
+       ('PROC_STATUS','ENDED','종료됨',2,DATE '2020-01-01',DATE '2026-08-19',1,1,'N','INACTIVE')
 ON CONFLICT (group_id, code_value) DO NOTHING;
+
+INSERT INTO common_system_settings (setting_key, setting_value, unit, updated_by, change_reason)
+VALUES ('SESSION_IDLE_MINUTES','30','minutes',1,'초기 공통 환경설정'),
+       ('PAGE_SIZE','20','rows',1,'초기 공통 환경설정'),
+       ('DEFAULT_SEARCH_PERIOD','30','days',1,'초기 공통 환경설정'),
+       ('BULK_QUERY_THRESHOLD','1000','rows',1,'초기 공통 환경설정'),
+       ('LONG_TASK_NOTICE_THRESHOLD','60','seconds',1,'초기 공통 환경설정')
+ON CONFLICT (setting_key) DO NOTHING;
+
+INSERT INTO evaluation_year_settings (id, current_evaluation_year, default_search_year, updated_by, change_reason)
+VALUES (1, 2026, 2026, 1, '초기 기준연도 설정')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO evaluation_year_preparations (target_year, copy_requested_yn, reset_requested_yn, updated_by, change_reason)
+VALUES (2027, 'N', 'N', 1, '초기 대상연도 준비 상태')
+ON CONFLICT (target_year) DO NOTHING;

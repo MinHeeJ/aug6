@@ -34,7 +34,7 @@ describe("LoginPage", () => {
     expect(html).not.toContain('name="password" type="password" value="admin"');
   });
 
-  it("allows seed R09 administrator to access all nine first-scope admin routes after login", () => {
+  it("allows seed R09 administrator to access all first-scope admin routes after login", () => {
     const adminUser: CurrentUser = {
       userId: 1,
       loginId: "admin",
@@ -53,7 +53,7 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(9);
+    expect(ADMIN_ROUTES).toHaveLength(13);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);

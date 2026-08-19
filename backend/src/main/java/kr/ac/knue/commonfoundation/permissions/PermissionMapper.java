@@ -11,10 +11,38 @@ public interface PermissionMapper {
             select m.menu_id as "menuId", m.parent_menu_id as "parentMenuId", m.menu_name as "menuName",
                    m.screen_id as "screenId", m.url as "url", m.icon as "icon", m.display_order as "displayOrder"
             from menus m
-            where m.status = 'ACTIVE' and m.system_use_yn = 'Y'
+            left join menu_usage_settings mus on mus.menu_id = m.menu_id
+            where m.status = 'ACTIVE'
+              and m.system_use_yn = 'Y'
+              and (m.url is null or (
+                  coalesce(mus.system_use_yn, m.system_use_yn) = 'Y'
+                  and mus.exposure_start_at is not null
+                  and mus.exposure_end_at is not null
+                  and CURRENT_TIMESTAMP between mus.exposure_start_at and mus.exposure_end_at
+              ))
             order by coalesce(m.parent_menu_id, 0), m.display_order, m.menu_id
             """)
     List<MenuRow> findActiveMenus();
+
+    @Select("""
+            select case
+                       when not exists (select 1 from menus where url = #{path} and status != 'DELETED') then 1
+                       when exists (
+                           select 1
+                           from menus m
+                           left join menu_usage_settings mus on mus.menu_id = m.menu_id
+                           where m.url = #{path}
+                             and m.status = 'ACTIVE'
+                             and m.system_use_yn = 'Y'
+                             and coalesce(mus.system_use_yn, m.system_use_yn) = 'Y'
+                             and mus.exposure_start_at is not null
+                             and mus.exposure_end_at is not null
+                             and CURRENT_TIMESTAMP between mus.exposure_start_at and mus.exposure_end_at
+                       ) then 1
+                       else 0
+                   end
+            """)
+    int isMenuRouteExposed(@Param("path") String path);
 
     @Select("""
             select mp.target_type as "targetType", mp.access_allowed as "accessAllowed"

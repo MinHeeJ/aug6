@@ -274,6 +274,217 @@ export const menuStructureApi = {
   },
 };
 
+export type MenuUsageSetting = {
+  menuId: number;
+  parentMenuId?: number | null;
+  topMenuName?: string | null;
+  middleMenuName?: string | null;
+  menuName: string;
+  screenId?: string | null;
+  url?: string | null;
+  systemUseYn: "Y" | "N";
+  exposureStartAt: string;
+  exposureEndAt: string;
+  status: string;
+  changeReason?: string | null;
+  updatedBy?: number | null;
+  updatedAt?: string;
+};
+
+export type MenuUsageSearchResponse = {
+  settings: MenuUsageSetting[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type MenuUsagePayload = {
+  items: Array<{
+    menuId: number;
+    systemUseYn: "Y" | "N";
+    exposureStartAt: string;
+    exposureEndAt: string;
+    changeReason: string;
+  }>;
+};
+
+export const menuUsageApi = {
+  listMenuUsageSettings(
+    params: {
+      filter?: string;
+      systemUseYn?: "Y" | "N";
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 10));
+    if (params.filter) query.set("filter", params.filter);
+    if (params.systemUseYn) query.set("systemUseYn", params.systemUseYn);
+    return apiRequest<MenuUsageSearchResponse>(
+      `/api/admin/menus/usage-settings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveMenuUsageSettings(payload: MenuUsagePayload) {
+    return apiRequest<MenuUsageSetting[]>("/api/admin/menus/usage-settings", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type DetailCodeUsageSetting = {
+  groupId: string;
+  codeValue: string;
+  codeName: string;
+  systemUseYn: "Y" | "N";
+  validStartDate?: string | null;
+  validEndDate?: string | null;
+  status: string;
+  changeReason?: string | null;
+  updatedBy?: number | null;
+  updatedAt?: string;
+  selectableForNewInput: boolean;
+};
+
+export type DetailCodeUsageSearchResponse = {
+  settings: DetailCodeUsageSetting[];
+  selectableOptions: DetailCodeUsageSetting[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type DetailCodeUsagePayload = {
+  items: Array<{
+    codeValue: string;
+    systemUseYn: "Y" | "N";
+    validStartDate?: string | null;
+    validEndDate?: string | null;
+    changeReason: string;
+  }>;
+};
+
+export const codeUsageApi = {
+  listDetailCodeUsageSettings(
+    groupId: string,
+    params: { page?: number; size?: number } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 10));
+    return apiRequest<DetailCodeUsageSearchResponse>(
+      `/api/admin/code-groups/${encodeURIComponent(groupId)}/codes/usage-settings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveDetailCodeUsageSettings(
+    groupId: string,
+    payload: DetailCodeUsagePayload,
+  ) {
+    return apiRequest<DetailCodeUsageSetting[]>(
+      `/api/admin/code-groups/${encodeURIComponent(groupId)}/codes/usage-settings` as `/api/${string}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type CommonSystemSettingKey =
+  | "SESSION_IDLE_MINUTES"
+  | "PAGE_SIZE"
+  | "DEFAULT_SEARCH_PERIOD"
+  | "BULK_QUERY_THRESHOLD"
+  | "LONG_TASK_NOTICE_THRESHOLD";
+
+export type CommonSystemSetting = {
+  settingKey: CommonSystemSettingKey;
+  settingValue: string;
+  unit: string;
+  changeReason?: string | null;
+  updatedBy?: number | null;
+  updatedAt?: string;
+};
+
+export type CommonSystemSettingsResponse = {
+  settings: CommonSystemSetting[];
+};
+
+export type CommonSystemSettingsPayload = {
+  settings: Array<{
+    settingKey: CommonSystemSettingKey;
+    settingValue: string;
+    unit: string;
+    changeReason: string;
+  }>;
+};
+
+export const commonSystemSettingsApi = {
+  getCommonSystemSettings() {
+    return apiRequest<CommonSystemSettingsResponse>(
+      "/api/admin/system-settings/common",
+    );
+  },
+  saveCommonSystemSettings(payload: CommonSystemSettingsPayload) {
+    return apiRequest<CommonSystemSettingsResponse>(
+      "/api/admin/system-settings/common",
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type EvaluationYearPreparation = {
+  targetYear: number;
+  copyRequestedYn: "Y" | "N";
+  resetRequestedYn: "Y" | "N";
+  updatedBy?: number | null;
+  updatedAt?: string;
+  changeReason?: string | null;
+};
+
+export type EvaluationYearSettings = {
+  currentEvaluationYear?: number | null;
+  defaultSearchYear?: number | null;
+  preparations: EvaluationYearPreparation[];
+  updatedBy?: number | null;
+  updatedAt?: string;
+  changeReason?: string | null;
+};
+
+export type EvaluationYearPayload = {
+  currentEvaluationYear: number;
+  defaultSearchYear: number;
+  changeReason: string;
+  preparations: Array<{
+    targetYear: number;
+    copyRequestedYn: "Y" | "N";
+    resetRequestedYn: "Y" | "N";
+    changeReason: string;
+  }>;
+};
+
+export const evaluationYearApi = {
+  getEvaluationYearSettings() {
+    return apiRequest<EvaluationYearSettings>(
+      "/api/admin/system-settings/evaluation-years",
+    );
+  },
+  saveEvaluationYearSettings(payload: EvaluationYearPayload) {
+    return apiRequest<EvaluationYearSettings>(
+      "/api/admin/system-settings/evaluation-years",
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type MenuExecution = {
   menuId: number;
   parentMenuId?: number | null;

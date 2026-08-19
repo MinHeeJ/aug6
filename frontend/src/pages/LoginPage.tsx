@@ -53,6 +53,12 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 정보 관리",
   },
   {
+    path: "/admin/menu-usage",
+    label: "메뉴 사용 관리",
+    screenId: "SCR-MENU-USAGE-MGMT",
+    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 사용 관리",
+  },
+  {
     path: "/admin/code-groups",
     label: "코드그룹 관리",
     screenId: "SCR-CODE-GROUP-MGMT",
@@ -63,6 +69,24 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     label: "상세코드 관리",
     screenId: "SCR-DETAIL-CODE-MGMT",
     menuPath: "시스템 관리 > 공통코드 관리 > 상세코드 관리",
+  },
+  {
+    path: "/admin/code-usage",
+    label: "코드 사용 관리",
+    screenId: "SCR-CODE-USAGE-MGMT",
+    menuPath: "시스템 관리 > 공통코드 관리 > 코드 사용 관리",
+  },
+  {
+    path: "/admin/common-settings",
+    label: "공통 환경설정",
+    screenId: "SCR-COMMON-SETTINGS-MGMT",
+    menuPath: "시스템 관리 > 환경설정 관리 > 공통 환경설정",
+  },
+  {
+    path: "/admin/evaluation-years",
+    label: "기준연도 관리",
+    screenId: "SCR-EVALUATION-YEAR-MGMT",
+    menuPath: "시스템 관리 > 환경설정 관리 > 기준연도 관리",
   },
 ];
 

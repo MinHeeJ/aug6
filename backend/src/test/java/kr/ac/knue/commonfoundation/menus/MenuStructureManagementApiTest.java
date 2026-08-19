@@ -53,6 +53,19 @@ class MenuStructureManagementApiTest {
     }
 
     @Test
+    void getMenuTreePassesSearchFilterToService() throws Exception {
+        when(service.getMenuTree("메뉴 구조")).thenReturn(List.of(menuNode(131L, 130L, "메뉴 구조 관리", List.of())));
+
+        mockMvc.perform(get("/api/admin/menus/tree").param("filter", "메뉴 구조").cookie(adminCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].menuId").value(131))
+                .andExpect(jsonPath("$.data[0].menuName").value("메뉴 구조 관리"));
+
+        verify(service).getMenuTree("메뉴 구조");
+    }
+
+    @Test
     void updateMenuParentPersistsParentAndReturnsChangedNodeWithMetadata() throws Exception {
         when(service.updateMenuParent(eq(131L), any(MenuParentUpdateRequest.class), eq(1L)))
                 .thenReturn(new MenuTreeNode(131L, 120L, "SCREEN", "메뉴 구조 관리", 4, "SCR-MENU-STRUCTURE-MGMT",

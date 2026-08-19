@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.userroles.UserRoleManagementMapper">
+    <sql id="assignmentColumns">
+        ur.assignment_id as "assignmentId",
+        ur.user_id as "userId",
+        u.login_id as "loginId",
+        u.employee_no as "employeeNo",
+        k.name as "name",
+        ur.role_code as "roleCode",
+        r.role_name as "roleName",
+        ur.assignment_type as "assignmentType",
+        ur.valid_start_date as "validStartDate",
+        ur.valid_end_date as "validEndDate",
+        ur.approver_user_id as "approverUserId",
+        approver_k.name as "approverName",
+        ur.status as "status",
+        ur.revoked_at as "revokedAt",
+        ur.revoked_by as "revokedBy",
+        ur.updated_at as "updatedAt",
+        ur.change_reason as "changeReason"
+    </sql>
+
+    <sql id="assignmentJoins">
+        from user_roles ur
+        join users u on u.user_id = ur.user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        join roles r on r.role_code = ur.role_code
+        left join users approver_u on approver_u.user_id = ur.approver_user_id
+        left join korus_personnel_snapshots approver_k on approver_k.employee_no = approver_u.employee_no
+    </sql>
+
+    <select id="listAssignments" resultType="kr.ac.knue.commonfoundation.userroles.UserRoleAssignmentSummary">
+        select <include refid="assignmentColumns" />
+        <include refid="assignmentJoins" />
+        <where>
+            u.status != 'DELETED'
+            <if test="criteria.roleCodeFilter != null and criteria.roleCodeFilter != ''">
+                and ur.role_code = #{criteria.roleCodeFilter}
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (u.login_id like concat('%', #{criteria.filter}, '%')
+                    or u.employee_no like concat('%', #{criteria.filter}, '%')
+                    or k.name like concat('%', #{criteria.filter}, '%')
+                    or r.role_name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by ur.status, ur.assignment_type, u.user_id, ur.role_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countAssignments" resultType="int">
+        select count(*)
+        <include refid="assignmentJoins" />
+        <where>
+            u.status != 'DELETED'
+            <if test="criteria.roleCodeFilter != null and criteria.roleCodeFilter != ''">
+                and ur.role_code = #{criteria.roleCodeFilter}
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (u.login_id like concat('%', #{criteria.filter}, '%')
+                    or u.employee_no like concat('%', #{criteria.filter}, '%')
+                    or k.name like concat('%', #{criteria.filter}, '%')
+                    or r.role_name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="listCurrentUserRoles" resultType="kr.ac.knue.commonfoundation.userroles.UserRoleAssignmentSummary">
+        select <include refid="assignmentColumns" />
+        <include refid="assignmentJoins" />
+        where ur.user_id = #{userId}
+          and ur.status = 'ACTIVE'
+          and ur.valid_start_date &lt;= CURRENT_DATE
+          and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
+        order by ur.assignment_type, ur.role_code
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countCurrentUserRoles" resultType="int">
+        select count(*) from user_roles ur
+        where ur.user_id = #{userId}
+          and ur.status = 'ACTIVE'
+          and ur.valid_start_date &lt;= CURRENT_DATE
+          and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
+    </select>
+
+    <select id="findAssignmentById" resultType="kr.ac.knue.commonfoundation.userroles.UserRoleAssignmentSummary">
+        select <include refid="assignmentColumns" />
+        <include refid="assignmentJoins" />
+        where ur.assignment_id = #{assignmentId}
+    </select>
+
+    <select id="existsUser" resultType="int">
+        select count(*) from users where user_id = #{userId} and status != 'DELETED'
+    </select>
+
+    <select id="existsActiveRole" resultType="int">
+        select count(*) from roles where role_code = #{roleCode} and status = 'ACTIVE' and system_use_yn = 'Y'
+    </select>
+
+    <select id="countOverlappingActiveAssignment" resultType="int">
+        select count(*) from user_roles
+        where user_id = #{userId}
+          and role_code = #{roleCode}
+          and status = 'ACTIVE'
+          <if test="assignmentId != null">
+              and assignment_id != #{assignmentId}
+          </if>
+          <if test="validEndDate != null">
+              and valid_start_date &lt;= #{validEndDate}
+          </if>
+          <if test="validEndDate == null">
+              and valid_start_date &lt;= DATE '9999-12-31'
+          </if>
+          and coalesce(valid_end_date, DATE '9999-12-31') &gt;= #{validStartDate}
+    </select>
+
+    <insert id="insertAssignment">
+        insert into user_roles (user_id, role_code, assignment_type, valid_start_date, valid_end_date, approver_user_id, status, change_reason)
+        values (#{userId}, #{roleCode}, #{assignmentType}, #{validStartDate}, #{validEndDate}, #{approverUserId}, 'ACTIVE', #{changeReason})
+    </insert>
+
+    <update id="updateAssignment">
+        update user_roles
+        set user_id = #{userId},
+            role_code = #{roleCode},
+            assignment_type = #{assignmentType},
+            valid_start_date = #{validStartDate},
+            valid_end_date = #{validEndDate},
+            approver_user_id = #{approverUserId},
+            updated_at = CURRENT_TIMESTAMP,
+            change_reason = #{changeReason}
+        where assignment_id = #{assignmentId}
+          and status = 'ACTIVE'
+    </update>
+
+    <update id="revokeAssignment">
+        update user_roles
+        set status = 'REVOKED',
+            revoked_at = CURRENT_TIMESTAMP,
+            revoked_by = #{revokedBy},
+            approver_user_id = #{revokedBy},
+            updated_at = CURRENT_TIMESTAMP,
+            change_reason = #{changeReason}
+        where assignment_id = #{assignmentId}
+          and status = 'ACTIVE'
+    </update>
+</mapper>

@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.users.UserManagementMapper">
+    <select id="searchUsers" resultType="kr.ac.knue.commonfoundation.users.UserSummary">
+        select u.user_id as "userId",
+               u.login_id as "loginId",
+               u.employee_no as "employeeNo",
+               k.name as "name",
+               coalesce(oum.organization_code, k.organization_code) as "organizationCode",
+               o.organization_name as "organizationName",
+               k.rank_name as "rankName",
+               k.employment_status as "employmentStatus",
+               coalesce(oum.position_name, k.position_name) as "positionName",
+               k.retirement_date as "retirementDate",
+               k.last_synced_at as "lastSyncedAt",
+               u.system_use_yn as "systemUseYn",
+               u.status as "status",
+               null as "roleCodes"
+        from users u
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        left join lateral (
+            select mapping.organization_code, mapping.position_name
+            from organization_user_mappings mapping
+            where mapping.user_id = u.user_id
+              and mapping.mapping_type in ('POSITION','ORGANIZATION')
+              and mapping.status = 'ACTIVE'
+              and mapping.effective_start_date &lt;= CURRENT_DATE
+              and (mapping.effective_end_date is null or mapping.effective_end_date &gt;= CURRENT_DATE)
+            order by case mapping.mapping_type when 'POSITION' then 0 else 1 end,
+                     mapping.effective_start_date desc, mapping.mapping_id desc
+            limit 1
+        ) oum on true
+        left join organizations o on o.organization_code = coalesce(oum.organization_code, k.organization_code)
+        <where>
+            u.status != 'DELETED'
+            <if test="criteria.employeeNo != null and criteria.employeeNo != ''">
+                and u.employee_no like concat('%', #{criteria.employeeNo}, '%')
+            </if>
+            <if test="criteria.name != null and criteria.name != ''">
+                and k.name like concat('%', #{criteria.name}, '%')
+            </if>
+            <if test="criteria.organizationCodeFilter != null and criteria.organizationCodeFilter != ''">
+                and coalesce(oum.organization_code, k.organization_code) = #{criteria.organizationCodeFilter}
+            </if>
+            <if test="criteria.rankName != null and criteria.rankName != ''">
+                and k.rank_name like concat('%', #{criteria.rankName}, '%')
+            </if>
+            <if test="criteria.employmentStatus != null and criteria.employmentStatus != ''">
+                and k.employment_status = #{criteria.employmentStatus}
+            </if>
+            <if test="criteria.systemUseYn != null and criteria.systemUseYn != ''">
+                and u.system_use_yn = #{criteria.systemUseYn}
+            </if>
+            <if test="criteria.roleCodeFilter != null and criteria.roleCodeFilter != ''">
+                and exists (
+                    select 1 from user_roles ur
+                    where ur.user_id = u.user_id
+                      and ur.role_code = #{criteria.roleCodeFilter}
+                      and ur.status = 'ACTIVE'
+                      and ur.valid_start_date &lt;= CURRENT_DATE
+                      and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
+                )
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (u.login_id like concat('%', #{criteria.filter}, '%')
+                    or u.employee_no like concat('%', #{criteria.filter}, '%')
+                    or k.name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by u.user_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="findUserById" resultType="kr.ac.knue.commonfoundation.users.UserSummary">
+        select u.user_id as "userId",
+               u.login_id as "loginId",
+               u.employee_no as "employeeNo",
+               k.name as "name",
+               coalesce(oum.organization_code, k.organization_code) as "organizationCode",
+               o.organization_name as "organizationName",
+               k.rank_name as "rankName",
+               k.employment_status as "employmentStatus",
+               coalesce(oum.position_name, k.position_name) as "positionName",
+               k.retirement_date as "retirementDate",
+               k.last_synced_at as "lastSyncedAt",
+               u.system_use_yn as "systemUseYn",
+               u.status as "status",
+               null as "roleCodes"
+        from users u
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        left join lateral (
+            select mapping.organization_code, mapping.position_name
+            from organization_user_mappings mapping
+            where mapping.user_id = u.user_id
+              and mapping.mapping_type in ('POSITION','ORGANIZATION')
+              and mapping.status = 'ACTIVE'
+              and mapping.effective_start_date &lt;= CURRENT_DATE
+              and (mapping.effective_end_date is null or mapping.effective_end_date &gt;= CURRENT_DATE)
+            order by case mapping.mapping_type when 'POSITION' then 0 else 1 end,
+                     mapping.effective_start_date desc, mapping.mapping_id desc
+            limit 1
+        ) oum on true
+        left join organizations o on o.organization_code = coalesce(oum.organization_code, k.organization_code)
+        where u.user_id = #{userId} and u.status != 'DELETED'
+    </select>
+
+    <select id="countUsers" resultType="int">
+        select count(*)
+        from users u
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        left join lateral (
+            select mapping.organization_code, mapping.position_name
+            from organization_user_mappings mapping
+            where mapping.user_id = u.user_id
+              and mapping.mapping_type in ('POSITION','ORGANIZATION')
+              and mapping.status = 'ACTIVE'
+              and mapping.effective_start_date &lt;= CURRENT_DATE
+              and (mapping.effective_end_date is null or mapping.effective_end_date &gt;= CURRENT_DATE)
+            order by case mapping.mapping_type when 'POSITION' then 0 else 1 end,
+                     mapping.effective_start_date desc, mapping.mapping_id desc
+            limit 1
+        ) oum on true
+        <where>
+            u.status != 'DELETED'
+            <if test="criteria.employeeNo != null and criteria.employeeNo != ''">
+                and u.employee_no like concat('%', #{criteria.employeeNo}, '%')
+            </if>
+            <if test="criteria.name != null and criteria.name != ''">
+                and k.name like concat('%', #{criteria.name}, '%')
+            </if>
+            <if test="criteria.organizationCodeFilter != null and criteria.organizationCodeFilter != ''">
+                and coalesce(oum.organization_code, k.organization_code) = #{criteria.organizationCodeFilter}
+            </if>
+            <if test="criteria.rankName != null and criteria.rankName != ''">
+                and k.rank_name like concat('%', #{criteria.rankName}, '%')
+            </if>
+            <if test="criteria.employmentStatus != null and criteria.employmentStatus != ''">
+                and k.employment_status = #{criteria.employmentStatus}
+            </if>
+            <if test="criteria.systemUseYn != null and criteria.systemUseYn != ''">
+                and u.system_use_yn = #{criteria.systemUseYn}
+            </if>
+            <if test="criteria.roleCodeFilter != null and criteria.roleCodeFilter != ''">
+                and exists (
+                    select 1 from user_roles ur
+                    where ur.user_id = u.user_id
+                      and ur.role_code = #{criteria.roleCodeFilter}
+                      and ur.status = 'ACTIVE'
+                      and ur.valid_start_date &lt;= CURRENT_DATE
+                      and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
+                )
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (u.login_id like concat('%', #{criteria.filter}, '%')
+                    or u.employee_no like concat('%', #{criteria.filter}, '%')
+                    or k.name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findRoleCodesByUserId" resultType="string">
+        select role_code from user_roles
+        where user_id = #{userId}
+          and status = 'ACTIVE'
+          and valid_start_date &lt;= CURRENT_DATE
+          and (valid_end_date &gt;= CURRENT_DATE or valid_end_date is null)
+        order by role_code
+    </select>
+
+    <select id="findCurrentRolesByUserId" resultType="kr.ac.knue.commonfoundation.users.UserRoleSummary">
+        select ur.assignment_id as "assignmentId",
+               ur.user_id as "userId",
+               ur.role_code as "roleCode",
+               r.role_name as "roleName",
+               ur.assignment_type as "assignmentType",
+               ur.valid_start_date as "validStartDate",
+               ur.valid_end_date as "validEndDate",
+               ur.approver_user_id as "approverUserId",
+               ur.status as "status",
+               ur.updated_at as "updatedAt",
+               ur.change_reason as "changeReason"
+        from user_roles ur
+        join roles r on r.role_code = ur.role_code
+        where ur.user_id = #{userId}
+          and ur.status = 'ACTIVE'
+          and ur.valid_start_date &lt;= CURRENT_DATE
+          and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
+        order by ur.assignment_type, ur.role_code
+    </select>
+
+    <select id="findAvailableRoles" resultType="kr.ac.knue.commonfoundation.users.AvailableRole">
+        select role_code as "roleCode", role_name as "roleName"
+        from roles
+        where status = 'ACTIVE' and system_use_yn = 'Y'
+        order by role_code
+    </select>
+
+    <select id="existsUser" resultType="int">
+        select count(*) from users where user_id = #{userId} and status != 'DELETED'
+    </select>
+
+    <select id="countActiveRoleCodes" resultType="int">
+        select count(*) from roles
+        where status = 'ACTIVE' and system_use_yn = 'Y'
+        <if test="roleCodes != null and roleCodes.size() &gt; 0">
+            and role_code in
+            <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+                #{roleCode}
+            </foreach>
+        </if>
+    </select>
+
+    <update id="updateUserAccount">
+        update users
+        set system_use_yn = #{systemUseYn},
+            status = case when #{systemUseYn} = 'Y' then 'ACTIVE' else 'INACTIVE' end,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where user_id = #{userId} and status != 'DELETED'
+    </update>
+
+    <update id="endManualRoles">
+        update user_roles
+        set status = 'INACTIVE',
+            updated_at = CURRENT_TIMESTAMP,
+            change_reason = #{changeReason}
+        where user_id = #{userId}
+          and assignment_type = 'MANUAL'
+          and status = 'ACTIVE'
+    </update>
+
+    <insert id="insertManualRole">
+        insert into user_roles (user_id, role_code, assignment_type, valid_start_date, valid_end_date, approver_user_id, status, change_reason)
+        values (#{userId}, #{roleCode}, 'MANUAL', #{validStartDate}, #{validEndDate}, #{approverUserId}, 'ACTIVE', #{changeReason})
+    </insert>
+</mapper>

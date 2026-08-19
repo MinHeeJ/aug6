@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.roles.RoleManagementMapper">
+    <select id="listRoles" resultType="kr.ac.knue.commonfoundation.roles.RoleRow">
+        select role_code as "roleCode",
+               role_name as "roleName",
+               purpose as "purpose",
+               assignment_criteria as "assignmentCriteria",
+               default_data_scope as "defaultDataScope",
+               system_use_yn as "systemUseYn",
+               status as "status",
+               updated_at as "updatedAt"
+        from roles
+        <where>
+            role_code in ('R01','R02','R03','R04','R05','R06','R07','R08','R09')
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (role_code like concat('%', #{criteria.filter}, '%')
+                    or role_name like concat('%', #{criteria.filter}, '%')
+                    or purpose like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by role_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="findRoleByCode" resultType="kr.ac.knue.commonfoundation.roles.RoleRow">
+        select role_code as "roleCode",
+               role_name as "roleName",
+               purpose as "purpose",
+               assignment_criteria as "assignmentCriteria",
+               default_data_scope as "defaultDataScope",
+               system_use_yn as "systemUseYn",
+               status as "status",
+               updated_at as "updatedAt"
+        from roles
+        where role_code = #{roleCode}
+          and role_code in ('R01','R02','R03','R04','R05','R06','R07','R08','R09')
+    </select>
+
+    <update id="updateRole">
+        update roles
+        set role_name = #{roleName},
+            purpose = #{purpose},
+            assignment_criteria = #{assignmentCriteria},
+            default_data_scope = #{defaultDataScope},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where role_code = #{roleCode}
+          and role_code in ('R01','R02','R03','R04','R05','R06','R07','R08','R09')
+    </update>
+</mapper>

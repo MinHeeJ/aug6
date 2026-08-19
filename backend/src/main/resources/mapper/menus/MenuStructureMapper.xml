@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.menus.MenuStructureMapper">
+    <resultMap id="MenuTreeRowMap" type="kr.ac.knue.commonfoundation.menus.MenuTreeRow">
+        <constructor>
+            <arg column="menuId" javaType="long"/>
+            <arg column="parentMenuId" javaType="long"/>
+            <arg column="menuType" javaType="string"/>
+            <arg column="menuName" javaType="string"/>
+            <arg column="displayOrder" javaType="int"/>
+            <arg column="screenId" javaType="string"/>
+            <arg column="url" javaType="string"/>
+            <arg column="icon" javaType="string"/>
+            <arg column="businessCategory" javaType="string"/>
+            <arg column="description" javaType="string"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="menuTreeSelect">
+        select m.menu_id as "menuId",
+               m.parent_menu_id as "parentMenuId",
+               m.menu_type as "menuType",
+               m.menu_name as "menuName",
+               m.display_order as "displayOrder",
+               m.screen_id as "screenId",
+               m.url as "url",
+               m.icon as "icon",
+               m.business_category as "businessCategory",
+               m.description as "description",
+               m.system_use_yn as "systemUseYn",
+               m.status as "status",
+               m.change_reason as "changeReason",
+               m.updated_at as "updatedAt"
+        from menus m
+    </sql>
+
+    <select id="findMenusForTree" resultMap="MenuTreeRowMap">
+        <include refid="menuTreeSelect"/>
+        <where>
+            m.status != 'DELETED'
+            <if test="filter != null and filter != ''">
+                and (m.menu_name ilike concat('%', #{filter}, '%')
+                    or m.screen_id ilike concat('%', #{filter}, '%')
+                    or m.url ilike concat('%', #{filter}, '%'))
+            </if>
+        </where>
+        order by coalesce(m.parent_menu_id, 0), m.display_order, m.menu_id
+    </select>
+
+    <select id="existsMenu" resultType="int">
+        select count(*) from menus where menu_id = #{menuId} and status != 'DELETED'
+    </select>
+
+    <select id="isDescendant" resultType="int">
+        with recursive descendants as (
+            select menu_id from menus where parent_menu_id = #{ancestorMenuId} and status != 'DELETED'
+            union all
+            select child.menu_id
+            from menus child
+            join descendants parent on child.parent_menu_id = parent.menu_id
+            where child.status != 'DELETED'
+        )
+        select count(*) from descendants where menu_id = #{candidateMenuId}
+    </select>
+
+    <select id="countSiblingsUnderParent" resultType="int">
+        select count(*) from menus
+        <where>
+            status != 'DELETED'
+            <choose>
+                <when test="parentMenuId != null">
+                    and parent_menu_id = #{parentMenuId}
+                </when>
+                <otherwise>
+                    and parent_menu_id is null
+                </otherwise>
+            </choose>
+            and menu_id in
+            <foreach collection="menuIds" item="menuId" open="(" separator="," close=")">
+                #{menuId}
+            </foreach>
+        </where>
+    </select>
+
+    <update id="updateParent">
+        update menus
+        set parent_menu_id = #{parentMenuId},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where menu_id = #{menuId}
+          and status != 'DELETED'
+    </update>
+
+    <update id="updateDisplayOrder">
+        update menus
+        set display_order = #{displayOrder},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where menu_id = #{menuId}
+          <choose>
+              <when test="parentMenuId != null">
+                  and parent_menu_id = #{parentMenuId}
+              </when>
+              <otherwise>
+                  and parent_menu_id is null
+              </otherwise>
+          </choose>
+          and status != 'DELETED'
+    </update>
+
+    <select id="findMenu" resultMap="MenuTreeRowMap">
+        <include refid="menuTreeSelect"/>
+        where m.menu_id = #{menuId}
+          and m.status != 'DELETED'
+    </select>
+
+    <select id="findMenusByParent" resultMap="MenuTreeRowMap">
+        <include refid="menuTreeSelect"/>
+        <where>
+            m.status != 'DELETED'
+            <choose>
+                <when test="parentMenuId != null">
+                    and m.parent_menu_id = #{parentMenuId}
+                </when>
+                <otherwise>
+                    and m.parent_menu_id is null
+                </otherwise>
+            </choose>
+        </where>
+        order by m.display_order, m.menu_id
+    </select>
+</mapper>

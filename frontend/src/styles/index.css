@@ -1,0 +1,140 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #2a3547;
+  background: #f6f9fc;
+  font-family:
+    "Plus Jakarta Sans",
+    Pretendard,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f6f9fc;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow,
+    transform, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+button:not(:disabled),
+a[href],
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@layer components {
+  [data-screen-id] > .mb-6:first-child,
+  [data-screen-id] > div:first-child.rounded-md {
+    @apply overflow-hidden rounded-2xl border border-transparent bg-lightsecondary px-6 py-5 shadow-none dark:bg-primary/10;
+  }
+
+  [data-screen-id] section.rounded-md,
+  [data-screen-id] aside.rounded-md,
+  [data-screen-id] form.rounded-md,
+  main > section.rounded-md {
+    @apply rounded-2xl border-ld bg-white shadow-md dark:border-white/10 dark:bg-white/[0.03];
+  }
+
+  [data-screen-id] h1,
+  [data-screen-id] h2,
+  [data-screen-id] h3,
+  .card-title {
+    @apply tracking-[-0.01em] text-dark dark:text-white;
+  }
+
+  [data-screen-id] p,
+  [data-screen-id] span,
+  [data-screen-id] td,
+  .card-subtitle {
+    @apply dark:text-white/70;
+  }
+
+  [data-screen-id] input,
+  [data-screen-id] select,
+  [data-screen-id] textarea,
+  form input,
+  form select,
+  form textarea {
+    @apply rounded-xl border-ld bg-white text-link shadow-sm outline-none placeholder:text-muted focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 dark:border-white/10 dark:bg-dark dark:text-white/90 dark:placeholder:text-white/35;
+  }
+
+  [data-screen-id] table {
+    @apply min-w-full overflow-hidden rounded-xl bg-white text-sm dark:bg-transparent;
+  }
+
+  [data-screen-id] thead {
+    @apply border-b border-ld bg-lightgray text-lightmuted dark:border-white/10 dark:bg-white/5 dark:text-white/55;
+  }
+
+  [data-screen-id] tbody tr {
+    @apply transition-colors duration-200 dark:border-white/10;
+  }
+
+  [data-screen-id] tbody tr:hover {
+    @apply bg-lightprimary dark:bg-primary/10;
+  }
+
+  [data-screen-id] th {
+    @apply whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide;
+  }
+
+  [data-screen-id] td {
+    @apply px-4 py-3 align-middle;
+  }
+
+  [data-screen-id] button {
+    @apply rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark;
+  }
+
+  [data-screen-id] button.bg-primary,
+  form button.bg-primary {
+    @apply shadow-btn-shadow hover:bg-primary/90;
+  }
+
+  [data-screen-id] .bg-lightprimary,
+  [data-screen-id] .bg-lightsecondary,
+  [data-screen-id] .bg-lightsuccess,
+  [data-screen-id] .bg-lightwarning,
+  [data-screen-id] .bg-lighterror,
+  [data-screen-id] .bg-lightinfo {
+    @apply rounded-xl;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

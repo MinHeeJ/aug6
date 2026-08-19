@@ -1,0 +1,268 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "./AuthProvider";
+import { AdminShell } from "../components/layout/AdminShell";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PermissionState,
+  SuccessState,
+} from "../components/States";
+import { authApi, type CurrentUser } from "../api/apiClient";
+import {
+  ADMIN_ROUTES,
+  LoginPage,
+  canAccessAdminRoute,
+} from "../pages/LoginPage";
+import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
+import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
+import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
+import { MenuInfoManagementPage } from "../pages/admin/SCR-MENU-INFO-MGMT";
+import { MenuStructureManagementPage } from "../pages/admin/SCR-MENU-STRUCTURE-MGMT";
+import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
+import { UserManagementPage } from "../pages/admin/SCR-USER-MGMT";
+import { CodeGroupManagementPage } from "../pages/admin/SCR-CODE-GROUP-MGMT";
+import { DetailCodeManagementPage } from "../pages/admin/SCR-DETAIL-CODE-MGMT";
+
+export function AppRouter() {
+  const auth = useAuth();
+  const path = usePathname();
+  const adminRoute = ADMIN_ROUTES.find((route) => route.path === path);
+
+  if (auth.status === "loading") {
+    return (
+      <AdminShell>
+        <LoadingState
+          title="인증 확인 중"
+          message="세션 정보를 확인하고 있습니다."
+        />
+      </AdminShell>
+    );
+  }
+
+  if (auth.status === "anonymous") {
+    return (
+      <LoginPage
+        onLogin={auth.login}
+        onHealth={async () => (await authApi.health()).data ?? { status: "UP" }}
+        onLoginSuccess={() => {
+          if (
+            typeof window !== "undefined" &&
+            window.location.pathname === "/login"
+          ) {
+            window.history.replaceState({}, "", "/admin/users");
+          }
+        }}
+      />
+    );
+  }
+
+  if (auth.status === "error") {
+    return (
+      <AdminShell>
+        <ErrorState
+          title="인증 오류"
+          message={auth.error ?? "인증 처리 중 오류가 발생했습니다."}
+        />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute && !canAccessAdminRoute(auth.user, adminRoute.path)) {
+    return (
+      <AdminShell>
+        <PermissionState
+          title="권한이 없습니다"
+          message={`${adminRoute.label} 화면 접근 권한이 없습니다.`}
+        />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/users") {
+    return (
+      <AdminShell>
+        <UserManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/organizations") {
+    return (
+      <AdminShell>
+        <OrganizationManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/roles") {
+    return (
+      <AdminShell>
+        <RoleManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/menu-permissions") {
+    return (
+      <AdminShell>
+        <MenuPermissionManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/menu-info") {
+    return (
+      <AdminShell>
+        <MenuInfoManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/menu-structure") {
+    return (
+      <AdminShell>
+        <MenuStructureManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/user-roles") {
+    return (
+      <AdminShell>
+        <UserRoleManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/code-groups") {
+    return (
+      <AdminShell>
+        <CodeGroupManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/detail-codes") {
+    return (
+      <AdminShell>
+        <DetailCodeManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute) {
+    return (
+      <AdminShell>
+        <AdminRoutePage route={adminRoute} user={auth.user} />
+      </AdminShell>
+    );
+  }
+
+  return (
+    <AdminShell>
+      <section className="mb-6 rounded-md bg-lightsecondary p-6 shadow-none">
+        <h1 className="text-xl font-semibold text-dark">Dashboard</h1>
+        <p className="mt-2 text-sm text-muted">
+          한국교원대학교 교수업적평가시스템 공통기능 기반
+        </p>
+      </section>
+      <section className="grid grid-cols-12 gap-6">
+        <DashboardCard
+          title="권한 역할"
+          value={auth.user?.roles.join(", ") ?? "-"}
+        />
+        <DashboardCard
+          title="시스템 관리 메뉴"
+          value={`${countMenus(auth.user?.menus ?? [])}개`}
+        />
+        <DashboardCard title="세션 상태" value="인증됨" />
+        <section className="col-span-12 rounded-md bg-white p-6 shadow-md">
+          <h2 className="text-lg font-semibold text-dark">
+            공통 상태 컴포넌트
+          </h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <EmptyState />
+            <PermissionState />
+            <SuccessState />
+          </div>
+        </section>
+      </section>
+    </AdminShell>
+  );
+}
+
+function usePathname() {
+  const [path, setPath] = useState(() =>
+    typeof window === "undefined" ? "/login" : window.location.pathname,
+  );
+
+  useEffect(() => {
+    const syncPath = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", syncPath);
+    return () => window.removeEventListener("popstate", syncPath);
+  }, []);
+
+  return path;
+}
+
+function AdminRoutePage({
+  route,
+  user,
+}: {
+  route: (typeof ADMIN_ROUTES)[number];
+  user: CurrentUser | null;
+}) {
+  return (
+    <section data-screen-id={route.screenId} className="space-y-6">
+      <div className="rounded-md bg-lightsecondary p-6 shadow-none">
+        <h1 className="text-xl font-semibold text-dark">{route.label}</h1>
+        <p className="mt-2 text-sm text-muted">{route.menuPath}</p>
+      </div>
+      <div className="grid grid-cols-12 gap-6">
+        <section className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-8">
+          <p className="text-sm font-semibold text-primary">{route.screenId}</p>
+          <h2 className="mt-2 text-lg font-semibold text-dark">
+            US-01 관리자 접근 검증
+          </h2>
+          <p className="mt-3 text-sm text-muted">
+            이 route는 시드 R09 관리자가 로그인 후 1차 목표 9개 화면에 접근할 수
+            있음을 독립 검증하기 위한 보호 화면입니다. 개별 업무 조회·저장
+            기능은 후속 phase의 vertical slice에서 구현합니다.
+          </p>
+          <div
+            className="mt-5 rounded-md bg-lightsuccess p-4 text-sm text-success"
+            role="status"
+          >
+            접근 가능: {user?.loginId ?? "-"} / {user?.roles.join(", ") ?? "-"}
+          </div>
+        </section>
+        <aside className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-4">
+          <h3 className="text-lg font-semibold text-dark">상태</h3>
+          <ul className="mt-4 space-y-2 text-sm text-muted">
+            <li>loading: route guard 인증 확인</li>
+            <li>permission: R09 또는 메뉴 권한 없음</li>
+            <li>success: 현재 보호 route 렌더링</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function DashboardCard({ title, value }: { title: string; value: string }) {
+  return (
+    <section className="col-span-12 rounded-md bg-white p-6 shadow-md md:col-span-4">
+      <p className="text-sm text-muted">{title}</p>
+      <p className="mt-3 text-2xl font-semibold text-dark">{value}</p>
+    </section>
+  );
+}
+
+function countMenus(items: Array<{ children: unknown[] }>): number {
+  return items.reduce(
+    (sum, item) =>
+      sum + 1 + countMenus(item.children as Array<{ children: unknown[] }>),
+    0,
+  );
+}

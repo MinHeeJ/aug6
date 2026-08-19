@@ -1,0 +1,301 @@
+import type React from "react";
+import { useState } from "react";
+import { ApiClientError, type CurrentUser } from "../api/apiClient";
+
+export type AdminRoute = {
+  path: string;
+  label: string;
+  screenId: string;
+  menuPath: string;
+};
+
+export const ADMIN_ROUTES: AdminRoute[] = [
+  {
+    path: "/admin/users",
+    label: "사용자 관리",
+    screenId: "SCR-USER-MGMT",
+    menuPath: "시스템 관리 > 사용자·조직 관리 > 사용자 관리",
+  },
+  {
+    path: "/admin/organizations",
+    label: "조직 관리",
+    screenId: "SCR-ORG-MGMT",
+    menuPath: "시스템 관리 > 사용자·조직 관리 > 조직 관리",
+  },
+  {
+    path: "/admin/roles",
+    label: "역할 관리",
+    screenId: "SCR-ROLE-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 역할 관리",
+  },
+  {
+    path: "/admin/user-roles",
+    label: "사용자 역할 관리",
+    screenId: "SCR-USER-ROLE-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 사용자 역할 관리",
+  },
+  {
+    path: "/admin/menu-permissions",
+    label: "메뉴 권한 관리",
+    screenId: "SCR-MENU-PERMISSION-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 권한 관리",
+  },
+  {
+    path: "/admin/menu-structure",
+    label: "메뉴 구조 관리",
+    screenId: "SCR-MENU-STRUCTURE-MGMT",
+    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 구조 관리",
+  },
+  {
+    path: "/admin/menu-info",
+    label: "메뉴 정보 관리",
+    screenId: "SCR-MENU-INFO-MGMT",
+    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 정보 관리",
+  },
+  {
+    path: "/admin/code-groups",
+    label: "코드그룹 관리",
+    screenId: "SCR-CODE-GROUP-MGMT",
+    menuPath: "시스템 관리 > 공통코드 관리 > 코드그룹 관리",
+  },
+  {
+    path: "/admin/detail-codes",
+    label: "상세코드 관리",
+    screenId: "SCR-DETAIL-CODE-MGMT",
+    menuPath: "시스템 관리 > 공통코드 관리 > 상세코드 관리",
+  },
+];
+
+export type LoginValidationErrors = Partial<
+  Record<"loginId" | "password", string>
+>;
+
+export function validateLoginInput(
+  loginId: string,
+  password: string,
+): LoginValidationErrors {
+  const errors: LoginValidationErrors = {};
+  if (!loginId.trim()) {
+    errors.loginId = "사용자 ID를 입력하세요.";
+  }
+  if (!password.trim()) {
+    errors.password = "비밀번호를 입력하세요.";
+  }
+  return errors;
+}
+
+export function describeLoginFailure(caught: unknown): string {
+  if (caught instanceof ApiClientError && caught.status === 401) {
+    return "아이디 또는 비밀번호가 올바르지 않습니다.";
+  }
+  if (
+    typeof caught === "object" &&
+    caught !== null &&
+    "status" in caught &&
+    (caught as { status: number }).status === 401
+  ) {
+    return "아이디 또는 비밀번호가 올바르지 않습니다.";
+  }
+  return caught instanceof Error
+    ? caught.message
+    : "로그인 중 오류가 발생했습니다.";
+}
+
+export function canAccessAdminRoute(
+  user: CurrentUser | null | undefined,
+  path: string,
+): boolean {
+  if (!user) {
+    return false;
+  }
+  return hasMenuUrl(user.menus, path);
+}
+
+function hasMenuUrl(menus: CurrentUser["menus"], path: string): boolean {
+  return menus.some(
+    (menu) => menu.url === path || hasMenuUrl(menu.children, path),
+  );
+}
+
+type LoginPageProps = {
+  onLogin: (loginId: string, password: string) => Promise<void>;
+  onHealth: () => Promise<{ status?: string; service?: string }>;
+  onLoginSuccess?: () => void;
+};
+
+export function LoginPage({
+  onLogin,
+  onHealth,
+  onLoginSuccess,
+}: LoginPageProps) {
+  const [loginId, setLoginId] = useState("");
+  const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<LoginValidationErrors>({});
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [healthMessage, setHealthMessage] =
+    useState<string>("아직 확인하지 않았습니다.");
+  const [submitting, setSubmitting] = useState(false);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextErrors = validateLoginInput(loginId, password);
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setStatusMessage("입력값을 확인하세요.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setStatusMessage("인증 요청 중입니다.");
+      await onLogin(loginId, password);
+      setStatusMessage(
+        "R09 시스템관리자 확인 후 시스템 관리 화면으로 이동합니다.",
+      );
+      onLoginSuccess?.();
+    } catch (caught) {
+      setStatusMessage(describeLoginFailure(caught));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const checkHealth = async () => {
+    try {
+      setCheckingHealth(true);
+      const health = await onHealth();
+      setHealthMessage(`/api/health ${health.status ?? "UP"} 확인`);
+    } catch (caught) {
+      setHealthMessage(
+        caught instanceof Error ? caught.message : "서비스 상태 확인 실패",
+      );
+    } finally {
+      setCheckingHealth(false);
+    }
+  };
+
+  const resetMessages =
+    (setter: (value: string) => void) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setter(event.target.value);
+      setFieldErrors({});
+      setStatusMessage(null);
+    };
+
+  return (
+    <main className="min-h-screen bg-lightgray px-5 py-[30px] text-link">
+      <section className="mx-auto max-w-5xl overflow-hidden rounded-md bg-white shadow-md">
+        <header className="border-b border-ld bg-lightsecondary px-6 py-5">
+          <p className="text-sm font-semibold text-primary">
+            한국교원대학교 교수업적평가시스템
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold text-dark">
+            공통기능 1차 범위
+          </h1>
+        </header>
+        <div className="grid grid-cols-12 gap-6 p-6">
+          <form
+            className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-6"
+            onSubmit={submit}
+          >
+            <p className="card-subtitle">SCR-LOGIN</p>
+            <h2 className="card-title mb-4 text-lg font-semibold text-dark">
+              로그인
+            </h2>
+            <label
+              className="mb-4 block text-sm font-semibold text-ld"
+              htmlFor="loginId"
+            >
+              사용자 ID<span className="ms-1 text-error">*</span>
+              <input
+                id="loginId"
+                name="loginId"
+                className="mt-2 flex h-10 w-full rounded-lg border border-ld bg-transparent px-3 py-2 text-sm text-ld focus-visible:border-primary focus-visible:outline-0"
+                value={loginId}
+                onChange={resetMessages(setLoginId)}
+                aria-invalid={Boolean(fieldErrors.loginId)}
+              />
+              {fieldErrors.loginId ? (
+                <span className="mt-1 block text-xs text-error">
+                  {fieldErrors.loginId}
+                </span>
+              ) : null}
+            </label>
+            <label
+              className="mb-4 block text-sm font-semibold text-ld"
+              htmlFor="password"
+            >
+              비밀번호<span className="ms-1 text-error">*</span>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                className="mt-2 flex h-10 w-full rounded-lg border border-ld bg-transparent px-3 py-2 text-sm text-ld focus-visible:border-primary focus-visible:outline-0"
+                value={password}
+                onChange={resetMessages(setPassword)}
+                aria-invalid={Boolean(fieldErrors.password)}
+              />
+              {fieldErrors.password ? (
+                <span className="mt-1 block text-xs text-error">
+                  {fieldErrors.password}
+                </span>
+              ) : null}
+            </label>
+            <button
+              className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-btn-shadow transition-colors hover:bg-secondary disabled:pointer-events-none disabled:opacity-50"
+              type="submit"
+              disabled={submitting}
+            >
+              {submitting ? "처리 중" : "로그인"}
+            </button>
+            <div
+              className="mt-4 rounded-md bg-lightprimary p-4 text-sm text-primary"
+              role="status"
+            >
+              {statusMessage ?? "admin / admin 계정으로 로그인하세요."}
+            </div>
+            <p className="mt-4 text-xs text-muted">
+              README 또는 quickstart에서 실행·로그인·주요 화면 검증 방법을
+              확인합니다.
+            </p>
+          </form>
+
+          <aside className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-6">
+            <h2 className="card-title mb-4 text-lg font-semibold text-dark">
+              로컬 검증 안내
+            </h2>
+            <div className="rounded-md bg-lightsecondary p-4 text-sm text-link">
+              <p className="font-semibold">시드 관리자 계정</p>
+              <p className="mt-2">- loginId: admin</p>
+              <p>- password: admin</p>
+              <p className="mt-3 text-muted">
+                Docker Compose 실행 직후 로그인 가능해야 합니다.
+              </p>
+            </div>
+            <button
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-md border border-primary bg-transparent px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-white disabled:pointer-events-none disabled:opacity-50"
+              type="button"
+              disabled={checkingHealth}
+              onClick={() => void checkHealth()}
+            >
+              {checkingHealth ? "확인 중" : "서비스 상태 확인"}
+            </button>
+            <div className="mt-4 rounded-md bg-lightsuccess p-4 text-sm text-success">
+              결과: {healthMessage}
+            </div>
+            <div className="mt-6 rounded-md border border-ld p-4 text-sm text-muted">
+              <p className="font-semibold text-link">성공 흐름</p>
+              <p className="mt-2">
+                login 성공 → getCurrentUser 확인 → 시스템 관리 shell 이동
+              </p>
+              <p className="mt-2">
+                R09 또는 메뉴 권한이 없으면 permission 상태를 표시합니다.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  );
+}

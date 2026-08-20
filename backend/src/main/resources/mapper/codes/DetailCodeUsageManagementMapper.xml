@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.codes.DetailCodeUsageManagementMapper">
+    <select id="findCodeGroupById" resultType="kr.ac.knue.commonfoundation.codes.CodeGroupRow">
+        select cg.group_id as "groupId",
+               cg.group_name as "groupName",
+               cg.description as "description",
+               cg.managing_department as "managingDepartment",
+               cg.system_use_yn as "systemUseYn",
+               cg.status as "status",
+               count(dc.code_value) as "detailCodeCount",
+               cg.created_at as "createdAt",
+               cg.updated_at as "updatedAt"
+        from code_groups cg
+        left join detail_codes dc
+          on dc.group_id = cg.group_id
+         and dc.status != 'DELETED'
+        where cg.group_id = #{groupId}
+          and cg.status != 'DELETED'
+        group by cg.group_id, cg.group_name, cg.description, cg.managing_department, cg.system_use_yn, cg.status, cg.created_at, cg.updated_at
+    </select>
+
+    <select id="listDetailCodeUsageSettings" resultType="kr.ac.knue.commonfoundation.codes.DetailCodeUsageRow">
+        select dc.group_id as "groupId",
+               dc.code_value as "codeValue",
+               dc.code_name as "codeName",
+               dc.system_use_yn as "systemUseYn",
+               dc.valid_start_date as "validStartDate",
+               dc.valid_end_date as "validEndDate",
+               dc.status as "status",
+               dc.change_reason as "changeReason",
+               dc.updated_by as "updatedBy",
+               dc.updated_at as "updatedAt",
+               case when dc.system_use_yn = 'Y'
+                         and dc.status = 'ACTIVE'
+                         and (dc.valid_start_date is null or dc.valid_start_date &lt;= CURRENT_DATE)
+                         and (dc.valid_end_date is null or dc.valid_end_date &gt;= CURRENT_DATE)
+                    then true else false end as "selectableForNewInput"
+        from detail_codes dc
+        where dc.group_id = #{groupId}
+          and dc.status != 'DELETED'
+        order by dc.sort_order, dc.code_value
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countDetailCodeUsageSettings" resultType="long">
+        select count(1)
+        from detail_codes dc
+        where dc.group_id = #{groupId}
+          and dc.status != 'DELETED'
+    </select>
+
+    <select id="listSelectableDetailCodesForNewInput" resultType="kr.ac.knue.commonfoundation.codes.DetailCodeUsageRow">
+        select dc.group_id as "groupId",
+               dc.code_value as "codeValue",
+               dc.code_name as "codeName",
+               dc.system_use_yn as "systemUseYn",
+               dc.valid_start_date as "validStartDate",
+               dc.valid_end_date as "validEndDate",
+               dc.status as "status",
+               dc.change_reason as "changeReason",
+               dc.updated_by as "updatedBy",
+               dc.updated_at as "updatedAt",
+               true as "selectableForNewInput"
+        from detail_codes dc
+        where dc.group_id = #{groupId}
+          and dc.system_use_yn = 'Y'
+          and dc.status = 'ACTIVE'
+          and (dc.valid_start_date is null or dc.valid_start_date &lt;= CURRENT_DATE)
+          and (dc.valid_end_date is null or dc.valid_end_date &gt;= CURRENT_DATE)
+        order by dc.sort_order, dc.code_value
+    </select>
+
+    <select id="findDetailCodeUsageSetting" resultType="kr.ac.knue.commonfoundation.codes.DetailCodeUsageRow">
+        select dc.group_id as "groupId",
+               dc.code_value as "codeValue",
+               dc.code_name as "codeName",
+               dc.system_use_yn as "systemUseYn",
+               dc.valid_start_date as "validStartDate",
+               dc.valid_end_date as "validEndDate",
+               dc.status as "status",
+               dc.change_reason as "changeReason",
+               dc.updated_by as "updatedBy",
+               dc.updated_at as "updatedAt",
+               case when dc.system_use_yn = 'Y'
+                         and dc.status = 'ACTIVE'
+                         and (dc.valid_start_date is null or dc.valid_start_date &lt;= CURRENT_DATE)
+                         and (dc.valid_end_date is null or dc.valid_end_date &gt;= CURRENT_DATE)
+                    then true else false end as "selectableForNewInput"
+        from detail_codes dc
+        where dc.group_id = #{groupId}
+          and dc.code_value = #{codeValue}
+          and dc.status != 'DELETED'
+    </select>
+
+    <update id="updateDetailCodeUsageSetting">
+        update detail_codes
+        set system_use_yn = #{systemUseYn},
+            valid_start_date = #{validStartDate},
+            valid_end_date = #{validEndDate},
+            status = case when #{systemUseYn} = 'Y' then 'ACTIVE' else 'INACTIVE' end,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where group_id = #{groupId}
+          and code_value = #{codeValue}
+          and status != 'DELETED'
+    </update>
+
+</mapper>

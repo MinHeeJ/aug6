@@ -19,10 +19,14 @@ import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
 import { MenuInfoManagementPage } from "../pages/admin/SCR-MENU-INFO-MGMT";
 import { MenuStructureManagementPage } from "../pages/admin/SCR-MENU-STRUCTURE-MGMT";
+import { MenuUsageManagementPage } from "../pages/admin/SCR-MENU-USAGE-MGMT";
+import { CodeUsageManagementPage } from "../pages/admin/SCR-CODE-USAGE-MGMT";
+import { CommonSettingsManagementPage } from "../pages/admin/SCR-COMMON-SETTINGS-MGMT";
 import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
 import { UserManagementPage } from "../pages/admin/SCR-USER-MGMT";
 import { CodeGroupManagementPage } from "../pages/admin/SCR-CODE-GROUP-MGMT";
 import { DetailCodeManagementPage } from "../pages/admin/SCR-DETAIL-CODE-MGMT";
+import { EvaluationYearManagementPage } from "../pages/admin/SCR-EVALUATION-YEAR-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -127,6 +131,30 @@ export function AppRouter() {
     );
   }
 
+  if (adminRoute?.path === "/admin/menu-usage") {
+    return (
+      <AdminShell>
+        <MenuUsageManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/code-usage") {
+    return (
+      <AdminShell>
+        <CodeUsageManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/common-settings") {
+    return (
+      <AdminShell>
+        <CommonSettingsManagementPage />
+      </AdminShell>
+    );
+  }
+
   if (adminRoute?.path === "/admin/user-roles") {
     return (
       <AdminShell>
@@ -147,6 +175,14 @@ export function AppRouter() {
     return (
       <AdminShell>
         <DetailCodeManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/evaluation-years") {
+    return (
+      <AdminShell>
+        <EvaluationYearManagementPage />
       </AdminShell>
     );
   }

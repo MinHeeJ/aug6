@@ -51,6 +51,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String pathToUiRoute(String apiPath) {
+        if (apiPath.equals("/api/admin/menus/usage-settings")) {
+            return "/admin/menu-usage";
+        }
+        if (apiPath.equals("/api/admin/system-settings/common")) {
+            return "/admin/common-settings";
+        }
+        if (apiPath.equals("/api/admin/system-settings/evaluation-years")) {
+            return "/admin/evaluation-years";
+        }
+        if (apiPath.matches("/api/admin/code-groups/[^/]+/codes/usage-settings")) {
+            return "/admin/code-usage";
+        }
         if (apiPath.equals("/api/admin/users") || apiPath.matches("/api/admin/users/[^/]+/(account|roles)")) {
             return "/admin/users";
         }

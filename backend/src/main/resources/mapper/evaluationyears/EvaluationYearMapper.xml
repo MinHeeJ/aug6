@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.evaluationyears.EvaluationYearMapper">
+    <resultMap id="EvaluationYearSettingsRowMap" type="kr.ac.knue.commonfoundation.evaluationyears.EvaluationYearSettingsRow">
+        <constructor>
+            <arg column="currentEvaluationYear" javaType="int"/>
+            <arg column="defaultSearchYear" javaType="int"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="EvaluationYearPreparationRowMap" type="kr.ac.knue.commonfoundation.evaluationyears.EvaluationYearPreparationRow">
+        <constructor>
+            <arg column="targetYear" javaType="int"/>
+            <arg column="copyRequestedYn" javaType="string"/>
+            <arg column="resetRequestedYn" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <select id="getEvaluationYearSettings" resultMap="EvaluationYearSettingsRowMap">
+        select current_evaluation_year as "currentEvaluationYear",
+               default_search_year as "defaultSearchYear",
+               updated_by as "updatedBy",
+               updated_at as "updatedAt",
+               change_reason as "changeReason"
+        from evaluation_year_settings
+        where id = 1
+    </select>
+
+    <select id="listEvaluationYearPreparations" resultMap="EvaluationYearPreparationRowMap">
+        select target_year as "targetYear",
+               copy_requested_yn as "copyRequestedYn",
+               reset_requested_yn as "resetRequestedYn",
+               updated_by as "updatedBy",
+               updated_at as "updatedAt",
+               change_reason as "changeReason"
+        from evaluation_year_preparations
+        order by target_year desc
+    </select>
+
+    <insert id="upsertEvaluationYearSettings">
+        insert into evaluation_year_settings (id, current_evaluation_year, default_search_year, updated_by, change_reason)
+        values (1, #{currentEvaluationYear}, #{defaultSearchYear}, #{updatedBy}, #{changeReason})
+        on conflict (id)
+        do update set current_evaluation_year = EXCLUDED.current_evaluation_year,
+                      default_search_year = EXCLUDED.default_search_year,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+
+    <insert id="upsertEvaluationYearPreparation">
+        insert into evaluation_year_preparations (target_year, copy_requested_yn, reset_requested_yn, updated_by, change_reason)
+        values (#{targetYear}, #{copyRequestedYn}, #{resetRequestedYn}, #{updatedBy}, #{changeReason})
+        on conflict (target_year)
+        do update set copy_requested_yn = EXCLUDED.copy_requested_yn,
+                      reset_requested_yn = EXCLUDED.reset_requested_yn,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+</mapper>

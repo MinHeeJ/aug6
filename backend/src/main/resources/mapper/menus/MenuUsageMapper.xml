@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.menus.MenuUsageMapper">
+    <resultMap id="MenuUsageRowMap" type="kr.ac.knue.commonfoundation.menus.MenuUsageRow">
+        <constructor>
+            <arg column="menuId" javaType="long"/>
+            <arg column="parentMenuId" javaType="long"/>
+            <arg column="topMenuName" javaType="string"/>
+            <arg column="middleMenuName" javaType="string"/>
+            <arg column="menuName" javaType="string"/>
+            <arg column="screenId" javaType="string"/>
+            <arg column="url" javaType="string"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="exposureStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="exposureEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="status" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="menuUsageSelect">
+        select m.menu_id as "menuId",
+               m.parent_menu_id as "parentMenuId",
+               top.menu_name as "topMenuName",
+               middle.menu_name as "middleMenuName",
+               m.menu_name as "menuName",
+               m.screen_id as "screenId",
+               m.url as "url",
+               coalesce(mus.system_use_yn, m.system_use_yn) as "systemUseYn",
+               mus.exposure_start_at as "exposureStartAt",
+               mus.exposure_end_at as "exposureEndAt",
+               m.status as "status",
+               mus.change_reason as "changeReason",
+               mus.updated_by as "updatedBy",
+               coalesce(mus.updated_at, m.updated_at) as "updatedAt"
+        from menus m
+        left join menu_usage_settings mus on mus.menu_id = m.menu_id
+        left join menus middle on middle.menu_id = m.parent_menu_id
+        left join menus top on top.menu_id = middle.parent_menu_id
+    </sql>
+
+    <select id="listMenuUsageSettings" resultMap="MenuUsageRowMap">
+        <include refid="menuUsageSelect"/>
+        <where>
+            m.status != 'DELETED'
+            and m.url is not null
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (m.menu_name ilike concat('%', #{criteria.filter}, '%')
+                    or m.screen_id ilike concat('%', #{criteria.filter}, '%')
+                    or m.url ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+            <if test="criteria.systemUseYn != null and criteria.systemUseYn != ''">
+                and coalesce(mus.system_use_yn, m.system_use_yn) = #{criteria.systemUseYn}
+            </if>
+        </where>
+        order by coalesce(top.display_order, middle.display_order, m.display_order),
+                 coalesce(middle.display_order, m.display_order),
+                 m.display_order,
+                 m.menu_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countMenuUsageSettings" resultType="int">
+        select count(*)
+        from menus m
+        left join menu_usage_settings mus on mus.menu_id = m.menu_id
+        <where>
+            m.status != 'DELETED'
+            and m.url is not null
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (m.menu_name ilike concat('%', #{criteria.filter}, '%')
+                    or m.screen_id ilike concat('%', #{criteria.filter}, '%')
+                    or m.url ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+            <if test="criteria.systemUseYn != null and criteria.systemUseYn != ''">
+                and coalesce(mus.system_use_yn, m.system_use_yn) = #{criteria.systemUseYn}
+            </if>
+        </where>
+    </select>
+
+    <select id="existsMenu" resultType="int">
+        select count(*)
+        from menus
+        where menu_id = #{menuId}
+          and status != 'DELETED'
+          and url is not null
+    </select>
+
+    <insert id="upsertMenuUsageSetting">
+        insert into menu_usage_settings (menu_id, system_use_yn, exposure_start_at, exposure_end_at, updated_by, change_reason)
+        values (#{menuId}, #{systemUseYn}, #{exposureStartAt}, #{exposureEndAt}, #{updatedBy}, #{changeReason})
+        on conflict (menu_id)
+        do update set system_use_yn = EXCLUDED.system_use_yn,
+                      exposure_start_at = EXCLUDED.exposure_start_at,
+                      exposure_end_at = EXCLUDED.exposure_end_at,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+
+    <select id="findMenuUsageSetting" resultMap="MenuUsageRowMap">
+        <include refid="menuUsageSelect"/>
+        where m.menu_id = #{menuId}
+          and m.status != 'DELETED'
+    </select>
+</mapper>

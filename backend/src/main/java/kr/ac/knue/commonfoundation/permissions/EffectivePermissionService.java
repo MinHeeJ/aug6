@@ -18,6 +18,9 @@ public class EffectivePermissionService {
     }
 
     public boolean canAccess(Long userId, List<String> roles, String path) {
+        if (permissionMapper != null && permissionMapper.isMenuRouteExposed(path) == 0) {
+            return false;
+        }
         if (roles != null && roles.contains("R09")) {
             return true;
         }

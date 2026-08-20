@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.settings.CommonSystemSettingsMapper">
+    <resultMap id="CommonSystemSettingRowMap" type="kr.ac.knue.commonfoundation.settings.CommonSystemSettingRow">
+        <constructor>
+            <arg column="settingKey" javaType="string"/>
+            <arg column="settingValue" javaType="string"/>
+            <arg column="unit" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <select id="listCommonSystemSettings" resultMap="CommonSystemSettingRowMap">
+        select setting_key as "settingKey",
+               setting_value as "settingValue",
+               unit as "unit",
+               change_reason as "changeReason",
+               updated_by as "updatedBy",
+               updated_at as "updatedAt"
+        from common_system_settings
+        where setting_key in
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+            #{key}
+        </foreach>
+        order by case setting_key
+            when 'SESSION_IDLE_MINUTES' then 1
+            when 'PAGE_SIZE' then 2
+            when 'DEFAULT_SEARCH_PERIOD' then 3
+            when 'BULK_QUERY_THRESHOLD' then 4
+            when 'LONG_TASK_NOTICE_THRESHOLD' then 5
+            else 99
+        end
+    </select>
+
+    <insert id="upsertCommonSystemSetting">
+        insert into common_system_settings (setting_key, setting_value, unit, updated_by, change_reason)
+        values (#{settingKey}, #{settingValue}, #{unit}, #{updatedBy}, #{changeReason})
+        on conflict (setting_key)
+        do update set setting_value = EXCLUDED.setting_value,
+                      unit = EXCLUDED.unit,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+</mapper>

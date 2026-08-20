@@ -53,7 +53,7 @@
 
     <insert id="insertCodeGroup">
         insert into code_groups (group_id, group_name, description, managing_department, system_use_yn, status, created_by, updated_by, change_reason)
-        values (#{groupId}, #{groupName}, #{description}, #{managingDepartment}, #{systemUseYn}, 'ACTIVE', #{createdBy}, #{createdBy}, #{changeReason})
+        values (#{groupId}, #{groupName}, #{description}, #{managingDepartment}, #{systemUseYn}, case when #{systemUseYn} = 'Y' then 'ACTIVE' else 'INACTIVE' end, #{createdBy}, #{createdBy}, #{changeReason})
     </insert>
 
     <update id="updateCodeGroup">

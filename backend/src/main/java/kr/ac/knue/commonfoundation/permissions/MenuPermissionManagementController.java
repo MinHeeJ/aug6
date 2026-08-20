@@ -25,8 +25,9 @@ public class MenuPermissionManagementController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String targetType,
             @RequestParam(required = false) String targetId,
-            @RequestParam(required = false) String filter) {
-        return ApiResponse.ok(service.listMenuPermissions(new MenuPermissionSearchCriteria(page, size, targetType, targetId, filter)));
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) String accessAllowed) {
+        return ApiResponse.ok(service.listMenuPermissions(new MenuPermissionSearchCriteria(page, size, targetType, targetId, filter, accessAllowed)));
     }
 
     @PutMapping("/api/admin/menu-permissions")

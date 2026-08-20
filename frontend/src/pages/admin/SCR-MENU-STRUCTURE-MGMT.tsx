@@ -82,14 +82,16 @@ export function MenuStructureManagementPage() {
 
   const saveParent = async () => {
     if (!selected) return;
-    const nextParentMenuId = Number(form.parentMenuId);
-    if (!Number.isFinite(nextParentMenuId)) {
+    const nextParentMenuId = form.parentMenuId ? Number(form.parentMenuId) : null;
+    if (nextParentMenuId !== null && !Number.isFinite(nextParentMenuId)) {
       setFieldErrors({ parentMenuId: "부모 메뉴를 선택하세요." });
       return;
     }
     const parentName =
-      flattenedMenus.find((menu) => menu.menuId === nextParentMenuId)
-        ?.menuName ?? nextParentMenuId;
+      nextParentMenuId === null
+        ? "최상위 메뉴"
+        : flattenedMenus.find((menu) => menu.menuId === nextParentMenuId)
+            ?.menuName ?? nextParentMenuId;
     if (
       !window.confirm(
         `${selected.menuName}의 부모 메뉴를 ${parentName}(으)로 변경합니까?`,
@@ -324,7 +326,6 @@ export function MenuStructureManagementPage() {
                 <Field
                   label="부모 메뉴"
                   error={fieldErrors.parentMenuId}
-                  required
                 >
                   <select
                     className="h-10 w-full rounded-md border border-ld px-3 py-2 text-sm"
@@ -333,7 +334,7 @@ export function MenuStructureManagementPage() {
                       setForm({ ...form, parentMenuId: event.target.value })
                     }
                   >
-                    <option value="">부모 메뉴 선택</option>
+                    <option value="">최상위 메뉴</option>
                     {flattenedMenus
                       .filter((menu) => menu.menuId !== selected.menuId)
                       .map((menu) => (

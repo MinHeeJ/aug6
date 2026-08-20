@@ -9,6 +9,7 @@ public interface UserRoleManagementMapper {
     java.util.List<UserRoleAssignmentSummary> listAssignments(@Param("criteria") UserRoleAssignmentSearchCriteria criteria);
     int countAssignments(@Param("criteria") UserRoleAssignmentSearchCriteria criteria);
     java.util.List<UserRoleAssignmentSummary> listCurrentUserRoles(@Param("userId") Long userId, @Param("limit") int limit, @Param("offset") int offset);
+    UserRoleAssignmentSummary findAssignmentByDetails(@Param("userId") Long userId, @Param("roleCode") String roleCode, @Param("assignmentType") String assignmentType, @Param("validStartDate") LocalDate validStartDate, @Param("validEndDate") LocalDate validEndDate);
     int countCurrentUserRoles(@Param("userId") Long userId);
     UserRoleAssignmentSummary findAssignmentById(@Param("assignmentId") Long assignmentId);
     int existsUser(@Param("userId") Long userId);

@@ -6,6 +6,7 @@ import {
   organizationApi,
   type ApiErrorField,
   type Organization,
+  type OrganizationRelationHistory,
   type OrganizationTreeNode,
 } from "../../api/apiClient";
 import {
@@ -33,6 +34,8 @@ const emptyForm: FormState = {
 export function OrganizationManagementPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [tree, setTree] = useState<OrganizationTreeNode[]>([]);
+  const [history, setHistory] = useState<OrganizationRelationHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [selected, setSelected] = useState<Organization | null>(null);
@@ -75,8 +78,25 @@ export function OrganizationManagementPage() {
     void load();
   }, []);
 
+  const loadHistory = async (organizationCode: string) => {
+    try {
+      setHistoryLoading(true);
+      const response =
+        await organizationApi.listOrganizationParentRelationHistory(
+          organizationCode,
+        );
+      setHistory(response.data ?? []);
+    } catch (caught) {
+      setHistory([]);
+      handleApiError(caught);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const selectOrganization = (organization: Organization) => {
     setSelected(organization);
+    void loadHistory(organization.organizationCode);
     setFieldErrors({});
     setForm({
       parentOrganizationCode: organization.parentOrganizationCode ?? "",
@@ -124,7 +144,7 @@ export function OrganizationManagementPage() {
         effectiveEndDate: updated.effectiveEndDate ?? form.effectiveEndDate,
         changeReason: "",
       });
-      await load();
+      await Promise.all([load(), loadHistory(updated.organizationCode)]);
     } catch (caught) {
       handleApiError(caught);
     } finally {
@@ -323,9 +343,6 @@ export function OrganizationManagementPage() {
               }}
             />
           )}
-          <p className="mt-4 text-xs text-muted">
-            OQ-UI-031: 이력 조회 전용 route는 확정 전 제공하지 않습니다.
-          </p>
         </div>
 
         <div className="col-span-12 rounded-md border border-ld bg-white p-6 shadow-md lg:col-span-4">
@@ -433,6 +450,76 @@ export function OrganizationManagementPage() {
             </div>
           )}
         </div>
+
+        <section
+          className="col-span-12 rounded-md border border-ld bg-white p-6 shadow-md"
+          data-testid="organization-relation-history-panel"
+        >
+          <h2 className="card-title mb-2 text-lg font-semibold text-dark">
+            조직 관계 변경 이력
+          </h2>
+          <p className="mb-4 text-sm text-muted">
+            선택한 조직의 변경 전·후 상위조직과 적용기간을 조회합니다.
+          </p>
+          {!selected ? (
+            <EmptyState
+              title="조직을 선택하세요"
+              message="조직을 선택하면 이전 상위관계와 적용기간 이력이 표시됩니다."
+            />
+          ) : historyLoading ? (
+            <LoadingState title="조직 관계 이력 조회 중" />
+          ) : history.length === 0 ? (
+            <EmptyState
+              title="저장된 변경 이력이 없습니다"
+              message="상위관계를 변경하면 이 목록에서 변경 전후 관계를 확인할 수 있습니다."
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-md border border-border">
+              <table className="w-full caption-bottom text-sm">
+                <thead className="border-b border-ld bg-lightgray">
+                  <tr>
+                    <th className="px-4 py-3 text-left">변경일시</th>
+                    <th className="px-4 py-3 text-left">
+                      변경 전 상위조직/기간
+                    </th>
+                    <th className="px-4 py-3 text-left">
+                      변경 후 상위조직/기간
+                    </th>
+                    <th className="px-4 py-3 text-left">변경 사유</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {history.map((item) => (
+                    <tr
+                      key={item.historyId}
+                      data-testid="organization-relation-history-row"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3">
+                        {item.changedAt?.replace("T", " ").slice(0, 16) ?? "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatRelation(
+                          item.beforeParentOrganizationCode,
+                          item.beforeEffectiveStartDate,
+                          item.beforeEffectiveEndDate,
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatRelation(
+                          item.afterParentOrganizationCode,
+                          item.afterEffectiveStartDate,
+                          item.afterEffectiveEndDate,
+                        )}
+                      </td>
+                      <td className="px-4 py-3">{item.changeReason ?? "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {/* BASIC-6 CMN-FR-002 AC-03: 관계 변경 이력은 보존 API 응답만 표시한다. */}
+        </section>
       </div>
     </section>
   );
@@ -490,6 +577,14 @@ function TreeNode({
       ) : null}
     </li>
   );
+}
+
+function formatRelation(
+  parentOrganizationCode?: string | null,
+  startDate?: string | null,
+  endDate?: string | null,
+) {
+  return `${parentOrganizationCode ?? "-"} / ${startDate ?? "-"} ~ ${endDate ?? "현재"}`;
 }
 
 function Field({

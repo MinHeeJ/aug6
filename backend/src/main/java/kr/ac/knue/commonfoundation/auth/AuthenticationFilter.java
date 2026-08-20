@@ -57,6 +57,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/admin/menus/tree") || apiPath.equals("/api/admin/menus/reorder") || apiPath.matches("/api/admin/menus/[^/]+/parent")) {
             return "/admin/menu-structure";
         }
+        if (apiPath.equals("/api/admin/organizations/tree")) {
+            return "/admin/organizations";
+        }
         if (apiPath.matches("/api/admin/menus/[^/]+/execution")) {
             return "/admin/menu-info";
         }

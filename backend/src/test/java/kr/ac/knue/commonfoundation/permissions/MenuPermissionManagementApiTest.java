@@ -42,7 +42,7 @@ class MenuPermissionManagementApiTest {
 
     @Test
     void listMenuPermissionsReturnsRoleOrganizationAndUserMatrixRows() throws Exception {
-        when(service.listMenuPermissions(new MenuPermissionSearchCriteria(0, 10, "ROLE", "R09", null)))
+        when(service.listMenuPermissions(new MenuPermissionSearchCriteria(0, 10, "ROLE", "R09", null, null)))
                 .thenReturn(new MenuPermissionSearchResponse(List.of(row("ROLE", "R09", "ALLOW")), 0, 10, 1));
 
         mockMvc.perform(get("/api/admin/menu-permissions")
@@ -59,6 +59,21 @@ class MenuPermissionManagementApiTest {
                 .andExpect(jsonPath("$.data.permissions[0].middleMenuName").value("역할·권한 관리"))
                 .andExpect(jsonPath("$.data.permissions[0].screenMenuName").value("메뉴 권한 관리"))
                 .andExpect(jsonPath("$.data.permissions[0].accessAllowed").value("ALLOW"));
+    }
+
+    @Test
+    void listMenuPermissionsPassesAccessAllowedFilterToService() throws Exception {
+        MenuPermissionSearchCriteria criteria = new MenuPermissionSearchCriteria(0, 10, "ROLE", "R09", null, "DENY");
+        when(service.listMenuPermissions(criteria))
+                .thenReturn(new MenuPermissionSearchResponse(List.of(row("ROLE", "R09", "DENY")), 0, 10, 1));
+
+        mockMvc.perform(get("/api/admin/menu-permissions")
+                        .param("targetType", "ROLE")
+                        .param("targetId", "R09")
+                        .param("accessAllowed", "DENY"))
+                .andExpect(status().isOk());
+
+        verify(service).listMenuPermissions(criteria);
     }
 
     @Test

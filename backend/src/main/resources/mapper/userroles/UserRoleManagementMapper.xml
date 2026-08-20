@@ -35,6 +35,8 @@
         <include refid="assignmentJoins" />
         <where>
             u.status != 'DELETED'
+            and ur.valid_start_date &lt;= CURRENT_DATE
+            and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
             <if test="criteria.roleCodeFilter != null and criteria.roleCodeFilter != ''">
                 and ur.role_code = #{criteria.roleCodeFilter}
             </if>
@@ -54,6 +56,8 @@
         <include refid="assignmentJoins" />
         <where>
             u.status != 'DELETED'
+            and ur.valid_start_date &lt;= CURRENT_DATE
+            and (ur.valid_end_date &gt;= CURRENT_DATE or ur.valid_end_date is null)
             <if test="criteria.roleCodeFilter != null and criteria.roleCodeFilter != ''">
                 and ur.role_code = #{criteria.roleCodeFilter}
             </if>
@@ -89,6 +93,26 @@
         select <include refid="assignmentColumns" />
         <include refid="assignmentJoins" />
         where ur.assignment_id = #{assignmentId}
+    </select>
+
+    <select id="findAssignmentByDetails" resultType="kr.ac.knue.commonfoundation.userroles.UserRoleAssignmentSummary">
+        select <include refid="assignmentColumns" />
+        <include refid="assignmentJoins" />
+        where ur.user_id = #{userId}
+          and ur.role_code = #{roleCode}
+          and ur.assignment_type = #{assignmentType}
+          and ur.valid_start_date = #{validStartDate}
+          <choose>
+              <when test="validEndDate != null">
+                  and ur.valid_end_date = #{validEndDate}
+              </when>
+              <otherwise>
+                  and ur.valid_end_date is null
+              </otherwise>
+          </choose>
+          and ur.status = 'ACTIVE'
+        order by ur.assignment_id desc
+        limit 1
     </select>
 
     <select id="existsUser" resultType="int">

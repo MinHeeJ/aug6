@@ -1,6 +1,6 @@
 package kr.ac.knue.commonfoundation.permissions;
 
-public record MenuPermissionSearchCriteria(int page, int size, String targetType, String targetId, String filter) {
+public record MenuPermissionSearchCriteria(int page, int size, String targetType, String targetId, String filter, String accessAllowed) {
     public int safeSize() {
         if (size < 1) {
             return 10;

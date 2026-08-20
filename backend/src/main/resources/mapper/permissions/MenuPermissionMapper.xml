@@ -61,6 +61,9 @@
             <if test="criteria.targetId != null and criteria.targetId != ''">
                 and mp.target_id = #{criteria.targetId}
             </if>
+            <if test="criteria.accessAllowed != null and criteria.accessAllowed != ''">
+                and mp.access_allowed = #{criteria.accessAllowed}
+            </if>
             <if test="criteria.filter != null and criteria.filter != ''">
                 and (screen.menu_name ilike concat('%', #{criteria.filter}, '%')
                     or screen.screen_id ilike concat('%', #{criteria.filter}, '%')
@@ -86,6 +89,9 @@
             </if>
             <if test="criteria.targetId != null and criteria.targetId != ''">
                 and mp.target_id = #{criteria.targetId}
+            </if>
+            <if test="criteria.accessAllowed != null and criteria.accessAllowed != ''">
+                and mp.access_allowed = #{criteria.accessAllowed}
             </if>
             <if test="criteria.filter != null and criteria.filter != ''">
                 and (screen.menu_name ilike concat('%', #{criteria.filter}, '%')

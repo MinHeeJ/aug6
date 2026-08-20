@@ -259,7 +259,7 @@ export type MenuTreeNode = {
 };
 
 export type MenuParentPayload = {
-  parentMenuId: number;
+  parentMenuId: number | null;
   changeReason: string;
 };
 

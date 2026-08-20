@@ -35,10 +35,13 @@ public class UserRoleManagementService {
     public UserRoleAssignmentSummary assign(UserRoleAssignmentRequest request, Long adminUserId) {
         ValidatedAssignment validated = validateAssignmentRequest(null, request, true);
         mapper.insertAssignment(validated.userId(), validated.roleCode(), validated.assignmentType(), validated.validStartDate(), request.getValidEndDate(), adminUserId, request.getChangeReason());
-        return mapper.listCurrentUserRoles(validated.userId(), 100, 0).stream()
-                .filter(row -> row.roleCode().equals(validated.roleCode()) && row.assignmentType().equals(validated.assignmentType()))
-                .reduce((first, second) -> second)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 역할 부여 결과를 찾을 수 없습니다."));
+        UserRoleAssignmentSummary created = mapper.findAssignmentByDetails(
+                validated.userId(), validated.roleCode(), validated.assignmentType(),
+                validated.validStartDate(), request.getValidEndDate());
+        if (created == null) {
+            throw new IllegalArgumentException("사용자 역할 부여 결과를 찾을 수 없습니다.");
+        }
+        return created;
     }
 
     @Transactional

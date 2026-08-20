@@ -29,7 +29,16 @@ class ResourceApiPathContractTest {
             "/api/admin/code-groups",
             "/api/admin/code-groups/{groupId}",
             "/api/admin/code-groups/{groupId}/codes",
-            "/api/admin/code-groups/{groupId}/codes/{codeValue}");
+            "/api/admin/code-groups/{groupId}/codes/{codeValue}",
+            "/api/admin/menus/exposure",
+            "/api/admin/menus/exposure-save",
+            "/api/admin/code-groups/{groupId}/codes-usage",
+            "/api/admin/code-groups/{groupId}/codes/{codeValue}/usage",
+            "/api/admin/system-settings/common",
+            "/api/admin/system-settings/common-values",
+            "/api/admin/system-settings/base-years",
+            "/api/admin/system-settings/base-year-current",
+            "/api/admin/system-settings/base-years/{baseYear}/standards-preparation");
 
     @Test
     void openApiUsesResourcePathsInsteadOfEndpointPerRequirementPaths() throws Exception {

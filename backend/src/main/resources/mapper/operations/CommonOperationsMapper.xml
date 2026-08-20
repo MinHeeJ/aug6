@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.operations.CommonOperationsMapper">
+    <resultMap id="MenuExposureSettingMap" type="kr.ac.knue.commonfoundation.operations.MenuExposureSetting">
+        <constructor>
+            <arg column="menuId" javaType="long"/>
+            <arg column="menuName" javaType="string"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="exposureStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="exposureEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="DetailCodeUsageSettingMap" type="kr.ac.knue.commonfoundation.operations.DetailCodeUsageSetting">
+        <constructor>
+            <arg column="groupId" javaType="string"/>
+            <arg column="codeValue" javaType="string"/>
+            <arg column="codeName" javaType="string"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="validStartDate" javaType="java.time.LocalDate"/>
+            <arg column="validEndDate" javaType="java.time.LocalDate"/>
+            <arg column="usageChangeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="CommonSettingRowMap" type="kr.ac.knue.commonfoundation.operations.CommonSettingRow">
+        <constructor>
+            <arg column="settingKey" javaType="string"/>
+            <arg column="settingValue" javaType="string"/>
+            <arg column="settingUnit" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="BaseYearSettingMap" type="kr.ac.knue.commonfoundation.operations.BaseYearSetting">
+        <constructor>
+            <arg column="baseYear" javaType="int"/>
+            <arg column="currentEvaluationYear" javaType="int"/>
+            <arg column="defaultSearchYear" javaType="int"/>
+            <arg column="copyRequestedYn" javaType="string"/>
+            <arg column="initializeRequestedYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="StandardPreparationHistoryMap" type="kr.ac.knue.commonfoundation.operations.StandardPreparationHistory">
+        <constructor>
+            <arg column="preparationId" javaType="long"/>
+            <arg column="baseYear" javaType="int"/>
+            <arg column="copyRequestedYn" javaType="string"/>
+            <arg column="initializeRequestedYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="preparedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="preparedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="menuExposureSelect">
+        select menu_id as "menuId",
+               menu_name as "menuName",
+               system_use_yn as "systemUseYn",
+               exposure_start_at as "exposureStartAt",
+               exposure_end_at as "exposureEndAt",
+               change_reason as "changeReason",
+               updated_at as "updatedAt"
+        from menus
+    </sql>
+
+    <select id="listMenuExposureSettings" resultMap="MenuExposureSettingMap">
+        <include refid="menuExposureSelect"/>
+        where status != 'DELETED'
+        order by coalesce(parent_menu_id, 0), display_order, menu_id
+    </select>
+
+    <select id="existsMenu" resultType="int">
+        select count(*) from menus where menu_id = #{menuId} and status != 'DELETED'
+    </select>
+
+    <update id="updateMenuExposure">
+        update menus
+        set system_use_yn = #{systemUseYn},
+            exposure_start_at = #{exposureStartAt},
+            exposure_end_at = #{exposureEndAt},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where menu_id = #{menuId}
+          and status != 'DELETED'
+    </update>
+
+    <select id="findMenuExposure" resultMap="MenuExposureSettingMap">
+        <include refid="menuExposureSelect"/>
+        where menu_id = #{menuId}
+          and status != 'DELETED'
+    </select>
+
+    <sql id="detailCodeUsageSelect">
+        select group_id as "groupId",
+               code_value as "codeValue",
+               code_name as "codeName",
+               system_use_yn as "systemUseYn",
+               valid_start_date as "validStartDate",
+               valid_end_date as "validEndDate",
+               usage_change_reason as "usageChangeReason",
+               updated_at as "updatedAt"
+        from detail_codes
+    </sql>
+
+    <select id="listDetailCodeUsageSettings" resultMap="DetailCodeUsageSettingMap">
+        <include refid="detailCodeUsageSelect"/>
+        where group_id = #{groupId}
+          and status != 'DELETED'
+        order by sort_order, code_value
+    </select>
+
+    <select id="existsDetailCode" resultType="int">
+        select count(*) from detail_codes where group_id = #{groupId} and code_value = #{codeValue} and status != 'DELETED'
+    </select>
+
+    <update id="updateDetailCodeUsage">
+        update detail_codes
+        set system_use_yn = #{systemUseYn},
+            valid_start_date = #{validStartDate},
+            valid_end_date = #{validEndDate},
+            usage_change_reason = #{changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where group_id = #{groupId}
+          and code_value = #{codeValue}
+          and status != 'DELETED'
+    </update>
+
+    <select id="findDetailCodeUsage" resultMap="DetailCodeUsageSettingMap">
+        <include refid="detailCodeUsageSelect"/>
+        where group_id = #{groupId}
+          and code_value = #{codeValue}
+          and status != 'DELETED'
+    </select>
+
+    <select id="listActiveDetailCodeOptions" resultMap="DetailCodeUsageSettingMap">
+        <include refid="detailCodeUsageSelect"/>
+        where group_id = #{groupId}
+          and status = 'ACTIVE'
+          and system_use_yn = 'Y'
+          and (valid_start_date is null or valid_start_date &lt;= CURRENT_DATE)
+          and (valid_end_date is null or valid_end_date &gt;= CURRENT_DATE)
+        order by sort_order, code_value
+    </select>
+
+    <select id="listCommonSettings" resultMap="CommonSettingRowMap">
+        select setting_key as "settingKey",
+               setting_value as "settingValue",
+               setting_unit as "settingUnit",
+               change_reason as "changeReason",
+               updated_at as "updatedAt"
+        from common_settings
+        order by setting_key
+    </select>
+
+    <insert id="upsertCommonSetting">
+        insert into common_settings (setting_key, setting_value, setting_unit, updated_by, change_reason)
+        values (#{settingKey}, #{settingValue}, #{settingUnit}, #{updatedBy}, #{changeReason})
+        on conflict (setting_key)
+        do update set setting_value = EXCLUDED.setting_value,
+                      setting_unit = EXCLUDED.setting_unit,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+
+    <select id="listBaseYearSettings" resultMap="BaseYearSettingMap">
+        select base_year as "baseYear",
+               current_evaluation_year as "currentEvaluationYear",
+               default_search_year as "defaultSearchYear",
+               copy_requested_yn as "copyRequestedYn",
+               initialize_requested_yn as "initializeRequestedYn",
+               change_reason as "changeReason",
+               updated_at as "updatedAt"
+        from base_year_settings
+        order by base_year desc
+    </select>
+
+    <insert id="upsertBaseYearSetting">
+        insert into base_year_settings (base_year, current_evaluation_year, default_search_year, copy_requested_yn, initialize_requested_yn, updated_by, change_reason)
+        values (#{baseYear}, #{currentEvaluationYear}, #{defaultSearchYear}, #{copyRequestedYn}, #{initializeRequestedYn}, #{updatedBy}, #{changeReason})
+        on conflict (base_year)
+        do update set current_evaluation_year = EXCLUDED.current_evaluation_year,
+                      default_search_year = EXCLUDED.default_search_year,
+                      copy_requested_yn = EXCLUDED.copy_requested_yn,
+                      initialize_requested_yn = EXCLUDED.initialize_requested_yn,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+
+    <select id="findBaseYearSetting" resultMap="BaseYearSettingMap">
+        select base_year as "baseYear",
+               current_evaluation_year as "currentEvaluationYear",
+               default_search_year as "defaultSearchYear",
+               copy_requested_yn as "copyRequestedYn",
+               initialize_requested_yn as "initializeRequestedYn",
+               change_reason as "changeReason",
+               updated_at as "updatedAt"
+        from base_year_settings
+        where base_year = #{baseYear}
+    </select>
+
+    <insert id="insertPreparationHistory">
+        insert into standard_year_preparation_history (base_year, copy_requested_yn, initialize_requested_yn, prepared_by, change_reason)
+        values (#{baseYear}, #{copyRequestedYn}, #{initializeRequestedYn}, #{changedBy}, #{changeReason})
+    </insert>
+
+    <select id="latestPreparationHistory" resultMap="StandardPreparationHistoryMap">
+        select preparation_id as "preparationId",
+               base_year as "baseYear",
+               copy_requested_yn as "copyRequestedYn",
+               initialize_requested_yn as "initializeRequestedYn",
+               change_reason as "changeReason",
+               prepared_at as "preparedAt",
+               prepared_by as "preparedBy"
+        from standard_year_preparation_history
+        where base_year = #{baseYear}
+        order by preparation_id desc
+        limit 1
+    </select>
+
+    <select id="findDefaultSearchYear" resultType="int">
+        select default_search_year
+        from base_year_settings
+        order by updated_at desc, base_year desc
+        limit 1
+    </select>
+</mapper>

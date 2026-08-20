@@ -11,10 +11,24 @@ public interface PermissionMapper {
             select m.menu_id as "menuId", m.parent_menu_id as "parentMenuId", m.menu_name as "menuName",
                    m.screen_id as "screenId", m.url as "url", m.icon as "icon", m.display_order as "displayOrder"
             from menus m
-            where m.status = 'ACTIVE' and m.system_use_yn = 'Y'
+            where m.status = 'ACTIVE'
+              and m.system_use_yn = 'Y'
+              and (m.exposure_start_at is null or m.exposure_start_at <= CURRENT_TIMESTAMP)
+              and (m.exposure_end_at is null or m.exposure_end_at >= CURRENT_TIMESTAMP)
             order by coalesce(m.parent_menu_id, 0), m.display_order, m.menu_id
             """)
     List<MenuRow> findActiveMenus();
+
+    @Select("""
+            select count(*)
+            from menus m
+            where m.url = #{path}
+              and m.status = 'ACTIVE'
+              and m.system_use_yn = 'Y'
+              and (m.exposure_start_at is null or m.exposure_start_at <= CURRENT_TIMESTAMP)
+              and (m.exposure_end_at is null or m.exposure_end_at >= CURRENT_TIMESTAMP)
+            """)
+    int countVisibleMenuForPath(@Param("path") String path);
 
     @Select("""
             select mp.target_type as "targetType", mp.access_allowed as "accessAllowed"

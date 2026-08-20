@@ -23,6 +23,12 @@ import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
 import { UserManagementPage } from "../pages/admin/SCR-USER-MGMT";
 import { CodeGroupManagementPage } from "../pages/admin/SCR-CODE-GROUP-MGMT";
 import { DetailCodeManagementPage } from "../pages/admin/SCR-DETAIL-CODE-MGMT";
+import {
+  BaseYearManagementPage,
+  CommonSettingsPage,
+  DetailCodeUsageManagementPage,
+  MenuUsageManagementPage,
+} from "../pages/admin/CommonOperationsPages";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -147,6 +153,38 @@ export function AppRouter() {
     return (
       <AdminShell>
         <DetailCodeManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/menu-usage") {
+    return (
+      <AdminShell>
+        <MenuUsageManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/detail-code-usage") {
+    return (
+      <AdminShell>
+        <DetailCodeUsageManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/common-settings") {
+    return (
+      <AdminShell>
+        <CommonSettingsPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/base-years") {
+    return (
+      <AdminShell>
+        <BaseYearManagementPage />
       </AdminShell>
     );
   }

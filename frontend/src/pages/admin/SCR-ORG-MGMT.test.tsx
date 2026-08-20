@@ -19,6 +19,11 @@ vi.mock("../../api/apiClient", async () => {
         data: [],
         meta: {},
       })),
+      listOrganizationParentRelationHistory: vi.fn(async () => ({
+        success: true,
+        data: [],
+        meta: {},
+      })),
       saveOrganizationParentRelation: vi.fn(async () => ({
         success: true,
         data: undefined,
@@ -40,6 +45,7 @@ describe("SCR-ORG-MGMT", () => {
     expect(html).toContain("조직 계층");
     expect(html).toContain("선택 조직 관계 편집");
     expect(html).toContain("상위관계 저장");
+    expect(html).toContain("조직 관계 변경 이력");
     expect(html).toContain("조직을 선택하세요");
   });
 

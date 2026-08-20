@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { apiRequest, menuPermissionApi } from "./apiClient";
+import { apiRequest, menuPermissionApi, organizationApi } from "./apiClient";
 
 describe("apiRequest", () => {
   it("uses relative /api paths without localhost or docker service names", async () => {
@@ -43,5 +43,22 @@ describe("apiRequest", () => {
     expect(requestedUrl).toContain("targetId=R09");
     expect(requestedUrl).toContain("accessAllowed=DENY");
     expect(requestedUrl).toContain("page=1");
+  });
+
+  it("retrieves organization parent-relation history through the relative history endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({ success: true, data: [], meta: {} }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await organizationApi.listOrganizationParentRelationHistory(
+      "KNUE-DEPT-COMP",
+    );
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/admin/organizations/KNUE-DEPT-COMP/parent-relations/history?page=0&size=10",
+    );
   });
 });

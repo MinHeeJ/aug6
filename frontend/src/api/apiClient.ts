@@ -123,6 +123,21 @@ export type OrganizationParentRelationPayload = {
   changeReason: string;
 };
 
+export type OrganizationRelationHistory = {
+  historyId: number;
+  relationId?: number;
+  organizationCode: string;
+  beforeParentOrganizationCode?: string | null;
+  afterParentOrganizationCode?: string | null;
+  beforeEffectiveStartDate?: string | null;
+  beforeEffectiveEndDate?: string | null;
+  afterEffectiveStartDate?: string | null;
+  afterEffectiveEndDate?: string | null;
+  changedAt?: string;
+  changedBy?: number;
+  changeReason?: string;
+};
+
 export const organizationApi = {
   searchOrganizations(
     params: {
@@ -153,6 +168,12 @@ export const organizationApi = {
         method: "PUT",
         body: JSON.stringify(payload),
       },
+    );
+  },
+  listOrganizationParentRelationHistory(organizationCode: string) {
+    const query = new URLSearchParams({ page: "0", size: "10" });
+    return apiRequest<OrganizationRelationHistory[]>(
+      `/api/admin/organizations/${encodeURIComponent(organizationCode)}/parent-relations/history?${query.toString()}` as `/api/${string}`,
     );
   },
 };

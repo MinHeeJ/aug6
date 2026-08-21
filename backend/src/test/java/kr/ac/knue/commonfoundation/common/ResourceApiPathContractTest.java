@@ -29,7 +29,12 @@ class ResourceApiPathContractTest {
             "/api/admin/code-groups",
             "/api/admin/code-groups/{groupId}",
             "/api/admin/code-groups/{groupId}/codes",
-            "/api/admin/code-groups/{groupId}/codes/{codeValue}");
+            "/api/admin/code-groups/{groupId}/codes/{codeValue}",
+            "/api/admin/position-assignments",
+            "/api/admin/position-assignments/{positionAssignmentId}",
+            "/api/admin/duty-assignments",
+            "/api/admin/duty-assignments/{dutyAssignmentId}",
+            "/api/admin/data-scope-rules");
 
     @Test
     void openApiUsesResourcePathsInsteadOfEndpointPerRequirementPaths() throws Exception {

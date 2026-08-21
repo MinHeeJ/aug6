@@ -2469,6 +2469,470 @@ paths:
         - 'validation: 필수 field 누락 상세코드 수정 요청 -> 해당 field-level ApiError가 반환된다'
         - 'business: 상세코드 수정 업무 규칙 위반 -> 기존 상태가 변경되지 않는다'
         - 'side-effect: 상세코드 수정 성공 -> 변경 처리자와 처리일시가 관련 row에 남는다'
+  /api/admin/position-assignments:
+    get:
+      operationId: searchPositionAssignments
+      summary: 보직 지정 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-109
+        - REQ-110
+        - REQ-144
+        - REQ-149
+        - REQ-150
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            enum: [20, 50, 100]
+        - name: referenceDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+    post:
+      operationId: savePositionAssignment
+      summary: 보직 지정 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionAssignmentRequest'
+      x-related-requirements:
+        - REQ-111
+        - REQ-112
+        - REQ-113
+        - REQ-143
+        - REQ-146
+        - REQ-147
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      x-business-rules:
+        - 필수 입력 항목 누락 시 저장을 차단한다
+        - 원천 사용자 인사정보, 조직구조, 역할 정의, 전체 권한 매트릭스는 변경하지 않는다
+      x-side-effects:
+        - 저장 성공 시 대상 업무 table row와 변경 메타정보를 기록한다
+      x-state-transitions:
+        - 미지정 -> 유효 또는 지정: 저장 확정 시
+        - 유효 또는 지정 -> 만료 또는 지정 종료: 종료일 경과 시 판정
+      x-required-tests:
+        - 'happy: R09가 유효한 savePositionAssignment 요청 -> 후속 조회에서 position_assignments.position_code/effective_start_date 값이 요청값과 일치한다'
+        - 'auth: R01 세션이 savePositionAssignment 요청 -> 403 ApiError가 반환되고 position_assignments row가 변경되지 않는다'
+        - 'validation: effectiveStartDate 누락 요청 -> ApiError.fields.effectiveStartDate가 반환된다'
+        - 'business: 보직은 지정된 소속조직과 유효기간에 연결 규칙 위반 요청 -> 400 ApiError가 반환되고 position_assignments 기존 상태가 유지된다'
+        - 'side-effect: savePositionAssignment 성공 -> position_assignments.updated_at 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
+  /api/admin/position-assignments/{positionAssignmentId}:
+    put:
+      operationId: updatePositionAssignment
+      summary: 보직 지정 변경
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionAssignmentRequest'
+      x-related-requirements:
+        - REQ-111
+        - REQ-112
+        - REQ-113
+        - REQ-143
+        - REQ-146
+        - REQ-147
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      x-business-rules:
+        - 필수 입력 항목 누락 시 저장을 차단한다
+        - 원천 사용자 인사정보, 조직구조, 역할 정의, 전체 권한 매트릭스는 변경하지 않는다
+      x-side-effects:
+        - 저장 성공 시 대상 업무 table row와 변경 메타정보를 기록한다
+      x-state-transitions:
+        - 미지정 -> 유효 또는 지정: 저장 확정 시
+        - 유효 또는 지정 -> 만료 또는 지정 종료: 종료일 경과 시 판정
+      x-required-tests:
+        - 'happy: R09가 유효한 updatePositionAssignment 요청 -> 후속 조회에서 position_assignments.position_assignment_id/effective_end_date 값이 요청값과 일치한다'
+        - 'auth: R01 세션이 updatePositionAssignment 요청 -> 403 ApiError가 반환되고 position_assignments row가 변경되지 않는다'
+        - 'validation: effectiveStartDate 누락 요청 -> ApiError.fields.effectiveStartDate가 반환된다'
+        - 'business: 사용자 원천 인사정보와 조직구조 변경 금지 규칙 위반 요청 -> 400 ApiError가 반환되고 position_assignments 기존 상태가 유지된다'
+        - 'side-effect: updatePositionAssignment 성공 -> position_assignments.change_reason 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
+  /api/admin/duty-assignments:
+    get:
+      operationId: searchDutyAssignments
+      summary: 업무담당자 지정 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-114
+        - REQ-115
+        - REQ-150
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            enum: [20, 50, 100]
+        - name: referenceDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+    post:
+      operationId: saveDutyAssignment
+      summary: 업무담당자 지정 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DutyAssignmentRequest'
+      x-related-requirements:
+        - REQ-115
+        - REQ-116
+        - REQ-117
+        - REQ-146
+        - REQ-147
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      x-business-rules:
+        - 필수 입력 항목 누락 시 저장을 차단한다
+        - 원천 사용자 인사정보, 조직구조, 역할 정의, 전체 권한 매트릭스는 변경하지 않는다
+      x-side-effects:
+        - 저장 성공 시 대상 업무 table row와 변경 메타정보를 기록한다
+      x-state-transitions:
+        - 미지정 -> 유효 또는 지정: 저장 확정 시
+        - 유효 또는 지정 -> 만료 또는 지정 종료: 종료일 경과 시 판정
+      x-required-tests:
+        - 'happy: R09가 유효한 saveDutyAssignment 요청 -> 후속 조회에서 duty_assignments.duty_organization/duty_area/valid_start_date 값이 요청값과 일치한다'
+        - 'auth: R01 세션이 saveDutyAssignment 요청 -> 403 ApiError가 반환되고 duty_assignments row가 변경되지 않는다'
+        - 'validation: validStartDate 누락 요청 -> ApiError.fields.validStartDate가 반환된다'
+        - 'business: 역할 정의와 전체 권한 매트릭스 변경 금지 규칙 위반 요청 -> 400 ApiError가 반환되고 duty_assignments 기존 상태가 유지된다'
+        - 'side-effect: saveDutyAssignment 성공 -> duty_assignments.confirmed_at 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
+  /api/admin/duty-assignments/{dutyAssignmentId}:
+    put:
+      operationId: updateDutyAssignment
+      summary: 업무담당자 지정 변경
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DutyAssignmentRequest'
+      x-related-requirements:
+        - REQ-115
+        - REQ-116
+        - REQ-117
+        - REQ-146
+        - REQ-147
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      x-business-rules:
+        - 필수 입력 항목 누락 시 저장을 차단한다
+        - 원천 사용자 인사정보, 조직구조, 역할 정의, 전체 권한 매트릭스는 변경하지 않는다
+      x-side-effects:
+        - 저장 성공 시 대상 업무 table row와 변경 메타정보를 기록한다
+      x-state-transitions:
+        - 미지정 -> 유효 또는 지정: 저장 확정 시
+        - 유효 또는 지정 -> 만료 또는 지정 종료: 종료일 경과 시 판정
+      x-required-tests:
+        - 'happy: R09가 유효한 updateDutyAssignment 요청 -> 후속 조회에서 duty_assignments.duty_assignment_id/confirmed_at 값이 요청값과 일치한다'
+        - 'auth: R01 세션이 updateDutyAssignment 요청 -> 403 ApiError가 반환되고 duty_assignments row가 변경되지 않는다'
+        - 'validation: validStartDate 누락 요청 -> ApiError.fields.validStartDate가 반환된다'
+        - 'business: 겹치는 지정은 나중에 확정된 지정을 우선 규칙 위반 요청 -> 400 ApiError가 반환되고 duty_assignments 기존 상태가 유지된다'
+        - 'side-effect: updateDutyAssignment 성공 -> duty_assignments.confirmed_at 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
+  /api/admin/data-scope-rules:
+    get:
+      operationId: searchDataScopeRules
+      summary: 데이터 범위 규칙 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-118
+        - REQ-119
+        - REQ-120
+        - REQ-121
+        - REQ-142
+        - REQ-144
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            enum: [20, 50, 100]
+        - name: referenceDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+    put:
+      operationId: saveDataScopeRules
+      summary: 데이터 범위 규칙 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataScopeRulesSaveRequest'
+      x-related-requirements:
+        - REQ-119
+        - REQ-120
+        - REQ-121
+        - REQ-142
+        - REQ-146
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      x-business-rules:
+        - 필수 입력 항목 누락 시 저장을 차단한다
+        - 원천 사용자 인사정보, 조직구조, 역할 정의, 전체 권한 매트릭스는 변경하지 않는다
+      x-side-effects:
+        - 저장 성공 시 대상 업무 table row와 변경 메타정보를 기록한다
+      x-state-transitions:
+        - 미지정 -> 유효 또는 지정: 저장 확정 시
+        - 유효 또는 지정 -> 만료 또는 지정 종료: 종료일 경과 시 판정
+      x-required-tests:
+        - 'happy: R09가 유효한 saveDataScopeRules 요청 -> 후속 조회에서 data_scope_rules.role_code/data_scope_type 값이 요청값과 일치한다'
+        - 'auth: R01 세션이 saveDataScopeRules 요청 -> 403 ApiError가 반환되고 data_scope_rules row가 변경되지 않는다'
+        - 'validation: roleCode 누락 요청 -> ApiError.fields.roleCode가 반환된다'
+        - 'business: 데이터 범위는 서버 조회조건에 강제 적용 규칙 위반 요청 -> 400 ApiError가 반환되고 data_scope_rules 기존 상태가 유지된다'
+        - 'side-effect: saveDataScopeRules 성공 -> data_scope_rules.updated_at 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
 components:
   securitySchemes:
     SessionCookie:
@@ -2485,37 +2949,36 @@ components:
       properties:
         success:
           type: boolean
+          enum:
+            - true
         data: {}
-        error:
-          $ref: '#/components/schemas/ApiError'
         meta:
           type: object
           additionalProperties: true
     ApiError:
       type: object
       required:
-        - code
-        - message
-        - fields
+        - success
+        - meta
       properties:
-        code:
-          type: string
-        message:
-          type: string
-        fields:
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationError'
-    ValidationError:
-      type: object
-      required:
-        - field
-        - message
-      properties:
-        field:
-          type: string
-        message:
-          type: string
+        success:
+          type: boolean
+          enum:
+            - false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            fields:
+              type: object
+              additionalProperties:
+                type: string
+        meta:
+          type: object
+          additionalProperties: true
     LoginRequest:
       type: object
       required:
@@ -2820,6 +3283,40 @@ components:
         - ACTIVE
         - EXPIRED
         - LOGGED_OUT
+    PositionAssignmentRequest:
+      type: object
+      required: [positionCode, userId, organizationCode, effectiveStartDate, changeReason]
+      properties:
+        positionCode: { type: string }
+        userId: { type: string }
+        organizationCode: { type: string }
+        effectiveStartDate: { type: string, format: date }
+        effectiveEndDate: { type: string, format: date, nullable: true }
+        changeReason: { type: string }
+    DutyAssignmentRequest:
+      type: object
+      required: [dutyOrganization, userId, dutyArea, validStartDate, dataScopeType, processingPermission, changeReason]
+      properties:
+        dutyOrganization: { type: string }
+        userId: { type: string }
+        dutyArea: { type: string }
+        validStartDate: { type: string, format: date }
+        validEndDate: { type: string, format: date, nullable: true }
+        dataScopeType: { $ref: '#/components/schemas/DataScopeTypeEnum' }
+        processingPermission: { type: string }
+        changeReason: { type: string }
+    DataScopeRulesSaveRequest:
+      type: object
+      required: [roleCode, dataScopeType]
+      properties:
+        roleCode: { $ref: '#/components/schemas/RoleCodeEnum' }
+        dataScopeType: { $ref: '#/components/schemas/DataScopeTypeEnum' }
+        organizationCode: { type: string, nullable: true }
+        dutyArea: { type: string, nullable: true }
+        changeReason: { type: string }
+    DataScopeTypeEnum:
+      type: string
+      enum: [SELF, DEPARTMENT, COLLEGE, DUTY, ALL]
 x-business-rules:
   - 보호 API는 인증 세션을 요구한다
   - 권한 없는 요청은 401 또는 403으로 차단한다
@@ -2827,283 +3324,386 @@ x-business-rules:
 x-requirement-accounting:
   - canonical_id: REQ-002
     status: covered
-    evidence: searchUsers
+    evidence: "searchUsers"
   - canonical_id: REQ-003
     status: covered
-    evidence: createCodeGroup, createDetailCode, reorderMenus, saveMenuPermissions, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount
+    evidence: "createCodeGroup, createDetailCode, reorderMenus, saveMenuPermissions, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount"
   - canonical_id: REQ-004
     status: covered
-    evidence: getMenuTree, listMenuPermissions, saveMenuPermissions
+    evidence: "getMenuTree, listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-006
     status: covered
-    evidence: getMenuTree, listMenuPermissions, saveMenuPermissions
+    evidence: "getMenuTree, listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-007
     status: covered
-    evidence: getMenuTree, listMenuPermissions, saveMenuPermissions
+    evidence: "getMenuTree, listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-008
     status: covered
-    evidence: assignUserRole, createCodeGroup, createDetailCode, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, createCodeGroup, createDetailCode, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles"
   - canonical_id: REQ-009
     status: covered
-    evidence: listOrganizationParentRelationHistory
+    evidence: "listOrganizationParentRelationHistory"
   - canonical_id: REQ-010
     status: covered
-    evidence: searchUsers
+    evidence: "searchUsers"
   - canonical_id: REQ-011
     status: covered
-    evidence: searchUsers
+    evidence: "searchUsers"
   - canonical_id: REQ-012
     status: covered
-    evidence: updateUserAccount
+    evidence: "updateUserAccount"
   - canonical_id: REQ-013
     status: covered
-    evidence: updateUserAccount
+    evidence: "updateUserAccount"
   - canonical_id: REQ-014
     status: covered
-    evidence: updateUserRoles
+    evidence: "updateUserRoles"
   - canonical_id: REQ-015
     status: covered
-    evidence: listCurrentUserRoles, searchUsers, updateUserAccount, updateUserRoles
+    evidence: "listCurrentUserRoles, searchUsers, updateUserAccount, updateUserRoles"
   - canonical_id: REQ-016
     status: covered
-    evidence: searchOrganizations
+    evidence: "searchOrganizations"
   - canonical_id: REQ-017
     status: covered
-    evidence: saveOrganizationParentRelation
+    evidence: "saveOrganizationParentRelation"
   - canonical_id: REQ-018
     status: covered
-    evidence: listOrganizationParentRelationHistory
+    evidence: "listOrganizationParentRelationHistory"
   - canonical_id: REQ-019
     status: covered
-    evidence: searchOrganizations
+    evidence: "searchOrganizations"
   - canonical_id: REQ-020
     status: covered
-    evidence: getOrganizationTree
+    evidence: "getOrganizationTree"
   - canonical_id: REQ-021
     status: covered
-    evidence: saveOrganizationParentRelation
+    evidence: "saveOrganizationParentRelation"
   - canonical_id: REQ-022
     status: covered
-    evidence: saveOrganizationParentRelation
+    evidence: "saveOrganizationParentRelation"
   - canonical_id: REQ-023
     status: covered
-    evidence: saveOrganizationParentRelation
+    evidence: "saveOrganizationParentRelation"
   - canonical_id: REQ-024
     status: covered
-    evidence: listRoles
+    evidence: "listRoles"
   - canonical_id: REQ-025
     status: covered
-    evidence: updateRole
+    evidence: "updateRole"
   - canonical_id: REQ-026
     status: covered
-    evidence: listRoles
+    evidence: "listRoles"
   - canonical_id: REQ-027
     status: covered
-    evidence: updateRole
+    evidence: "updateRole"
   - canonical_id: REQ-028
     status: covered
-    evidence: updateRole
+    evidence: "updateRole"
   - canonical_id: REQ-029
     status: covered
-    evidence: updateRole
+    evidence: "updateRole"
   - canonical_id: REQ-030
     status: covered
-    evidence: assignUserRole, updateUserRoles
+    evidence: "assignUserRole, updateUserRoles"
   - canonical_id: REQ-031
     status: covered
-    evidence: updateUserRole, updateUserRoles
+    evidence: "updateUserRole, updateUserRoles"
   - canonical_id: REQ-032
     status: covered
-    evidence: revokeUserRole
+    evidence: "revokeUserRole"
   - canonical_id: REQ-033
     status: covered
-    evidence: listCurrentUserRoles, listUserRoleAssignments
+    evidence: "listCurrentUserRoles, listUserRoleAssignments"
   - canonical_id: REQ-034
     status: covered
-    evidence: listCurrentUserRoles, listUserRoleAssignments
+    evidence: "listCurrentUserRoles, listUserRoleAssignments"
   - canonical_id: REQ-035
     status: covered
-    evidence: assignUserRole, revokeUserRole, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, revokeUserRole, updateUserRole, updateUserRoles"
   - canonical_id: REQ-036
     status: covered
-    evidence: saveMenuPermissions
+    evidence: "saveMenuPermissions"
   - canonical_id: REQ-037
     status: covered
-    evidence: saveMenuPermissions
+    evidence: "saveMenuPermissions"
   - canonical_id: REQ-038
     status: covered
-    evidence: listMenuPermissions
+    evidence: "listMenuPermissions"
   - canonical_id: REQ-039
     status: covered
-    evidence: listMenuPermissions
+    evidence: "listMenuPermissions"
   - canonical_id: REQ-040
     status: covered
-    evidence: listMenuPermissions
+    evidence: "listMenuPermissions"
   - canonical_id: REQ-041
     status: covered
-    evidence: listMenuPermissions, saveMenuPermissions
+    evidence: "listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-042
     status: covered
-    evidence: listMenuPermissions, saveMenuPermissions
+    evidence: "listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-043
     status: covered
-    evidence: listMenuPermissions, saveMenuPermissions
+    evidence: "listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-044
     status: covered
-    evidence: getMenuTree, updateMenuParent
+    evidence: "getMenuTree, updateMenuParent"
   - canonical_id: REQ-045
     status: covered
-    evidence: getMenuTree, reorderMenus
+    evidence: "getMenuTree, reorderMenus"
   - canonical_id: REQ-046
     status: covered
-    evidence: getMenuTree
+    evidence: "getMenuTree"
   - canonical_id: REQ-047
     status: covered
-    evidence: updateMenuParent
+    evidence: "updateMenuParent"
   - canonical_id: REQ-048
     status: covered
-    evidence: updateMenuParent
+    evidence: "updateMenuParent"
   - canonical_id: REQ-049
     status: covered
-    evidence: getMenuExecution, updateMenuExecution
+    evidence: "getMenuExecution, updateMenuExecution"
   - canonical_id: REQ-050
     status: covered
-    evidence: getMenuExecution
+    evidence: "getMenuExecution"
   - canonical_id: REQ-051
     status: covered
-    evidence: updateMenuExecution
+    evidence: "updateMenuExecution"
   - canonical_id: REQ-052
     status: covered
-    evidence: getMenuExecution, getMenuTree, updateMenuExecution
+    evidence: "getMenuExecution, getMenuTree, updateMenuExecution"
   - canonical_id: REQ-053
     status: covered
-    evidence: createCodeGroup, updateCodeGroup
+    evidence: "createCodeGroup, updateCodeGroup"
   - canonical_id: REQ-054
     status: covered
-    evidence: listCodeGroups
+    evidence: "listCodeGroups"
   - canonical_id: REQ-055
     status: covered
-    evidence: listCodeGroups
+    evidence: "listCodeGroups"
   - canonical_id: REQ-056
     status: covered
-    evidence: createCodeGroup, updateCodeGroup
+    evidence: "createCodeGroup, updateCodeGroup"
   - canonical_id: REQ-057
     status: covered
-    evidence: createDetailCode, listDetailCodes, updateDetailCode
+    evidence: "createDetailCode, listDetailCodes, updateDetailCode"
   - canonical_id: REQ-058
     status: covered
-    evidence: listDetailCodes
+    evidence: "listDetailCodes"
   - canonical_id: REQ-059
     status: covered
-    evidence: listDetailCodes
+    evidence: "listDetailCodes"
   - canonical_id: REQ-060
     status: covered
-    evidence: listDetailCodes
+    evidence: "listDetailCodes"
   - canonical_id: REQ-061
     status: covered
-    evidence: createDetailCode, listDetailCodes, updateDetailCode
+    evidence: "createDetailCode, listDetailCodes, updateDetailCode"
   - canonical_id: REQ-062
     status: covered
-    evidence: createDetailCode, listDetailCodes, updateDetailCode
+    evidence: "createDetailCode, listDetailCodes, updateDetailCode"
   - canonical_id: REQ-063
     status: covered
-    evidence: saveMenuPermissions
+    evidence: "saveMenuPermissions"
   - canonical_id: REQ-064
     status: covered
-    evidence: updateUserAccount
+    evidence: "updateUserAccount"
   - canonical_id: REQ-065
     status: covered
-    evidence: assignUserRole, createCodeGroup, createDetailCode, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, createCodeGroup, createDetailCode, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles"
   - canonical_id: REQ-066
     status: covered
-    evidence: createDetailCode, listDetailCodes, updateDetailCode
+    evidence: "createDetailCode, listDetailCodes, updateDetailCode"
   - canonical_id: REQ-067
     status: covered
-    evidence: updateDetailCode
+    evidence: "updateDetailCode"
   - canonical_id: REQ-068
     status: covered
-    evidence: getMenuExecution, getMenuTree, listCodeGroups, listDetailCodes, listMenuPermissions, listRoles, listUserRoleAssignments, searchOrganizations, searchUsers
+    evidence: "getMenuExecution, getMenuTree, listCodeGroups, listDetailCodes, listMenuPermissions, listRoles, listUserRoleAssignments, searchOrganizations, searchUsers"
   - canonical_id: REQ-069
     status: covered
-    evidence: updateUserAccount
+    evidence: "updateUserAccount"
   - canonical_id: REQ-070
     status: covered
-    evidence: assignUserRole, createCodeGroup, createDetailCode, getCurrentUser, getHealth, getMenuExecution, getMenuTree, getOrganizationTree, listCodeGroups, listCurrentUserRoles, listDetailCodes, listMenuPermissions, listOrganizationParentRelationHistory, listRoles, listUserRoleAssignments, login, logout, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, searchOrganizations, searchUsers, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, createCodeGroup, createDetailCode, getCurrentUser, getHealth, getMenuExecution, getMenuTree, getOrganizationTree, listCodeGroups, listCurrentUserRoles, listDetailCodes, listMenuPermissions, listOrganizationParentRelationHistory, listRoles, listUserRoleAssignments, login, logout, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, searchOrganizations, searchUsers, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles"
   - canonical_id: REQ-071
     status: covered
-    evidence: getCurrentUser, getMenuTree, login
+    evidence: "getCurrentUser, getMenuTree, login"
   - canonical_id: REQ-073
     status: covered
-    evidence: assignUserRole, createCodeGroup, createDetailCode, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, createCodeGroup, createDetailCode, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles"
   - canonical_id: REQ-074
     status: covered
-    evidence: revokeUserRole, updateCodeGroup, updateDetailCode, updateMenuExecution, updateUserAccount
+    evidence: "revokeUserRole, updateCodeGroup, updateDetailCode, updateMenuExecution, updateUserAccount"
   - canonical_id: REQ-075
     status: covered
-    evidence: getCurrentUser, login, logout
+    evidence: "getCurrentUser, login, logout"
   - canonical_id: REQ-076
     status: covered
-    evidence: assignUserRole, createCodeGroup, createDetailCode, getCurrentUser, getMenuExecution, getMenuTree, getOrganizationTree, listCodeGroups, listCurrentUserRoles, listDetailCodes, listMenuPermissions, listOrganizationParentRelationHistory, listRoles, listUserRoleAssignments, logout, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, searchOrganizations, searchUsers, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, createCodeGroup, createDetailCode, getCurrentUser, getMenuExecution, getMenuTree, getOrganizationTree, listCodeGroups, listCurrentUserRoles, listDetailCodes, listMenuPermissions, listOrganizationParentRelationHistory, listRoles, listUserRoleAssignments, logout, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, searchOrganizations, searchUsers, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles"
   - canonical_id: REQ-077
     status: covered
-    evidence: assignUserRole, createCodeGroup, createDetailCode, getCurrentUser, getMenuExecution, getMenuTree, getOrganizationTree, listCodeGroups, listCurrentUserRoles, listDetailCodes, listMenuPermissions, listOrganizationParentRelationHistory, listRoles, listUserRoleAssignments, logout, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, searchOrganizations, searchUsers, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, createCodeGroup, createDetailCode, getCurrentUser, getMenuExecution, getMenuTree, getOrganizationTree, listCodeGroups, listCurrentUserRoles, listDetailCodes, listMenuPermissions, listOrganizationParentRelationHistory, listRoles, listUserRoleAssignments, logout, reorderMenus, revokeUserRole, saveMenuPermissions, saveOrganizationParentRelation, searchOrganizations, searchUsers, updateCodeGroup, updateDetailCode, updateMenuExecution, updateMenuParent, updateRole, updateUserAccount, updateUserRole, updateUserRoles"
   - canonical_id: REQ-078
     status: covered
-    evidence: login
+    evidence: "login"
   - canonical_id: REQ-079
     status: covered
-    evidence: listCurrentUserRoles, searchUsers, updateUserAccount, updateUserRoles
+    evidence: "listCurrentUserRoles, searchUsers, updateUserAccount, updateUserRoles"
   - canonical_id: REQ-080
     status: covered
-    evidence: getOrganizationTree, listOrganizationParentRelationHistory, saveOrganizationParentRelation, searchOrganizations
+    evidence: "getOrganizationTree, listOrganizationParentRelationHistory, saveOrganizationParentRelation, searchOrganizations"
   - canonical_id: REQ-081
     status: covered
-    evidence: listRoles, updateRole
+    evidence: "listRoles, updateRole"
   - canonical_id: REQ-082
     status: covered
-    evidence: assignUserRole, listCurrentUserRoles, listUserRoleAssignments, revokeUserRole, updateUserRole, updateUserRoles
+    evidence: "assignUserRole, listCurrentUserRoles, listUserRoleAssignments, revokeUserRole, updateUserRole, updateUserRoles"
   - canonical_id: REQ-083
     status: covered
-    evidence: listMenuPermissions, saveMenuPermissions
+    evidence: "listMenuPermissions, saveMenuPermissions"
   - canonical_id: REQ-084
     status: covered
-    evidence: getMenuTree, reorderMenus, updateMenuParent
+    evidence: "getMenuTree, reorderMenus, updateMenuParent"
   - canonical_id: REQ-085
     status: covered
-    evidence: getMenuExecution, updateMenuExecution
+    evidence: "getMenuExecution, updateMenuExecution"
   - canonical_id: REQ-086
     status: covered
-    evidence: createCodeGroup, listCodeGroups, updateCodeGroup
+    evidence: "createCodeGroup, listCodeGroups, updateCodeGroup"
   - canonical_id: REQ-087
     status: covered
-    evidence: createDetailCode, listDetailCodes, updateDetailCode
+    evidence: "createDetailCode, listDetailCodes, updateDetailCode"
   - canonical_id: REQ-088
     status: covered
-    evidence: getCurrentUser, getHealth, login
+    evidence: "getCurrentUser, getHealth, login"
   - canonical_id: REQ-091
     status: covered
-    evidence: getCurrentUser, getHealth, login
+    evidence: "getCurrentUser, getHealth, login"
   - canonical_id: REQ-093
     status: covered
-    evidence: getCurrentUser, login, logout
+    evidence: "getCurrentUser, login, logout"
   - canonical_id: REQ-094
     status: covered
-    evidence: getCurrentUser, getMenuTree, login
+    evidence: "getCurrentUser, getMenuTree, login"
   - canonical_id: REQ-096
     status: covered
-    evidence: getCurrentUser
+    evidence: "getCurrentUser"
   - canonical_id: REQ-097
     status: covered
-    evidence: getCurrentUser, getMenuTree, login
+    evidence: "getCurrentUser, getMenuTree, login"
   - canonical_id: REQ-098
     status: covered
-    evidence: login
+    evidence: "login"
   - canonical_id: REQ-101
     status: covered
-    evidence: getHealth
+    evidence: "getHealth"
   - canonical_id: REQ-102
     status: covered
-    evidence: getCurrentUser, getHealth, getMenuTree, login
+    evidence: "getCurrentUser, getHealth, getMenuTree, login"
+x-uncovered-requirements:
+  - canonical_id: REQ-103
+    status: non-functional
+    evidence: "요청 유형 change은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-104
+    status: non-functional
+    evidence: "제목 기능 추가 요청은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-105
+    status: non-functional
+    evidence: "목표 기능 추가 요청 — R1-A 생성 전에 정할 것 — 복사하지 않는다은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-106
+    status: non-functional
+    evidence: "선택 도메인 -은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-107
+    status: non-functional
+    evidence: "자동 추가 -은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-108
+    status: non-functional
+    evidence: "전체(effective) 도메인 -은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-122
+    status: non-functional
+    evidence: "출력 언어 한국어은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-123
+    status: non-functional
+    evidence: "언어 규칙 코드 식별자, API path, table, file name, enum 값은 은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-124
+    status: non-functional
+    evidence: "정책 기존 설계문서 6종은 요청별로 새로 생성하지 않는다.은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-125
+    status: non-functional
+    evidence: "새로 생성할 변경 실행 문서 spec.md, plan.md, tasks.md은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-126
+    status: non-functional
+    evidence: "참조할 단일 정본 문서 data-model.md, contracts/openapi.yaml은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-127
+    status: non-functional
+    evidence: "Manifest 상태 ready_for_review은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-128
+    status: non-functional
+    evidence: "적용 상태 advisory은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-129
+    status: non-functional
+    evidence: "Source of truth fallback은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-130
+    status: non-functional
+    evidence: "Rule packs common-constitution, common-naming, com은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-131
+    status: non-functional
+    evidence: "Rule IDs CONST-001, CONST-002, CONST-003, NR-001, 은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-132
+    status: non-functional
+    evidence: "Refs docs/standards/constitution.md, docs/standard은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-133
+    status: non-functional
+    evidence: "- 없음은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-134
+    status: non-functional
+    evidence: "자동추가된 모든 effective 도메인에 대해 spec.md/plan.md/tasks.m은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-135
+    status: non-functional
+    evidence: "- generation_order의 단계 순서(의존성)가 위배되지 않는다.은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-136
+    status: non-functional
+    evidence: "- 각 도메인의 requires(의존)가 같은 단계 또는 이전 단계에서 충족된다.은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-137
+    status: out-of-scope
+    evidence: "Q 한 사용자가 같은 기간에 같은 보직을 여러 조직이나 여러 지정 건으로 중복 보유할 수 은 명확화 답변으로 해결되어 관련 slice에 반영되며 별도 기능 row는 만들지 않는다."
+  - canonical_id: REQ-138
+    status: out-of-scope
+    evidence: "같은 조직 안에서도 같은 기간에 여러 지정 건이 겹칠 수 있나요, 아니면 조직이 같으면 기은 명확화 답변으로 해결되어 관련 slice에 반영되며 별도 기능 row는 만들지 않는다."
+  - canonical_id: REQ-139
+    status: out-of-scope
+    evidence: "Q 업무담당자 지정기간이 겹칠 때 어떤 지정정보를 우선 적용할까요?은 명확화 답변으로 해결되어 관련 slice에 반영되며 별도 기능 row는 만들지 않는다."
+  - canonical_id: REQ-140
+    status: out-of-scope
+    evidence: "변경이 확정된 시점을 승인 시점으로 보는 뜻인가요?은 명확화 답변으로 해결되어 관련 slice에 반영되며 별도 기능 row는 만들지 않는다."
+  - canonical_id: REQ-141
+    status: out-of-scope
+    evidence: "Q 한 사용자가 여러 역할을 가지고 있고 각 역할의 데이터 범위가 다를 때 최종 접근 가능은 명확화 답변으로 해결되어 관련 slice에 반영되며 별도 기능 row는 만들지 않는다."
+  - canonical_id: REQ-145
+    status: out-of-scope
+    evidence: "목록 엑셀 다운로드은 이 변경 범위의 구현 대상에서 제외되거나 금지 조건으로만 보존된다."
+  - canonical_id: REQ-148
+    status: screen-only
+    evidence: "표준 UI 적용은 화면 상태·검증·공통 UI 계약으로만 적용된다."
+  - canonical_id: REQ-151
+    status: non-functional
+    evidence: "질의 평균 응답시간은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-152
+    status: non-functional
+    evidence: "건별 질의 처리시간은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-153
+    status: non-functional
+    evidence: "페이지 용량 제한은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-154
+    status: non-functional
+    evidence: "시큐어 코딩은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-155
+    status: non-functional
+    evidence: "개인정보 보호와 암호화은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
+  - canonical_id: REQ-156
+    status: non-functional
+    evidence: "브라우저·기기 호환성은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
 x-shared-contract-reference:
   technology_stack:
     backend: Java 17 + Spring Boot 3.3.x + Maven + MyBatis + PostgreSQL 16

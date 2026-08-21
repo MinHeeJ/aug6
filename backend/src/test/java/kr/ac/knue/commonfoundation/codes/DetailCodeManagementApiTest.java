@@ -119,6 +119,34 @@ class DetailCodeManagementApiTest {
     }
 
     @Test
+    void updateDetailCodeValidationRejectsMissingFieldsBeforeTableSideEffect() throws Exception {
+        mockMvc.perform(put("/api/admin/code-groups/COMMON_STATUS/codes/PENDING")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").exists());
+        verify(detailCodeManagementService, never()).updateDetailCode(any(), any(), any(), any());
+    }
+
+    @Test
+    void updateDetailCodeBusinessRulePreventsTableSideEffectAndReturnsFieldError() throws Exception {
+        when(detailCodeManagementService.updateDetailCode(eq("COMMON_STATUS"), eq("PENDING"), any(DetailCodeRequest.class), eq(1L)))
+                .thenThrow(new BusinessValidationException("상세코드 업무 규칙 위반",
+                        List.of(new kr.ac.knue.commonfoundation.common.api.ValidationError("codeValue", "상세코드 식별자는 변경할 수 없습니다."))));
+
+        mockMvc.perform(put("/api/admin/code-groups/COMMON_STATUS/codes/PENDING")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"codeValue\":\"PENDING_NEW\",\"codeName\":\"대기\",\"sortOrder\":3,\"systemUseYn\":\"Y\",\"validStartDate\":\"2026-01-01\",\"changeReason\":\"업무 규칙 검증\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.fields[0].field").value("codeValue"));
+    }
+
+    @Test
     void createDetailCodeBusinessRulePreventsTableSideEffectAndReturnsFieldError() throws Exception {
         when(detailCodeManagementService.createDetailCode(eq("COMMON_STATUS"), any(DetailCodeRequest.class), eq(1L)))
                 .thenThrow(new BusinessValidationException("상세코드 업무 규칙 위반",

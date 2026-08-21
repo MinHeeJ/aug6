@@ -152,6 +152,21 @@ class MenuStructureManagementApiTest {
     }
 
     @Test
+    void updateMenuParentBusinessRulePreventsParentTableSideEffect() throws Exception {
+        when(service.updateMenuParent(eq(131L), any(MenuParentUpdateRequest.class), eq(1L)))
+                .thenThrow(new BusinessValidationException("메뉴 부모 업무 규칙 위반",
+                        List.of(new ValidationError("parentMenuId", "하위 메뉴를 부모로 지정할 수 없습니다."))));
+
+        mockMvc.perform(put("/api/admin/menus/131/parent")
+                        .requestAttr("currentUser", admin)
+                        .cookie(adminCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"parentMenuId\":999,\"changeReason\":\"업무 규칙 검증\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.fields[0].field").value("parentMenuId"));
+    }
+
+    @Test
     void reorderMenusBusinessRulePreventsSiblingOrderTableSideEffect() throws Exception {
         when(service.reorderMenus(any(MenuReorderRequest.class), eq(1L)))
                 .thenThrow(new BusinessValidationException("메뉴 순서 변경 업무 규칙 위반",

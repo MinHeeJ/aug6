@@ -23,6 +23,11 @@ import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
 import { UserManagementPage } from "../pages/admin/SCR-USER-MGMT";
 import { CodeGroupManagementPage } from "../pages/admin/SCR-CODE-GROUP-MGMT";
 import { DetailCodeManagementPage } from "../pages/admin/SCR-DETAIL-CODE-MGMT";
+import {
+  DataScopeRuleManagementPage,
+  DutyAssignmentManagementPage,
+  PositionAssignmentManagementPage,
+} from "../pages/admin/OperationsAssignmentScreens";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -147,6 +152,30 @@ export function AppRouter() {
     return (
       <AdminShell>
         <DetailCodeManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/position-assignments") {
+    return (
+      <AdminShell>
+        <PositionAssignmentManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/duty-assignments") {
+    return (
+      <AdminShell>
+        <DutyAssignmentManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/data-scope-rules") {
+    return (
+      <AdminShell>
+        <DataScopeRuleManagementPage />
       </AdminShell>
     );
   }

@@ -18,11 +18,14 @@ public class EffectivePermissionService {
     }
 
     public boolean canAccess(Long userId, List<String> roles, String path) {
-        if (roles != null && roles.contains("R09")) {
-            return true;
-        }
         if (permissionMapper == null || roles == null || roles.isEmpty()) {
             return false;
+        }
+        if (path != null && path.startsWith("/admin/") && permissionMapper.countVisibleMenuForPath(path) == 0) {
+            return false;
+        }
+        if (roles.contains("R09")) {
+            return true;
         }
         return resolveAllowed(permissionMapper.findRulesForPath(userId, path, roleCsv(roles)));
     }

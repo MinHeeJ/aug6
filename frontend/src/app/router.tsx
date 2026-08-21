@@ -24,6 +24,12 @@ import { UserManagementPage } from "../pages/admin/SCR-USER-MGMT";
 import { CodeGroupManagementPage } from "../pages/admin/SCR-CODE-GROUP-MGMT";
 import { DetailCodeManagementPage } from "../pages/admin/SCR-DETAIL-CODE-MGMT";
 import {
+  BaseYearManagementPage,
+  CommonSettingsPage,
+  DetailCodeUsageManagementPage,
+  MenuUsageManagementPage,
+} from "../pages/admin/CommonOperationsPages";
+import {
   DataScopeRuleManagementPage,
   DutyAssignmentManagementPage,
   PositionAssignmentManagementPage,
@@ -156,6 +162,10 @@ export function AppRouter() {
     );
   }
 
+  if (adminRoute?.path === "/admin/menu-usage") {
+    return (
+      <AdminShell>
+        <MenuUsageManagementPage />
   if (adminRoute?.path === "/admin/position-assignments") {
     return (
       <AdminShell>
@@ -164,6 +174,10 @@ export function AppRouter() {
     );
   }
 
+  if (adminRoute?.path === "/admin/detail-code-usage") {
+    return (
+      <AdminShell>
+        <DetailCodeUsageManagementPage />
   if (adminRoute?.path === "/admin/duty-assignments") {
     return (
       <AdminShell>
@@ -172,6 +186,18 @@ export function AppRouter() {
     );
   }
 
+  if (adminRoute?.path === "/admin/common-settings") {
+    return (
+      <AdminShell>
+        <CommonSettingsPage />
+      </AdminShell>
+    );
+  }
+
+  if (adminRoute?.path === "/admin/base-years") {
+    return (
+      <AdminShell>
+        <BaseYearManagementPage />
   if (adminRoute?.path === "/admin/data-scope-rules") {
     return (
       <AdminShell>

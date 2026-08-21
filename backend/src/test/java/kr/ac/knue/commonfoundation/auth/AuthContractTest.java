@@ -124,6 +124,74 @@ class AuthContractTest {
     }
 
     @Test
+    void postAuthLoginReturnsSessionCookieAndPersistsSessionTableSideEffect() throws Exception {
+        CurrentUser admin = new CurrentUser(1L, "admin", "E0001", "시스템 관리자", List.of("R09"), List.of());
+        when(authService.login(any(LoginRequest.class))).thenReturn(new AuthenticatedSession("SESSION-SIDE-EFFECT-1", admin));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"loginId\":\"admin\",\"password\":\"admin\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString(AuthController.SESSION_COOKIE + "=SESSION-SIDE-EFFECT-1")))
+                .andExpect(jsonPath("$.data.loginId").value("admin"))
+                .andExpect(jsonPath("$.data.roles[0]").value("R09"));
+        verify(authService).login(any(LoginRequest.class));
+
+        AuthMapper mapper = mock(AuthMapper.class);
+        kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
+        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
+        when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
+                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자"));
+        when(mapper.findActiveRoleCodes(1L)).thenReturn(List.of("R09"));
+        when(permissions.visibleMenus(eq(1L), eq(List.of("R09")))).thenReturn(List.of());
+        AuthenticatedSession persistedSession = adapter.authenticate(new LoginRequest("admin", "admin"));
+        org.assertj.core.api.Assertions.assertThat(persistedSession.user().roles()).containsExactly("R09");
+        verify(mapper).insertSession(any(String.class), eq(1L), any(LocalDateTime.class));
+    }
+
+    @Test
+    void postAuthLoginInvalidCredentialsDoNotPersistSessionTableSideEffect() throws Exception {
+        when(authService.login(any(LoginRequest.class))).thenThrow(new kr.ac.knue.commonfoundation.common.api.UnauthenticatedException());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"loginId\":\"admin\",\"password\":\"wrong\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+
+        AuthMapper mapper = mock(AuthMapper.class);
+        kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
+        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
+        when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
+                "sha256:invalid", "E0001", "시스템 관리자"));
+        assertThatThrownBy(() -> adapter.authenticate(new LoginRequest("admin", "wrong")))
+                .isInstanceOf(kr.ac.knue.commonfoundation.common.api.UnauthenticatedException.class);
+        verify(mapper, never()).insertSession(any(String.class), any(Long.class), any(LocalDateTime.class));
+    }
+
+    @Test
+    void postAuthLogoutRequiresActiveSessionAndTransitionsSessionTableToLoggedOut() throws Exception {
+        doNothing().when(authService).logout("SESSION-CONTRACT-2");
+
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .cookie(new jakarta.servlet.http.Cookie(AuthController.SESSION_COOKIE, "SESSION-CONTRACT-2")))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, org.hamcrest.Matchers.containsString("Max-Age=0")));
+        verify(authService).logout("SESSION-CONTRACT-2");
+
+        AuthenticationPort port = mock(AuthenticationPort.class);
+        AuthMapper mapper = mock(AuthMapper.class);
+        kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
+        AuthService service = new AuthService(port, mapper, permissions);
+        service.logout("SESSION-CONTRACT-2");
+        verify(mapper).logout("SESSION-CONTRACT-2");
+    }
+
+    @Test
     void loginPersistsActiveSessionTableSideEffectAndInvalidLoginKeepsSessionTableUnchanged() {
         AuthMapper mapper = mock(AuthMapper.class);
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);

@@ -2469,10 +2469,10 @@ paths:
         - 'validation: 필수 field 누락 상세코드 수정 요청 -> 해당 field-level ApiError가 반환된다'
         - 'business: 상세코드 수정 업무 규칙 위반 -> 기존 상태가 변경되지 않는다'
         - 'side-effect: 상세코드 수정 성공 -> 변경 처리자와 처리일시가 관련 row에 남는다'
-  /api/admin/position-assignments:
+  /api/admin/menus/exposure:
     get:
-      operationId: searchPositionAssignments
-      summary: 보직 지정 조회
+      operationId: listMenuExposureSettings
+      summary: 메뉴 노출 설정 조회
       responses:
         '200':
           description: 성공
@@ -2514,18 +2514,117 @@ paths:
           schema:
             type: integer
             minimum: 0
+          description: 페이지 번호
         - name: size
           in: query
           schema:
             type: integer
             minimum: 1
             enum: [20, 50, 100]
+          description: 페이지 크기
         - name: referenceDate
           in: query
           required: false
           schema:
             type: string
             format: date
+  /api/admin/menus/exposure-save:
+    put:
+      operationId: saveMenuExposureSettings
+      summary: 메뉴 노출 설정 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuExposureRequest'
+      x-related-requirements:
+        - REQ-109
+        - REQ-110
+        - REQ-144
+        - REQ-149
+        - REQ-150
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      x-business-rules:
+        - 요청 필수 필드와 기간 경계는 서버에서 검증한다
+        - R09 관리자만 해당 설정을 변경할 수 있다
+      x-side-effects:
+        - menus row 변경값과 처리자/처리일시가 기록된다
+      x-state-transitions:
+        - requested -> persisted
+      x-required-tests:
+        - 'happy: 유효한 저장 요청 -> 후속 조회에서 menus.exposure_start_at 변경값이 확인된다'
+        - 'auth: SessionCookie 없는 요청 -> 401 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
+        - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 menus 기존 상태가 유지된다'
+        - 'side-effect: 저장 성공 -> menus.updated_at 또는 history row가 생성된다'
+  /api/admin/position-assignments:
+    get:
+      operationId: searchPositionAssignments
+      summary: 보직 지정 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1 }
+      x-related-requirements: [REQ-112, REQ-115, REQ-116]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
     post:
       operationId: savePositionAssignment
       summary: 보직 지정 저장
@@ -2614,6 +2713,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: positionAssignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: positionAssignmentId
       requestBody:
         required: true
         content:
@@ -2674,32 +2780,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-      x-related-requirements:
-        - REQ-114
-        - REQ-115
-        - REQ-150
-      security:
-        - SessionCookie: []
-      x-roles:
-        - R09
       parameters:
         - name: page
           in: query
-          schema:
-            type: integer
-            minimum: 0
+          schema: { type: integer, minimum: 0 }
         - name: size
           in: query
-          schema:
-            type: integer
-            minimum: 1
-            enum: [20, 50, 100]
-        - name: referenceDate
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
+          schema: { type: integer, minimum: 1 }
+      x-related-requirements: [REQ-121, REQ-123, REQ-124]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
     post:
       operationId: saveDutyAssignment
       summary: 업무담당자 지정 저장
@@ -2787,6 +2877,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: dutyAssignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: dutyAssignmentId
       requestBody:
         required: true
         content:
@@ -2817,6 +2914,109 @@ paths:
         - 'validation: validStartDate 누락 요청 -> ApiError.fields.validStartDate가 반환된다'
         - 'business: 겹치는 지정은 나중에 확정된 지정을 우선 규칙 위반 요청 -> 400 ApiError가 반환되고 duty_assignments 기존 상태가 유지된다'
         - 'side-effect: updateDutyAssignment 성공 -> duty_assignments.confirmed_at 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
+  /api/admin/code-groups/{groupId}/codes-usage:
+    get:
+      operationId: listDetailCodeUsageSettings
+      summary: 코드 사용 설정 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1 }
+      x-related-requirements: [REQ-117, REQ-119]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+  /api/admin/code-groups/{groupId}/codes/{codeValue}/usage:
+    put:
+      operationId: updateDetailCodeUsageSetting
+      summary: 코드 사용 설정 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: codeValue
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetailCodeUsageRequest'
+      x-related-requirements: [REQ-111, REQ-118, REQ-119, REQ-120, REQ-147]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+      x-business-rules:
+        - 요청 필수 필드와 기간 경계는 서버에서 검증한다
+        - R09 관리자만 해당 설정을 변경할 수 있다
+      x-side-effects:
+        - detail_codes row 변경값과 처리자/처리일시가 기록된다
+      x-state-transitions:
+        - requested -> persisted
+      x-required-tests:
+        - 'happy: 유효한 저장 요청 -> 후속 조회에서 detail_codes.system_use_yn 변경값이 확인된다'
+        - 'auth: SessionCookie 없는 요청 -> 401 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
+        - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 detail_codes 기존 상태가 유지된다'
+        - 'side-effect: 저장 성공 -> detail_codes.updated_at 또는 history row가 생성된다'
   /api/admin/data-scope-rules:
     get:
       operationId: searchDataScopeRules
@@ -2846,35 +3046,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-      x-related-requirements:
-        - REQ-118
-        - REQ-119
-        - REQ-120
-        - REQ-121
-        - REQ-142
-        - REQ-144
-      security:
-        - SessionCookie: []
-      x-roles:
-        - R09
       parameters:
         - name: page
           in: query
-          schema:
-            type: integer
-            minimum: 0
+          schema: { type: integer, minimum: 0 }
         - name: size
           in: query
-          schema:
-            type: integer
-            minimum: 1
-            enum: [20, 50, 100]
-        - name: referenceDate
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
+          schema: { type: integer, minimum: 1 }
+      x-related-requirements: [REQ-125, REQ-127, REQ-128]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
     put:
       operationId: saveDataScopeRules
       summary: 데이터 범위 규칙 저장
@@ -2933,6 +3114,242 @@ paths:
         - 'validation: roleCode 누락 요청 -> ApiError.fields.roleCode가 반환된다'
         - 'business: 데이터 범위는 서버 조회조건에 강제 적용 규칙 위반 요청 -> 400 ApiError가 반환되고 data_scope_rules 기존 상태가 유지된다'
         - 'side-effect: saveDataScopeRules 성공 -> data_scope_rules.updated_at 메타정보를 후속 조회 또는 DB 검증에서 확인한다'
+  /api/admin/system-settings/common:
+    get:
+      operationId: listCommonSettings
+      summary: 공통 환경설정 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1 }
+      x-related-requirements: [REQ-114, REQ-115, REQ-150]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+  /api/admin/system-settings/common-values:
+    put:
+      operationId: saveCommonSettings
+      summary: 공통 환경설정 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommonSettingsRequest'
+      x-related-requirements: [REQ-109, REQ-122, REQ-123, REQ-124]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+      x-business-rules:
+        - 요청 필수 필드와 기간 경계는 서버에서 검증한다
+        - R09 관리자만 해당 설정을 변경할 수 있다
+      x-side-effects:
+        - common_settings row 변경값과 처리자/처리일시가 기록된다
+      x-state-transitions:
+        - requested -> persisted
+      x-required-tests:
+        - 'happy: 유효한 저장 요청 -> 후속 조회에서 common_settings.setting_value 변경값이 확인된다'
+        - 'auth: SessionCookie 없는 요청 -> 401 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
+        - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 common_settings 기존 상태가 유지된다'
+        - 'side-effect: 저장 성공 -> common_settings.updated_at 또는 history row가 생성된다'
+  /api/admin/system-settings/base-years:
+    get:
+      operationId: listBaseYearSettings
+      summary: 기준연도 조회
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1 }
+      x-related-requirements: [REQ-125, REQ-127, REQ-128]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+  /api/admin/system-settings/base-year-current:
+    put:
+      operationId: saveBaseYearSettings
+      summary: 기준연도 저장
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaseYearSettingsRequest'
+      x-related-requirements: [REQ-125, REQ-127, REQ-128]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+      x-business-rules:
+        - 요청 필수 필드와 기간 경계는 서버에서 검증한다
+        - R09 관리자만 해당 설정을 변경할 수 있다
+      x-side-effects:
+        - base_year_settings row 변경값과 처리자/처리일시가 기록된다
+      x-state-transitions:
+        - requested -> persisted
+      x-required-tests:
+        - 'happy: 유효한 저장 요청 -> 후속 조회에서 base_year_settings.default_search_year 변경값이 확인된다'
+        - 'auth: SessionCookie 없는 요청 -> 401 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
+        - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 base_year_settings 기존 상태가 유지된다'
+        - 'side-effect: 저장 성공 -> base_year_settings.updated_at 또는 history row가 생성된다'
+  /api/admin/system-settings/base-years/{baseYear}/standards-preparation:
+    post:
+      operationId: prepareBaseYearStandards
+      summary: 기준정보 준비 실행
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      parameters:
+        - name: baseYear
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaseYearPreparationRequest'
+      x-related-requirements: [REQ-110, REQ-126, REQ-127]
+      security: [{SessionCookie: []}]
+      x-roles: [R09]
+      x-business-rules:
+        - 요청 필수 필드와 기간 경계는 서버에서 검증한다
+        - R09 관리자만 해당 설정을 변경할 수 있다
+      x-side-effects:
+        - standard_year_preparation_history row 변경값과 처리자/처리일시가 기록된다
+      x-state-transitions:
+        - requested -> persisted
+      x-required-tests:
+        - 'happy: 유효한 저장 요청 -> 후속 조회에서 standard_year_preparation_history.base_year 변경값이 확인된다'
+        - 'auth: SessionCookie 없는 요청 -> 401 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
+        - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 standard_year_preparation_history 기존 상태가 유지된다'
+        - 'side-effect: 저장 성공 -> standard_year_preparation_history.updated_at 또는 history row가 생성된다'
 components:
   securitySchemes:
     SessionCookie:
@@ -3195,6 +3612,82 @@ components:
           nullable: true
         changeReason:
           type: string
+    MenuExposureRequest:
+      type: object
+      required: [menuId, systemUseYn, changeReason]
+      properties:
+        menuId: { type: string }
+        systemUseYn:
+          $ref: '#/components/schemas/SystemUseYnEnum'
+        exposureStartAt: { type: string, format: date-time, nullable: true }
+        exposureEndAt: { type: string, format: date-time, nullable: true }
+        changeReason: { type: string }
+    DetailCodeUsageRequest:
+      type: object
+      required: [systemUseYn, changeReason]
+      properties:
+        systemUseYn:
+          $ref: '#/components/schemas/SystemUseYnEnum'
+        validStartDate: { type: string, format: date }
+        validEndDate: { type: string, format: date, nullable: true }
+        changeReason: { type: string }
+    CommonSettingsRequest:
+      type: object
+      required: [sessionIdleMinutes, pageSizeDefault, defaultSearchPeriodDays, largeQueryThreshold, longRunningTaskThreshold, changeReason]
+      properties:
+        sessionIdleMinutes: { type: integer, minimum: 1 }
+        pageSizeDefault: { type: integer, enum: [20, 50, 100] }
+        defaultSearchPeriodDays: { type: integer, minimum: 1 }
+        largeQueryThreshold: { type: integer, minimum: 1 }
+        longRunningTaskThreshold: { type: integer, minimum: 1 }
+        changeReason: { type: string }
+    BaseYearSettingsRequest:
+      type: object
+      required: [currentEvaluationYear, defaultSearchYear, changeReason]
+      properties:
+        currentEvaluationYear: { type: integer }
+        defaultSearchYear: { type: integer }
+        changeReason: { type: string }
+    BaseYearPreparationRequest:
+      type: object
+      required: [copyRequestedYn, initializeRequestedYn, changeReason]
+      properties:
+        copyRequestedYn:
+          $ref: '#/components/schemas/SystemUseYnEnum'
+        initializeRequestedYn:
+          $ref: '#/components/schemas/SystemUseYnEnum'
+        changeReason: { type: string }
+    PositionAssignmentRequest:
+      type: object
+      required: [positionCode, userId, organizationCode, effectiveStartDate, changeReason]
+      properties:
+        positionCode: { type: string }
+        userId: { type: string }
+        organizationCode: { type: string }
+        effectiveStartDate: { type: string, format: date }
+        effectiveEndDate: { type: string, format: date, nullable: true }
+        changeReason: { type: string }
+    DutyAssignmentRequest:
+      type: object
+      required: [dutyOrganization, userId, dutyArea, validStartDate, dataScopeType, processingPermission, changeReason]
+      properties:
+        dutyOrganization: { type: string }
+        userId: { type: string }
+        dutyArea: { type: string }
+        validStartDate: { type: string, format: date }
+        validEndDate: { type: string, format: date, nullable: true }
+        dataScopeType: { $ref: '#/components/schemas/DataScopeTypeEnum' }
+        processingPermission: { type: string }
+        changeReason: { type: string }
+    DataScopeRulesSaveRequest:
+      type: object
+      required: [roleCode, dataScopeType]
+      properties:
+        roleCode: { $ref: '#/components/schemas/RoleCodeEnum' }
+        dataScopeType: { $ref: '#/components/schemas/DataScopeTypeEnum' }
+        organizationCode: { type: string, nullable: true }
+        dutyArea: { type: string, nullable: true }
+        changeReason: { type: string }
     RoleCodeEnum:
       type: string
       enum:
@@ -3283,37 +3776,6 @@ components:
         - ACTIVE
         - EXPIRED
         - LOGGED_OUT
-    PositionAssignmentRequest:
-      type: object
-      required: [positionCode, userId, organizationCode, effectiveStartDate, changeReason]
-      properties:
-        positionCode: { type: string }
-        userId: { type: string }
-        organizationCode: { type: string }
-        effectiveStartDate: { type: string, format: date }
-        effectiveEndDate: { type: string, format: date, nullable: true }
-        changeReason: { type: string }
-    DutyAssignmentRequest:
-      type: object
-      required: [dutyOrganization, userId, dutyArea, validStartDate, dataScopeType, processingPermission, changeReason]
-      properties:
-        dutyOrganization: { type: string }
-        userId: { type: string }
-        dutyArea: { type: string }
-        validStartDate: { type: string, format: date }
-        validEndDate: { type: string, format: date, nullable: true }
-        dataScopeType: { $ref: '#/components/schemas/DataScopeTypeEnum' }
-        processingPermission: { type: string }
-        changeReason: { type: string }
-    DataScopeRulesSaveRequest:
-      type: object
-      required: [roleCode, dataScopeType]
-      properties:
-        roleCode: { $ref: '#/components/schemas/RoleCodeEnum' }
-        dataScopeType: { $ref: '#/components/schemas/DataScopeTypeEnum' }
-        organizationCode: { type: string, nullable: true }
-        dutyArea: { type: string, nullable: true }
-        changeReason: { type: string }
     DataScopeTypeEnum:
       type: string
       enum: [SELF, DEPARTMENT, COLLEGE, DUTY, ALL]
@@ -3602,6 +4064,9 @@ x-requirement-accounting:
     status: covered
     evidence: "getCurrentUser, getHealth, getMenuTree, login"
 x-uncovered-requirements:
+  - {canonical_id: REQ-110, status: data-constraint, evidence: "기준정보 복사 대상은 data-model/prepareBaseYearStandards 이력으로 검증한다"}
+  - {canonical_id: REQ-123, status: data-constraint, evidence: "common_settings.setting_key UNIQUE 제약으로 검증한다"}
+  - {canonical_id: REQ-124, status: non-functional, evidence: "세션 인증방식과 대량처리 구현방식은 architecture boundary로만 제한한다"}
   - canonical_id: REQ-103
     status: non-functional
     evidence: "요청 유형 change은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
@@ -3623,12 +4088,6 @@ x-uncovered-requirements:
   - canonical_id: REQ-122
     status: non-functional
     evidence: "출력 언어 한국어은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
-  - canonical_id: REQ-123
-    status: non-functional
-    evidence: "언어 규칙 코드 식별자, API path, table, file name, enum 값은 은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
-  - canonical_id: REQ-124
-    status: non-functional
-    evidence: "정책 기존 설계문서 6종은 요청별로 새로 생성하지 않는다.은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."
   - canonical_id: REQ-125
     status: non-functional
     evidence: "새로 생성할 변경 실행 문서 spec.md, plan.md, tasks.md은 실행·품질 제약으로 plan/tasks 검증 항목에 반영된다."

@@ -54,6 +54,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/admin/users") || apiPath.matches("/api/admin/users/[^/]+/(account|roles)")) {
             return "/admin/users";
         }
+        if (apiPath.equals("/api/admin/menus/exposure") || apiPath.equals("/api/admin/menus/exposure-save")) {
+            return "/admin/menu-usage";
+        }
         if (apiPath.equals("/api/admin/menus/tree") || apiPath.equals("/api/admin/menus/reorder") || apiPath.matches("/api/admin/menus/[^/]+/parent")) {
             return "/admin/menu-structure";
         }
@@ -65,6 +68,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         if (apiPath.matches("/api/admin/code-groups/[^/]+")) {
             return "/admin/code-groups";
+        }
+        if (apiPath.matches("/api/admin/code-groups/[^/]+/codes/[^/]+/usage") || apiPath.matches("/api/admin/code-groups/[^/]+/codes-usage")) {
+            return "/admin/detail-code-usage";
         }
         if (apiPath.matches("/api/admin/code-groups/[^/]+/codes(/[^/]+)?")) {
             return "/admin/detail-codes";
@@ -78,6 +84,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.matches("/api/admin/user-roles/[^/]+")) {
             return "/admin/user-roles";
         }
+        if (apiPath.matches("/api/admin/system-settings/base-years/[^/]+/standards-preparation")) {
+            return "/admin/base-years";
+        }
         return switch (apiPath) {
             case "/api/admin/organizations" -> "/admin/organizations";
             case "/api/admin/roles" -> "/admin/roles";
@@ -87,6 +96,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             case "/api/admin/menu-info" -> "/admin/menu-info";
             case "/api/admin/code-groups" -> "/admin/code-groups";
             case "/api/admin/detail-codes" -> "/admin/detail-codes";
+            case "/api/admin/system-settings/common", "/api/admin/system-settings/common-values" -> "/admin/common-settings";
+            case "/api/admin/system-settings/base-years", "/api/admin/system-settings/base-year-current" -> "/admin/base-years";
             default -> apiPath;
         };
     }

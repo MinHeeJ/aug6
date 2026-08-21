@@ -337,3 +337,190 @@ export const menuExecutionApi = {
     );
   },
 };
+
+export type PageSize = 20 | 50 | 100;
+
+export type PositionAssignment = {
+  positionAssignmentId: number;
+  positionCode: string;
+  userId: number;
+  userName?: string;
+  organizationCode: string;
+  organizationName?: string;
+  effectiveStartDate: string;
+  effectiveEndDate?: string | null;
+  status: string;
+  confirmedAt?: string;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type PositionAssignmentPayload = {
+  positionCode: string;
+  userId: string;
+  organizationCode: string;
+  effectiveStartDate: string;
+  effectiveEndDate?: string | null;
+  changeReason: string;
+};
+
+export type PositionAssignmentSearchResponse = {
+  assignments: PositionAssignment[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type DutyAssignment = {
+  dutyAssignmentId: number;
+  dutyOrganization: string;
+  userId: number;
+  userName?: string;
+  dutyArea: string;
+  validStartDate: string;
+  validEndDate?: string | null;
+  dataScopeType: DataScopeType;
+  processingPermission: string;
+  status: string;
+  confirmedAt?: string;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type DataScopeType = "SELF" | "DEPARTMENT" | "COLLEGE" | "DUTY" | "ALL";
+
+export type DutyAssignmentPayload = {
+  dutyOrganization: string;
+  userId: string;
+  dutyArea: string;
+  validStartDate: string;
+  validEndDate?: string | null;
+  dataScopeType: DataScopeType;
+  processingPermission: string;
+  changeReason: string;
+};
+
+export type DutyAssignmentSearchResponse = {
+  assignments: DutyAssignment[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type DataScopeRule = {
+  dataScopeRuleId: number;
+  roleCode: string;
+  roleName?: string;
+  dataScopeType: DataScopeType;
+  organizationCode?: string | null;
+  organizationName?: string | null;
+  dutyArea?: string | null;
+  changeReason?: string | null;
+  updatedAt?: string;
+};
+
+export type DataScopeRulePayload = {
+  roleCode: string;
+  dataScopeType: DataScopeType;
+  organizationCode?: string | null;
+  dutyArea?: string | null;
+  changeReason?: string;
+};
+
+export type DataScopeRulesSearchResponse = {
+  rules: DataScopeRule[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+function assignmentQuery(
+  params: {
+    page?: number;
+    size?: PageSize;
+    referenceDate?: string;
+    filter?: string;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("size", String(params.size ?? 20));
+  if (params.referenceDate) query.set("referenceDate", params.referenceDate);
+  if (params.filter?.trim()) query.set("filter", params.filter.trim());
+  return query.toString();
+}
+
+export const operationsApi = {
+  searchPositionAssignments(
+    params: {
+      page?: number;
+      size?: PageSize;
+      referenceDate?: string;
+      filter?: string;
+    } = {},
+  ) {
+    return apiRequest<PositionAssignmentSearchResponse>(
+      `/api/admin/position-assignments?${assignmentQuery(params)}` as `/api/${string}`,
+    );
+  },
+  savePositionAssignment(payload: PositionAssignmentPayload) {
+    return apiRequest<PositionAssignment>("/api/admin/position-assignments", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updatePositionAssignment(
+    positionAssignmentId: number,
+    payload: PositionAssignmentPayload,
+  ) {
+    return apiRequest<PositionAssignment>(
+      `/api/admin/position-assignments/${encodeURIComponent(String(positionAssignmentId))}` as `/api/${string}`,
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+  searchDutyAssignments(
+    params: {
+      page?: number;
+      size?: PageSize;
+      referenceDate?: string;
+      filter?: string;
+    } = {},
+  ) {
+    return apiRequest<DutyAssignmentSearchResponse>(
+      `/api/admin/duty-assignments?${assignmentQuery(params)}` as `/api/${string}`,
+    );
+  },
+  saveDutyAssignment(payload: DutyAssignmentPayload) {
+    return apiRequest<DutyAssignment>("/api/admin/duty-assignments", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateDutyAssignment(
+    dutyAssignmentId: number,
+    payload: DutyAssignmentPayload,
+  ) {
+    return apiRequest<DutyAssignment>(
+      `/api/admin/duty-assignments/${encodeURIComponent(String(dutyAssignmentId))}` as `/api/${string}`,
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+  searchDataScopeRules(
+    params: {
+      page?: number;
+      size?: PageSize;
+      referenceDate?: string;
+      filter?: string;
+    } = {},
+  ) {
+    return apiRequest<DataScopeRulesSearchResponse>(
+      `/api/admin/data-scope-rules?${assignmentQuery(params)}` as `/api/${string}`,
+    );
+  },
+  saveDataScopeRules(payload: DataScopeRulePayload) {
+    return apiRequest<DataScopeRule>("/api/admin/data-scope-rules", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+};

@@ -1,12 +1,11 @@
 node_modules
-.git
+.next
 dist
 build
-.next
 coverage
+.git
 .vite
 .cache
 *.log
-*.local
 .env
 .env.*

@@ -87,6 +87,22 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     label: "기준연도 관리",
     screenId: "SCR-BASE-YEAR-MGMT",
     menuPath: "시스템 관리 > 공통 운영 관리 > 기준연도 관리",
+    path: "/admin/position-assignments",
+    label: "보직 관리",
+    screenId: "SCR-POSITION-ASSIGNMENT-MGMT",
+    menuPath: "시스템 관리 > 사용자·조직 관리 > 보직 관리",
+  },
+  {
+    path: "/admin/duty-assignments",
+    label: "업무담당자 관리",
+    screenId: "SCR-DUTY-ASSIGNMENT-MGMT",
+    menuPath: "시스템 관리 > 사용자·조직 관리 > 업무담당자 관리",
+  },
+  {
+    path: "/admin/data-scope-rules",
+    label: "데이터 범위 권한",
+    screenId: "SCR-DATA-SCOPE-RULE-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 데이터 범위 권한",
   },
 ];
 

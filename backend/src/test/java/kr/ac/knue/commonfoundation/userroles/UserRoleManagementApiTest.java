@@ -155,6 +155,40 @@ class UserRoleManagementApiTest {
     }
 
     @Test
+    void postUserRolesBusinessRulePreventsUserRolesTableSideEffect() throws Exception {
+        when(userRoleManagementService.assign(any(UserRoleAssignmentRequest.class), eq(1L)))
+                .thenThrow(new BusinessValidationException("사용자 역할 업무 규칙 위반",
+                        List.of(new ValidationError("roleCode", "이미 활성 사용자 역할이 있습니다."))));
+
+        mockMvc.perform(post("/api/admin/user-roles")
+                        .requestAttr("currentUser", admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"2\",\"roleCode\":\"R03\",\"assignmentType\":\"MANUAL\",\"validStartDate\":\"2026-08-18\",\"changeReason\":\"업무 규칙 검증\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.fields[0].field").value("roleCode"));
+    }
+
+    @Test
+    void deleteUserRolesPersistsUserRolesStateTransitionSideEffect() throws Exception {
+        when(userRoleManagementService.revoke(eq(20L), any(RevokeUserRoleRequest.class), eq(1L)))
+                .thenReturn(new UserRoleAssignmentSummary(20L, 2L, "professor1", "E1001", "홍길동", "R03",
+                        "단과대학(원) 행정실", "MANUAL", LocalDate.of(2026, 8, 18), null, 1L,
+                        "시스템 관리자", "REVOKED", LocalDateTime.of(2026, 8, 19, 10, 0), 1L,
+                        LocalDateTime.of(2026, 8, 19, 10, 0), "회수"));
+
+        mockMvc.perform(delete("/api/admin/user-roles/20")
+                        .requestAttr("currentUser", admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"changeReason\":\"회수\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.assignmentId").value(20))
+                .andExpect(jsonPath("$.data.status").value("REVOKED"))
+                .andExpect(jsonPath("$.data.revokedBy").value(1))
+                .andExpect(jsonPath("$.data.revokedAt").value("2026-08-19T10:00:00"));
+        verify(userRoleManagementService).revoke(eq(20L), any(RevokeUserRoleRequest.class), eq(1L));
+    }
+
+    @Test
     void userRoleMutationsRequireValidationBeforeRoleTableSideEffect() throws Exception {
         mockMvc.perform(post("/api/admin/user-roles")
                         .requestAttr("currentUser", admin)

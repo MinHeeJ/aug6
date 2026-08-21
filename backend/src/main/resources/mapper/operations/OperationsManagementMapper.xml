@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.operations.OperationsManagementMapper">
+    <sql id="positionSelect">
+        select pa.position_assignment_id as "positionAssignmentId",
+               pa.position_code as "positionCode",
+               pa.user_id as "userId",
+               kps.name as "userName",
+               pa.organization_code as "organizationCode",
+               o.organization_name as "organizationName",
+               pa.effective_start_date as "effectiveStartDate",
+               pa.effective_end_date as "effectiveEndDate",
+               case when pa.status = 'DELETED' then 'DELETED'
+                    when pa.effective_end_date is not null and pa.effective_end_date &lt; CURRENT_DATE then 'EXPIRED'
+                    else 'ACTIVE' end as "status",
+               pa.confirmed_at as "confirmedAt",
+               pa.change_reason as "changeReason",
+               pa.updated_at as "updatedAt"
+        from position_assignments pa
+        join users u on u.user_id = pa.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        join organizations o on o.organization_code = pa.organization_code
+    </sql>
+
+    <select id="searchPositionAssignments" resultType="kr.ac.knue.commonfoundation.operations.PositionAssignmentRow">
+        <include refid="positionSelect" />
+        <where>
+            pa.status != 'DELETED'
+            <if test="criteria.referenceDate != null">
+                and pa.effective_start_date &lt;= #{criteria.referenceDate}
+                and (pa.effective_end_date is null or pa.effective_end_date &gt;= #{criteria.referenceDate})
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (pa.position_code like concat('%', #{criteria.filter}, '%')
+                    or pa.organization_code like concat('%', #{criteria.filter}, '%')
+                    or kps.name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by pa.confirmed_at desc, pa.position_assignment_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countPositionAssignments" resultType="int">
+        select count(*)
+        from position_assignments pa
+        join users u on u.user_id = pa.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <where>
+            pa.status != 'DELETED'
+            <if test="criteria.referenceDate != null">
+                and pa.effective_start_date &lt;= #{criteria.referenceDate}
+                and (pa.effective_end_date is null or pa.effective_end_date &gt;= #{criteria.referenceDate})
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (pa.position_code like concat('%', #{criteria.filter}, '%')
+                    or pa.organization_code like concat('%', #{criteria.filter}, '%')
+                    or kps.name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findPositionAssignmentById" resultType="kr.ac.knue.commonfoundation.operations.PositionAssignmentRow">
+        <include refid="positionSelect" />
+        where pa.position_assignment_id = #{positionAssignmentId}
+          and pa.status != 'DELETED'
+    </select>
+
+    <select id="existsUser" resultType="int">
+        select count(*) from users where user_id = #{userId} and status != 'DELETED'
+    </select>
+
+    <select id="existsOrganization" resultType="int">
+        select count(*) from organizations where organization_code = #{organizationCode} and status != 'DELETED'
+    </select>
+
+    <insert id="insertPositionAssignment">
+        insert into position_assignments (position_code, user_id, organization_code, effective_start_date, effective_end_date, status, confirmed_at, created_by, updated_by, change_reason)
+        values (#{positionCode}, #{userId}, #{organizationCode}, #{effectiveStartDate}, #{effectiveEndDate}, 'ACTIVE', CURRENT_TIMESTAMP, #{updatedBy}, #{updatedBy}, #{changeReason})
+    </insert>
+
+    <update id="updatePositionAssignment">
+        update position_assignments
+        set position_code = #{positionCode},
+            user_id = #{userId},
+            organization_code = #{organizationCode},
+            effective_start_date = #{effectiveStartDate},
+            effective_end_date = #{effectiveEndDate},
+            status = 'ACTIVE',
+            confirmed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where position_assignment_id = #{positionAssignmentId}
+          and status != 'DELETED'
+    </update>
+
+    <sql id="dutySelect">
+        select da.duty_assignment_id as "dutyAssignmentId",
+               da.duty_organization as "dutyOrganization",
+               da.user_id as "userId",
+               kps.name as "userName",
+               da.duty_area as "dutyArea",
+               da.valid_start_date as "validStartDate",
+               da.valid_end_date as "validEndDate",
+               da.data_scope_type as "dataScopeType",
+               da.processing_permission as "processingPermission",
+               case when da.status = 'DELETED' then 'DELETED'
+                    when da.valid_end_date is not null and da.valid_end_date &lt; CURRENT_DATE then 'ENDED'
+                    else 'ACTIVE' end as "status",
+               da.confirmed_at as "confirmedAt",
+               da.change_reason as "changeReason",
+               da.updated_at as "updatedAt"
+        from duty_assignments da
+        join users u on u.user_id = da.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+    </sql>
+
+    <select id="searchDutyAssignments" resultType="kr.ac.knue.commonfoundation.operations.DutyAssignmentRow">
+        <include refid="dutySelect" />
+        <where>
+            da.status != 'DELETED'
+            <if test="criteria.referenceDate != null">
+                and da.valid_start_date &lt;= #{criteria.referenceDate}
+                and (da.valid_end_date is null or da.valid_end_date &gt;= #{criteria.referenceDate})
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (da.duty_organization like concat('%', #{criteria.filter}, '%')
+                    or da.duty_area like concat('%', #{criteria.filter}, '%')
+                    or kps.name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by da.confirmed_at desc, da.duty_assignment_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDutyAssignments" resultType="int">
+        select count(*)
+        from duty_assignments da
+        join users u on u.user_id = da.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <where>
+            da.status != 'DELETED'
+            <if test="criteria.referenceDate != null">
+                and da.valid_start_date &lt;= #{criteria.referenceDate}
+                and (da.valid_end_date is null or da.valid_end_date &gt;= #{criteria.referenceDate})
+            </if>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (da.duty_organization like concat('%', #{criteria.filter}, '%')
+                    or da.duty_area like concat('%', #{criteria.filter}, '%')
+                    or kps.name like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findDutyAssignmentById" resultType="kr.ac.knue.commonfoundation.operations.DutyAssignmentRow">
+        <include refid="dutySelect" />
+        where da.duty_assignment_id = #{dutyAssignmentId}
+          and da.status != 'DELETED'
+    </select>
+
+    <insert id="insertDutyAssignment">
+        insert into duty_assignments (duty_organization, user_id, duty_area, valid_start_date, valid_end_date, data_scope_type, processing_permission, status, confirmed_at, created_by, updated_by, change_reason)
+        values (#{dutyOrganization}, #{userId}, #{dutyArea}, #{validStartDate}, #{validEndDate}, #{dataScopeType}, #{processingPermission}, 'ACTIVE', CURRENT_TIMESTAMP, #{updatedBy}, #{updatedBy}, #{changeReason})
+    </insert>
+
+    <update id="updateDutyAssignment">
+        update duty_assignments
+        set duty_organization = #{dutyOrganization},
+            user_id = #{userId},
+            duty_area = #{dutyArea},
+            valid_start_date = #{validStartDate},
+            valid_end_date = #{validEndDate},
+            data_scope_type = #{dataScopeType},
+            processing_permission = #{processingPermission},
+            status = 'ACTIVE',
+            confirmed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where duty_assignment_id = #{dutyAssignmentId}
+          and status != 'DELETED'
+    </update>
+
+    <select id="findEffectiveDutyAssignments" resultType="kr.ac.knue.commonfoundation.operations.DutyAssignmentRow">
+        <include refid="dutySelect" />
+        where da.user_id = #{userId}
+          and da.duty_area = #{dutyArea}
+          and da.status = 'ACTIVE'
+          and da.valid_start_date &lt;= #{referenceDate}
+          and (da.valid_end_date is null or da.valid_end_date &gt;= #{referenceDate})
+        order by da.confirmed_at desc
+    </select>
+
+    <sql id="dataScopeSelect">
+        select dsr.data_scope_rule_id as "dataScopeRuleId",
+               dsr.role_code as "roleCode",
+               r.role_name as "roleName",
+               dsr.data_scope_type as "dataScopeType",
+               dsr.organization_code as "organizationCode",
+               o.organization_name as "organizationName",
+               dsr.duty_area as "dutyArea",
+               dsr.change_reason as "changeReason",
+               dsr.updated_at as "updatedAt"
+        from data_scope_rules dsr
+        join roles r on r.role_code = dsr.role_code
+        left join organizations o on o.organization_code = dsr.organization_code
+    </sql>
+
+    <select id="searchDataScopeRules" resultType="kr.ac.knue.commonfoundation.operations.DataScopeRuleRow">
+        <include refid="dataScopeSelect" />
+        <where>
+            dsr.status = 'ACTIVE'
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (dsr.role_code like concat('%', #{criteria.filter}, '%')
+                    or r.role_name like concat('%', #{criteria.filter}, '%')
+                    or dsr.data_scope_type like concat('%', #{criteria.filter}, '%')
+                    or dsr.duty_area like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+        order by dsr.role_code, dsr.data_scope_type, dsr.data_scope_rule_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDataScopeRules" resultType="int">
+        select count(*)
+        from data_scope_rules dsr
+        join roles r on r.role_code = dsr.role_code
+        <where>
+            dsr.status = 'ACTIVE'
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (dsr.role_code like concat('%', #{criteria.filter}, '%')
+                    or r.role_name like concat('%', #{criteria.filter}, '%')
+                    or dsr.data_scope_type like concat('%', #{criteria.filter}, '%')
+                    or dsr.duty_area like concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findDataScopeRule" resultType="kr.ac.knue.commonfoundation.operations.DataScopeRuleRow">
+        <include refid="dataScopeSelect" />
+        <where>
+            dsr.role_code = #{roleCode}
+            and dsr.data_scope_type = #{dataScopeType}
+            and dsr.status = 'ACTIVE'
+            <choose>
+                <when test="organizationCode != null and organizationCode != ''">
+                    and dsr.organization_code = #{organizationCode}
+                </when>
+                <otherwise>
+                    and dsr.organization_code is null
+                </otherwise>
+            </choose>
+            <choose>
+                <when test="dutyArea != null and dutyArea != ''">
+                    and dsr.duty_area = #{dutyArea}
+                </when>
+                <otherwise>
+                    and dsr.duty_area is null
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <select id="existsRole" resultType="int">
+        select count(*) from roles where role_code = #{roleCode} and role_code in ('R01','R02','R03','R04','R05','R06','R07','R08','R09') and status = 'ACTIVE'
+    </select>
+
+    <insert id="insertDataScopeRule">
+        insert into data_scope_rules (role_code, data_scope_type, organization_code, duty_area, status, created_by, updated_by, change_reason)
+        values (#{roleCode}, #{dataScopeType}, #{organizationCode}, #{dutyArea}, 'ACTIVE', #{updatedBy}, #{updatedBy}, #{changeReason})
+    </insert>
+
+    <update id="updateDataScopeRule">
+        update data_scope_rules
+        set data_scope_type = #{dataScopeType},
+            organization_code = #{organizationCode},
+            duty_area = #{dutyArea},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy},
+            change_reason = #{changeReason}
+        where data_scope_rule_id = #{dataScopeRuleId}
+          and status = 'ACTIVE'
+    </update>
+
+    <select id="findRulesByRoles" resultType="kr.ac.knue.commonfoundation.operations.DataScopeRuleRow">
+        <include refid="dataScopeSelect" />
+        where dsr.status = 'ACTIVE'
+        <choose>
+            <when test="roleCodes != null and roleCodes.size() &gt; 0">
+                and dsr.role_code in
+                <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+                    #{roleCode}
+                </foreach>
+            </when>
+            <otherwise>
+                and 1 = 0
+            </otherwise>
+        </choose>
+        order by dsr.role_code, dsr.data_scope_type
+    </select>
+</mapper>

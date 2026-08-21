@@ -29,6 +29,11 @@ import {
   DetailCodeUsageManagementPage,
   MenuUsageManagementPage,
 } from "../pages/admin/CommonOperationsPages";
+import {
+  DataScopeRuleManagementPage,
+  DutyAssignmentManagementPage,
+  PositionAssignmentManagementPage,
+} from "../pages/admin/OperationsAssignmentScreens";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -161,6 +166,10 @@ export function AppRouter() {
     return (
       <AdminShell>
         <MenuUsageManagementPage />
+  if (adminRoute?.path === "/admin/position-assignments") {
+    return (
+      <AdminShell>
+        <PositionAssignmentManagementPage />
       </AdminShell>
     );
   }
@@ -169,6 +178,10 @@ export function AppRouter() {
     return (
       <AdminShell>
         <DetailCodeUsageManagementPage />
+  if (adminRoute?.path === "/admin/duty-assignments") {
+    return (
+      <AdminShell>
+        <DutyAssignmentManagementPage />
       </AdminShell>
     );
   }
@@ -185,6 +198,10 @@ export function AppRouter() {
     return (
       <AdminShell>
         <BaseYearManagementPage />
+  if (adminRoute?.path === "/admin/data-scope-rules") {
+    return (
+      <AdminShell>
+        <DataScopeRuleManagementPage />
       </AdminShell>
     );
   }

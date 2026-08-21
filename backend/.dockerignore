@@ -1,11 +1,10 @@
 node_modules
-.git
+.next
 dist
 build
-.next
 coverage
+.git
 target
 *.log
-*.local
 .env
 .env.*

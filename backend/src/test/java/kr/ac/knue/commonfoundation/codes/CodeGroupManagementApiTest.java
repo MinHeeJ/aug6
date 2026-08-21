@@ -120,6 +120,34 @@ class CodeGroupManagementApiTest {
     }
 
     @Test
+    void updateCodeGroupValidationRejectsMissingFieldsBeforeTableSideEffect() throws Exception {
+        mockMvc.perform(put("/api/admin/code-groups/PROC_STATUS")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").exists());
+        verify(codeGroupManagementService, never()).updateCodeGroup(any(), any(), any());
+    }
+
+    @Test
+    void updateCodeGroupBusinessRulePreventsTableSideEffectAndReturnsFieldError() throws Exception {
+        when(codeGroupManagementService.updateCodeGroup(eq("PROC_STATUS"), any(CodeGroupRequest.class), eq(1L)))
+                .thenThrow(new BusinessValidationException("코드그룹 업무 규칙 위반",
+                        List.of(new kr.ac.knue.commonfoundation.common.api.ValidationError("groupId", "코드그룹 식별자는 변경할 수 없습니다."))));
+
+        mockMvc.perform(put("/api/admin/code-groups/PROC_STATUS")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"groupId\":\"PROC_STATUS_NEW\",\"groupName\":\"처리상태\",\"managingDepartment\":\"교수지원과\",\"changeReason\":\"업무 규칙 검증\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.fields[0].field").value("groupId"));
+    }
+
+    @Test
     void createCodeGroupBusinessRulePreventsTableSideEffectAndReturnsFieldError() throws Exception {
         when(codeGroupManagementService.createCodeGroup(any(CodeGroupRequest.class), eq(1L)))
                 .thenThrow(new BusinessValidationException("코드그룹 업무 규칙 위반",

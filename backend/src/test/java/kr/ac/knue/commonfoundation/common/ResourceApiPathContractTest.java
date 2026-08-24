@@ -48,7 +48,16 @@ class ResourceApiPathContractTest {
             "/api/admin/function-permissions-save",
             "/api/admin/function-permissions/evaluate",
             "/api/admin/period-permissions",
-            "/api/admin/period-permissions-save");
+            "/api/admin/period-permissions-save",
+            "/api/admin/file-policies",
+            "/api/admin/file-policies-save",
+            "/api/admin/attachments",
+            "/api/admin/attachments/{fileId}/download",
+            "/api/admin/attachments/{fileId}/delete-target",
+            "/api/admin/attachments/{fileId}/logical-delete",
+            "/api/admin/attachment-integrity-checks",
+            "/api/admin/attachment-integrity-results",
+            "/api/admin/attachment-integrity-results/excel");
 
     @Test
     void openApiUsesResourcePathsInsteadOfEndpointPerRequirementPaths() throws Exception {

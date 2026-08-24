@@ -9,6 +9,7 @@ coverage/
 *.local
 .env
 .env.*
+!.env.example
 target/
 
 # Playwright verifier artifacts

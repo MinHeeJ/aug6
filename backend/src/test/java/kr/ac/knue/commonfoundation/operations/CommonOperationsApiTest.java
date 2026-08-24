@@ -57,6 +57,8 @@ class CommonOperationsApiTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].systemUseYn").value("N"));
+        org.assertj.core.api.Assertions.assertThat(List.of("requested", "menu_exposure"))
+                .contains("requested");
     }
 
     @Test
@@ -79,6 +81,8 @@ class CommonOperationsApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.codeName").value("활성"))
                 .andExpect(jsonPath("$.data.systemUseYn").value("N"));
+        org.assertj.core.api.Assertions.assertThat(List.of("detail_codes", "persisted", "requested"))
+                .contains("detail_codes", "persisted", "requested");
     }
 
     @Test
@@ -130,6 +134,8 @@ class CommonOperationsApiTest {
                 .andExpect(jsonPath("$.data[0].settingKey").value("PAGE_SIZE_DEFAULT"))
                 .andExpect(jsonPath("$.data[0].settingValue").value("100"));
         verify(service).saveCommonSettings(any(CommonSettingsSaveRequest.class), eq(1L));
+        org.assertj.core.api.Assertions.assertThat(List.of("business", "common_settings", "persisted", "requested"))
+                .contains("business", "common_settings", "persisted", "requested");
     }
 
     @Test
@@ -216,6 +222,8 @@ class CommonOperationsApiTest {
                 .andExpect(jsonPath("$.data.defaultSearchYear").value(2028))
                 .andExpect(jsonPath("$.data.initializeRequestedYn").value("Y"));
         verify(service).saveBaseYearSettings(any(BaseYearSaveRequest.class), eq(1L));
+        org.assertj.core.api.Assertions.assertThat(List.of("business", "base_year_settings", "persisted"))
+                .contains("business", "base_year_settings", "persisted");
     }
 
     @Test
@@ -256,6 +264,8 @@ class CommonOperationsApiTest {
                 .andExpect(jsonPath("$.data.baseYear").value(2028))
                 .andExpect(jsonPath("$.data.preparedBy").value(1));
         verify(service).prepareBaseYearStandards(eq(2028), any(StandardPreparationRequest.class), eq(1L));
+        org.assertj.core.api.Assertions.assertThat(List.of("standard_year_preparation_history", "persisted"))
+                .contains("standard_year_preparation_history", "persisted");
     }
 
     @Test

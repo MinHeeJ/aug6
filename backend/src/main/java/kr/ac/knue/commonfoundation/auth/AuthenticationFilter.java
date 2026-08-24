@@ -78,6 +78,23 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.matches("/api/admin/organizations/[^/]+/parent-relations(/history)?")) {
             return "/admin/organizations";
         }
+        if (apiPath.matches("/api/admin/position-assignments/[^/]+")) {
+            return "/admin/position-assignments";
+        }
+        if (apiPath.matches("/api/admin/duty-assignments/[^/]+")) {
+            return "/admin/duty-assignments";
+        }
+        if (apiPath.matches("/api/admin/attachments/[^/]+/(delete-target|logical-delete)")) {
+            return "/admin/attachments/delete";
+        }
+        if (apiPath.equals("/api/admin/attachments") || apiPath.matches("/api/admin/attachments/[^/]+/download")) {
+            return "/admin/attachments";
+        }
+        if (apiPath.equals("/api/admin/attachment-integrity-checks")
+                || apiPath.equals("/api/admin/attachment-integrity-results")
+                || apiPath.equals("/api/admin/attachment-integrity-results/excel")) {
+            return "/admin/attachment-integrity";
+        }
         if (apiPath.matches("/api/admin/roles/[^/]+")) {
             return "/admin/roles";
         }
@@ -98,6 +115,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             case "/api/admin/detail-codes" -> "/admin/detail-codes";
             case "/api/admin/system-settings/common", "/api/admin/system-settings/common-values" -> "/admin/common-settings";
             case "/api/admin/system-settings/base-years", "/api/admin/system-settings/base-year-current" -> "/admin/base-years";
+            case "/api/admin/position-assignments" -> "/admin/position-assignments";
+            case "/api/admin/duty-assignments" -> "/admin/duty-assignments";
+            case "/api/admin/data-scope-rules" -> "/admin/data-scope-rules";
+            case "/api/admin/file-policies", "/api/admin/file-policies-save" -> "/admin/file-policies";
             default -> apiPath;
         };
     }

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.fileoperations.AttachmentIntegrityMapper">
+    <resultMap id="AttachmentIntegrityFindingRowMap" type="kr.ac.knue.commonfoundation.fileoperations.AttachmentIntegrityFindingRow">
+        <constructor>
+            <arg column="findingId" javaType="long"/>
+            <arg column="checkId" javaType="long"/>
+            <arg column="fileId" javaType="java.lang.Long"/>
+            <arg column="storageObjectRef" javaType="string"/>
+            <arg column="anomalyType" javaType="string"/>
+            <arg column="resultMessage" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="findingColumns">
+        finding_id as "findingId",
+        check_id as "checkId",
+        file_id as "fileId",
+        storage_object_ref as "storageObjectRef",
+        anomaly_type as "anomalyType",
+        result_message as "resultMessage",
+        created_at as "createdAt"
+    </sql>
+
+    <insert id="insertCheck" useGeneratedKeys="true" keyProperty="checkId" keyColumn="check_id">
+        insert into attachment_integrity_checks (status, started_by, started_at, completed_at)
+        values (#{status}, #{startedBy}, #{startedAt}, #{completedAt})
+    </insert>
+
+    <update id="completeCheck">
+        update attachment_integrity_checks
+        set status = #{status},
+            completed_at = CURRENT_TIMESTAMP
+        where check_id = #{checkId}
+    </update>
+
+    <insert id="insertFinding">
+        insert into attachment_integrity_findings (check_id, file_id, storage_object_ref, anomaly_type, result_message)
+        values (#{checkId}, #{draft.fileId}, #{draft.storageObjectRef}, #{draft.anomalyType}, #{draft.resultMessage})
+    </insert>
+
+    <select id="listFindings" resultMap="AttachmentIntegrityFindingRowMap">
+        select <include refid="findingColumns"/>
+        from attachment_integrity_findings
+        <where>
+            <if test="checkId != null">
+                check_id = #{checkId}
+            </if>
+            <if test="anomalyType != null and anomalyType != ''">
+                <if test="checkId != null">and</if>
+                anomaly_type = #{anomalyType}
+            </if>
+        </where>
+        order by created_at desc, finding_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countFindings" resultType="long">
+        select count(*)
+        from attachment_integrity_findings
+        <where>
+            <if test="checkId != null">
+                check_id = #{checkId}
+            </if>
+            <if test="anomalyType != null and anomalyType != ''">
+                <if test="checkId != null">and</if>
+                anomaly_type = #{anomalyType}
+            </if>
+        </where>
+    </select>
+
+    <select id="listFindingsForExcel" resultMap="AttachmentIntegrityFindingRowMap">
+        select <include refid="findingColumns"/>
+        from attachment_integrity_findings
+        <where>
+            <if test="checkId != null">
+                check_id = #{checkId}
+            </if>
+            <if test="anomalyType != null and anomalyType != ''">
+                <if test="checkId != null">and</if>
+                anomaly_type = #{anomalyType}
+            </if>
+        </where>
+        order by finding_id
+    </select>
+</mapper>

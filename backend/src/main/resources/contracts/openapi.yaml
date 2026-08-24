@@ -2898,152 +2898,6 @@ paths:
         - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
         - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 standard_year_preparation_history 기존 상태가 유지된다'
         - 'side-effect: 저장 성공 -> standard_year_preparation_history.updated_at 또는 history row가 생성된다'
-  /api/admin/position-assignments:
-    get:
-      operationId: listPositionAssignments
-      summary: 보직 발령 조회
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, minimum: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, minimum: 1 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    post:
-      operationId: createPositionAssignment
-      summary: 보직 발령 등록
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/position-assignments/{positionAssignmentId}:
-    put:
-      operationId: updatePositionAssignment
-      summary: 보직 발령 수정
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: positionAssignmentId
-          in: path
-          required: true
-          schema: { type: integer, format: int64 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    delete:
-      operationId: deletePositionAssignment
-      summary: 보직 발령 삭제
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/duty-assignments:
-    get:
-      operationId: listDutyAssignments
-      summary: 직무 발령 조회
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, minimum: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, minimum: 1 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    post:
-      operationId: createDutyAssignment
-      summary: 직무 발령 등록
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/duty-assignments/{dutyAssignmentId}:
-    put:
-      operationId: updateDutyAssignment
-      summary: 직무 발령 수정
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: dutyAssignmentId
-          in: path
-          required: true
-          schema: { type: integer, format: int64 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    delete:
-      operationId: deleteDutyAssignment
-      summary: 직무 발령 삭제
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/data-scope-rules:
-    get:
-      operationId: listDataScopeRules
-      summary: 데이터 범위 규칙 조회
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, minimum: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, minimum: 1 }
-      x-related-requirements: [REQ-134, REQ-135, REQ-136]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    put:
-      operationId: saveDataScopeRules
-      summary: 데이터 범위 규칙 저장
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-134, REQ-135, REQ-136]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
   /api/admin/function-permissions:
     get:
       operationId: listFunctionPermissions
@@ -3124,7 +2978,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FunctionPermissionRequest'
-      x-contract-fields: [screenId, roleCode, functionType, permissionAllowed, changeReason]
       x-related-requirements: [REQ-149, REQ-152, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3269,7 +3122,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PeriodPermissionRequest'
-      x-contract-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt, changeReason]
       x-related-requirements: [REQ-153, REQ-169, REQ-170, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3363,7 +3215,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TemporaryPermissionRequest'
-      x-contract-fields: [userId, workDataRef, functionType, validStartAt, validEndAt, changeReason]
       x-related-requirements: [REQ-157, REQ-158, REQ-159, REQ-160, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3425,6 +3276,1282 @@ paths:
       x-related-requirements: [REQ-161, REQ-162, REQ-163, REQ-164, REQ-171]
       security: [{SessionCookie: []}]
       x-roles: [R09]
+  /api/admin/file-policies:
+    get:
+      operationId: listFilePolicies
+      summary: 파일정책 조회
+      parameters:
+      - name: businessType
+        in: query
+        schema: {type: string}
+      - name: page
+        in: query
+        schema: {type: integer, minimum: 0}
+      - name: size
+        in: query
+        schema: {type: integer, enum: [20, 50, 100], default: 20}
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-247
+    - REQ-248
+    - REQ-249
+    - REQ-250
+    - REQ-251
+    - REQ-252
+    - REQ-253
+    - REQ-254
+    - REQ-255
+    - REQ-256
+    - REQ-257
+    - REQ-258
+    - REQ-259
+    - REQ-260
+    - REQ-261
+    - REQ-262
+    - REQ-263
+    - REQ-264
+    - REQ-265
+    - REQ-266
+    - REQ-267
+    - REQ-268
+    - REQ-269
+    - REQ-270
+    - REQ-271
+    - REQ-272
+    - REQ-273
+    - REQ-274
+    - REQ-275
+    - REQ-276
+    - REQ-277
+    - REQ-278
+    - REQ-279
+    - REQ-280
+    - REQ-281
+    - REQ-282
+    - REQ-283
+    - REQ-284
+    - REQ-285
+    - REQ-286
+    - REQ-287
+    - REQ-288
+    - REQ-289
+    - REQ-290
+    - REQ-291
+    - REQ-292
+    - REQ-293
+    - REQ-294
+    - REQ-295
+    - REQ-296
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+      x-pagination:
+        defaultSize: 20
+        allowedSizes: [20, 50, 100]
+        filters: [businessType]
+  /api/admin/file-policies-save:
+    put:
+      operationId: saveFilePolicy
+      summary: 파일정책 저장
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilePolicyRequest'
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-247
+    - REQ-248
+    - REQ-249
+    - REQ-250
+    - REQ-251
+    - REQ-252
+    - REQ-253
+    - REQ-254
+    - REQ-255
+    - REQ-256
+    - REQ-257
+    - REQ-258
+    - REQ-259
+    - REQ-260
+    - REQ-261
+    - REQ-262
+    - REQ-263
+    - REQ-264
+    - REQ-265
+    - REQ-266
+    - REQ-267
+    - REQ-268
+    - REQ-269
+    - REQ-270
+    - REQ-271
+    - REQ-272
+    - REQ-273
+    - REQ-274
+    - REQ-275
+    - REQ-276
+    - REQ-277
+    - REQ-278
+    - REQ-279
+    - REQ-280
+    - REQ-281
+    - REQ-282
+    - REQ-283
+    - REQ-284
+    - REQ-285
+    - REQ-286
+    - REQ-287
+    - REQ-288
+    - REQ-289
+    - REQ-290
+    - REQ-291
+    - REQ-292
+    - REQ-293
+    - REQ-294
+    - REQ-295
+    - REQ-296
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+      x-business-rules:
+      - 업무구분별 파일정책은 하나의 현재 정책으로 저장한다.
+      - 허용 확장자, 용량, 개수, 파일명 길이는 업로드 검증에 적용한다.
+      x-side-effects:
+      - file_policies row가 upsert되고 updated_at/updated_by가 기록된다.
+      x-state-transitions:
+      - file_policies: none or existing -> ACTIVE_POLICY
+      x-required-tests:
+      - 'happy: R09가 COMMON_ATTACHMENT 정책 저장 -> file_policies.business_type row를 재조회하면 allowed_extensions가 일치한다'
+      - 'auth: SessionCookie 없는 저장 요청 -> 401 ApiError가 반환된다'
+      - 'validation: maxFileSizeMb가 0 -> ApiError.fields.maxFileSizeMb가 기록된다'
+      - 'business: 허용 확장자 밖 파일 검증 -> 업무 첨부 row가 생성되지 않는다'
+      - 'side-effect: 저장 성공 -> file_policies.updated_by와 updated_at이 기록된다'
+  /api/admin/attachments:
+    get:
+      operationId: listAttachments
+      summary: 첨부파일 메타정보 조회
+      parameters:
+      - name: businessRecordId
+        in: query
+        required: true
+        schema: {type: string}
+      - name: page
+        in: query
+        schema: {type: integer, minimum: 0}
+      - name: size
+        in: query
+        schema: {type: integer, enum: [20, 50, 100], default: 20}
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-297
+    - REQ-298
+    - REQ-299
+    - REQ-300
+    - REQ-301
+    - REQ-302
+    - REQ-303
+    - REQ-304
+    - REQ-305
+    - REQ-306
+    - REQ-307
+    - REQ-308
+    - REQ-309
+    - REQ-310
+    - REQ-311
+    - REQ-312
+    - REQ-313
+    - REQ-314
+    - REQ-315
+    - REQ-316
+    - REQ-317
+    - REQ-318
+    - REQ-319
+    - REQ-320
+    - REQ-321
+    - REQ-322
+    - REQ-323
+    - REQ-324
+    - REQ-325
+    - REQ-326
+    - REQ-327
+    - REQ-328
+    - REQ-329
+    - REQ-330
+    - REQ-331
+    - REQ-332
+    - REQ-333
+    - REQ-334
+    - REQ-335
+    - REQ-336
+    - REQ-337
+    - REQ-338
+    - REQ-339
+    - REQ-340
+    - REQ-341
+    - REQ-342
+    - REQ-343
+    - REQ-344
+    - REQ-345
+    - REQ-346
+    - REQ-347
+    - REQ-348
+    - REQ-349
+    - REQ-350
+    - REQ-351
+    - REQ-352
+    - REQ-353
+    - REQ-354
+    - REQ-355
+    - REQ-356
+    - REQ-357
+    - REQ-358
+    - REQ-359
+    - REQ-360
+    - REQ-361
+    - REQ-362
+    - REQ-363
+      security:
+      - SessionCookie: []
+      x-roles: [R09, authorized-user]
+      x-pagination:
+        defaultSize: 20
+        allowedSizes: [20, 50, 100]
+        filters: [businessRecordId]
+  /api/admin/attachments/{fileId}/download:
+    get:
+      operationId: getAttachmentDownload
+      summary: 첨부파일 다운로드
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema: {type: integer, format: int64}
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-297
+    - REQ-298
+    - REQ-299
+    - REQ-300
+    - REQ-301
+    - REQ-302
+    - REQ-303
+    - REQ-304
+    - REQ-305
+    - REQ-306
+    - REQ-307
+    - REQ-308
+    - REQ-309
+    - REQ-310
+    - REQ-311
+    - REQ-312
+    - REQ-313
+    - REQ-314
+    - REQ-315
+    - REQ-316
+    - REQ-317
+    - REQ-318
+    - REQ-319
+    - REQ-320
+    - REQ-321
+    - REQ-322
+    - REQ-323
+    - REQ-324
+    - REQ-325
+    - REQ-326
+    - REQ-327
+    - REQ-328
+    - REQ-329
+    - REQ-330
+    - REQ-331
+    - REQ-332
+    - REQ-333
+    - REQ-334
+    - REQ-335
+    - REQ-336
+    - REQ-337
+    - REQ-338
+    - REQ-339
+    - REQ-340
+    - REQ-341
+    - REQ-342
+    - REQ-343
+    - REQ-344
+    - REQ-345
+    - REQ-346
+    - REQ-347
+    - REQ-348
+    - REQ-349
+    - REQ-350
+    - REQ-351
+    - REQ-352
+    - REQ-353
+    - REQ-354
+    - REQ-355
+    - REQ-356
+    - REQ-357
+    - REQ-358
+    - REQ-359
+    - REQ-360
+    - REQ-361
+    - REQ-362
+    - REQ-363
+      security:
+      - SessionCookie: []
+      x-roles: [R09, authorized-user]
+  /api/admin/attachments/{fileId}/delete-target:
+    get:
+      operationId: getAttachmentDeleteTarget
+      summary: 첨부파일 삭제대상 확인
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema: {type: integer, format: int64}
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-364
+    - REQ-365
+    - REQ-366
+    - REQ-367
+    - REQ-368
+    - REQ-369
+    - REQ-370
+    - REQ-371
+    - REQ-372
+    - REQ-373
+    - REQ-374
+    - REQ-375
+    - REQ-376
+    - REQ-377
+    - REQ-378
+    - REQ-379
+    - REQ-380
+    - REQ-381
+    - REQ-382
+    - REQ-383
+    - REQ-384
+    - REQ-385
+    - REQ-386
+    - REQ-387
+    - REQ-388
+    - REQ-389
+    - REQ-390
+    - REQ-391
+    - REQ-392
+    - REQ-393
+    - REQ-394
+    - REQ-395
+    - REQ-396
+    - REQ-397
+    - REQ-398
+    - REQ-399
+    - REQ-400
+    - REQ-401
+    - REQ-402
+    - REQ-403
+    - REQ-404
+    - REQ-405
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+  /api/admin/attachments/{fileId}/logical-delete:
+    post:
+      operationId: logicallyDeleteAttachment
+      summary: 첨부파일 논리삭제
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachmentDeleteRequest'
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-364
+    - REQ-365
+    - REQ-366
+    - REQ-367
+    - REQ-368
+    - REQ-369
+    - REQ-370
+    - REQ-371
+    - REQ-372
+    - REQ-373
+    - REQ-374
+    - REQ-375
+    - REQ-376
+    - REQ-377
+    - REQ-378
+    - REQ-379
+    - REQ-380
+    - REQ-381
+    - REQ-382
+    - REQ-383
+    - REQ-384
+    - REQ-385
+    - REQ-386
+    - REQ-387
+    - REQ-388
+    - REQ-389
+    - REQ-390
+    - REQ-391
+    - REQ-392
+    - REQ-393
+    - REQ-394
+    - REQ-395
+    - REQ-396
+    - REQ-397
+    - REQ-398
+    - REQ-399
+    - REQ-400
+    - REQ-401
+    - REQ-402
+    - REQ-403
+    - REQ-404
+    - REQ-405
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+      x-business-rules:
+      - 삭제사유가 없으면 논리삭제를 실행하지 않는다.
+      - 평가확정 자료의 첨부파일은 논리삭제도 차단한다.
+      - 물리삭제는 수행하지 않고 연결 업무자료 자체는 삭제하지 않는다.
+      x-side-effects:
+      - attachment_files.deleted_at/deleted_by/delete_reason이 기록된다.
+      - attachment_delete_history row에 삭제방식, 삭제자, 삭제일시, 삭제사유가 저장된다.
+      x-state-transitions:
+      - attachment_files: ACTIVE -> LOGICALLY_DELETED
+      x-required-tests:
+      - 'happy: R09가 deleteReason으로 삭제 요청 -> attachment_files.deleted_at이 설정되고 listAttachments에서 제외된다'
+      - 'auth: 일반 사용자가 논리삭제 요청 -> 403 ApiError가 반환된다'
+      - 'validation: deleteReason 누락 -> ApiError.fields.deleteReason이 기록된다'
+      - 'business: 평가확정 자료 파일 삭제 요청 -> attachment_files.deleted_at이 null로 유지된다'
+      - 'side-effect: 삭제 성공 -> attachment_delete_history.reason/deleted_by/deleted_at row가 생성된다'
+  /api/admin/attachment-integrity-checks:
+    post:
+      operationId: createAttachmentIntegrityCheck
+      summary: 파일 정합성 점검 실행
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-406
+    - REQ-407
+    - REQ-408
+    - REQ-409
+    - REQ-410
+    - REQ-411
+    - REQ-412
+    - REQ-413
+    - REQ-414
+    - REQ-415
+    - REQ-416
+    - REQ-417
+    - REQ-418
+    - REQ-419
+    - REQ-420
+    - REQ-421
+    - REQ-422
+    - REQ-423
+    - REQ-424
+    - REQ-425
+    - REQ-426
+    - REQ-427
+    - REQ-428
+    - REQ-429
+    - REQ-430
+    - REQ-431
+    - REQ-432
+    - REQ-433
+    - REQ-434
+    - REQ-435
+    - REQ-436
+    - REQ-437
+    - REQ-438
+    - REQ-439
+    - REQ-440
+    - REQ-441
+    - REQ-442
+    - REQ-443
+    - REQ-444
+    - REQ-445
+    - REQ-446
+    - REQ-447
+    - REQ-448
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+      x-business-rules:
+      - DB 파일메타정보와 실제 저장소 양쪽을 비교한다.
+      - 점검만으로 파일, 메타정보, 업무자료, 첨부파일 삭제정책을 자동 변경하지 않는다.
+      x-side-effects:
+      - attachment_integrity_checks row와 attachment_integrity_findings row가 생성된다.
+      x-state-transitions:
+      - attachment_integrity_checks: none -> RUNNING -> COMPLETED
+      x-required-tests:
+      - 'happy: R09가 점검 실행 -> attachment_integrity_checks.status가 COMPLETED이고 findings가 생성된다'
+      - 'auth: SessionCookie 없는 점검 실행 -> 401 ApiError가 반환된다'
+      - 'validation: 저장소 adapter 접근 실패 입력 fixture -> ApiError 또는 FAILED 상태가 기록된다'
+      - 'business: 이상 발견 점검 -> attachment_files와 업무자료 row는 삭제되지 않는다'
+      - 'side-effect: 점검 성공 -> attachment_integrity_findings.anomaly_type별 row가 생성된다'
+  /api/admin/attachment-integrity-results:
+    get:
+      operationId: listAttachmentIntegrityResults
+      summary: 파일 정합성 결과 조회
+      parameters:
+      - name: checkId
+        in: query
+        schema: {type: integer, format: int64}
+      - name: anomalyType
+        in: query
+        schema: {type: string, enum: [MISSING_BUSINESS_REF, MISSING_STORAGE_FILE, DUPLICATE_FILE]}
+      - name: page
+        in: query
+        schema: {type: integer, minimum: 0}
+      - name: size
+        in: query
+        schema: {type: integer, enum: [20, 50, 100], default: 20}
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-406
+    - REQ-407
+    - REQ-408
+    - REQ-409
+    - REQ-410
+    - REQ-411
+    - REQ-412
+    - REQ-413
+    - REQ-414
+    - REQ-415
+    - REQ-416
+    - REQ-417
+    - REQ-418
+    - REQ-419
+    - REQ-420
+    - REQ-421
+    - REQ-422
+    - REQ-423
+    - REQ-424
+    - REQ-425
+    - REQ-426
+    - REQ-427
+    - REQ-428
+    - REQ-429
+    - REQ-430
+    - REQ-431
+    - REQ-432
+    - REQ-433
+    - REQ-434
+    - REQ-435
+    - REQ-436
+    - REQ-437
+    - REQ-438
+    - REQ-439
+    - REQ-440
+    - REQ-441
+    - REQ-442
+    - REQ-443
+    - REQ-444
+    - REQ-445
+    - REQ-446
+    - REQ-447
+    - REQ-448
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+      x-pagination:
+        defaultSize: 20
+        allowedSizes: [20, 50, 100]
+        filters: [checkId, anomalyType]
+  /api/admin/attachment-integrity-results/excel:
+    get:
+      operationId: downloadAttachmentIntegrityExcel
+      summary: 파일 정합성 엑셀 다운로드
+      parameters:
+      - name: checkId
+        in: query
+        schema: {type: integer, format: int64}
+      - name: anomalyType
+        in: query
+        schema: {type: string, enum: [MISSING_BUSINESS_REF, MISSING_STORAGE_FILE, DUPLICATE_FILE]}
+      responses:
+      '200':
+        description: 성공
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      '400':
+        description: 요청 검증 오류
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '401':
+        description: 인증 필요
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      '403':
+        description: 권한 없음
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+    - REQ-406
+    - REQ-407
+    - REQ-408
+    - REQ-409
+    - REQ-410
+    - REQ-411
+    - REQ-412
+    - REQ-413
+    - REQ-414
+    - REQ-415
+    - REQ-416
+    - REQ-417
+    - REQ-418
+    - REQ-419
+    - REQ-420
+    - REQ-421
+    - REQ-422
+    - REQ-423
+    - REQ-424
+    - REQ-425
+    - REQ-426
+    - REQ-427
+    - REQ-428
+    - REQ-429
+    - REQ-430
+    - REQ-431
+    - REQ-432
+    - REQ-433
+    - REQ-434
+    - REQ-435
+    - REQ-436
+    - REQ-437
+    - REQ-438
+    - REQ-439
+    - REQ-440
+    - REQ-441
+    - REQ-442
+    - REQ-443
+    - REQ-444
+    - REQ-445
+    - REQ-446
+    - REQ-447
+    - REQ-448
+      security:
+      - SessionCookie: []
+      x-roles: [R09]
+
+x-uncovered-requirements:
+- canonical_id: REQ-175
+  status: covered
+  evidence: REQ-175은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-176
+  status: covered
+  evidence: REQ-176은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-177
+  status: covered
+  evidence: REQ-177은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-178
+  status: covered
+  evidence: REQ-178은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-179
+  status: covered
+  evidence: REQ-179은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-180
+  status: covered
+  evidence: REQ-180은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-181
+  status: covered
+  evidence: REQ-181은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-182
+  status: data-constraint
+  evidence: REQ-182은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-183
+  status: out-of-scope
+  evidence: REQ-183은 변경 범위 제외 항목(역할을 새로 정의하지 않는다.)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-184
+  status: out-of-scope
+  evidence: REQ-184은 변경 범위 제외 항목(기존 역할의 이름을 변경하지 않는다.)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-185
+  status: out-of-scope
+  evidence: REQ-185은 변경 범위 제외 항목(교수업적평가의 개별 업적입력)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-186
+  status: out-of-scope
+  evidence: REQ-186은 변경 범위 제외 항목(교수업적평가의 점수판정)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-187
+  status: out-of-scope
+  evidence: REQ-187은 변경 범위 제외 항목(교수업적평가의 신청 업무규칙)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-188
+  status: out-of-scope
+  evidence: REQ-188은 변경 범위 제외 항목(학술지원금의 개별 업적입력)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-189
+  status: out-of-scope
+  evidence: REQ-189은 변경 범위 제외 항목(학술지원금의 점수판정)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-190
+  status: out-of-scope
+  evidence: REQ-190은 변경 범위 제외 항목(학술지원금의 신청 업무규칙)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-191
+  status: covered
+  evidence: REQ-191은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-192
+  status: covered
+  evidence: REQ-192은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-193
+  status: covered
+  evidence: REQ-193은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-194
+  status: out-of-scope
+  evidence: REQ-194은 변경 범위 제외 항목(Excel에 없는 운영기관의 로그인 인증방식)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-195
+  status: out-of-scope
+  evidence: REQ-195은 변경 범위 제외 항목(실제 외부연계 규격)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-196
+  status: non-functional
+  evidence: REQ-196은 기술 스택 비기능/문서 제약으로 plan.md 검증 접근에 반영한다.
+- canonical_id: REQ-197
+  status: non-functional
+  evidence: REQ-197은 버전 BOM 비기능/문서 제약으로 plan.md 검증 접근에 반영한다.
+- canonical_id: REQ-198
+  status: covered
+  evidence: REQ-198은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-199
+  status: covered
+  evidence: REQ-199은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-200
+  status: covered
+  evidence: REQ-200은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-201
+  status: covered
+  evidence: REQ-201은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-202
+  status: covered
+  evidence: REQ-202은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-203
+  status: covered
+  evidence: REQ-203은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-204
+  status: covered
+  evidence: REQ-204은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-205
+  status: covered
+  evidence: REQ-205은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-206
+  status: covered
+  evidence: REQ-206은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-207
+  status: covered
+  evidence: REQ-207은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-208
+  status: covered
+  evidence: REQ-208은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-209
+  status: covered
+  evidence: REQ-209은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-210
+  status: covered
+  evidence: REQ-210은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-211
+  status: covered
+  evidence: REQ-211은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-212
+  status: covered
+  evidence: REQ-212은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-213
+  status: covered
+  evidence: REQ-213은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-214
+  status: covered
+  evidence: REQ-214은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-215
+  status: covered
+  evidence: REQ-215은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-216
+  status: covered
+  evidence: REQ-216은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-217
+  status: covered
+  evidence: REQ-217은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-218
+  status: covered
+  evidence: REQ-218은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-219
+  status: covered
+  evidence: REQ-219은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-220
+  status: covered
+  evidence: REQ-220은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-221
+  status: covered
+  evidence: REQ-221은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-222
+  status: data-constraint
+  evidence: REQ-222은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-223
+  status: data-constraint
+  evidence: REQ-223은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-224
+  status: covered
+  evidence: REQ-224은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-225
+  status: covered
+  evidence: REQ-225은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-226
+  status: covered
+  evidence: REQ-226은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-227
+  status: covered
+  evidence: REQ-227은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-228
+  status: covered
+  evidence: REQ-228은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-229
+  status: covered
+  evidence: REQ-229은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-230
+  status: covered
+  evidence: REQ-230은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-231
+  status: covered
+  evidence: REQ-231은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-232
+  status: covered
+  evidence: REQ-232은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-233
+  status: covered
+  evidence: REQ-233은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-234
+  status: covered
+  evidence: REQ-234은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-235
+  status: covered
+  evidence: REQ-235은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-236
+  status: covered
+  evidence: REQ-236은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-237
+  status: covered
+  evidence: REQ-237은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-238
+  status: covered
+  evidence: REQ-238은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-239
+  status: covered
+  evidence: REQ-239은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-240
+  status: covered
+  evidence: REQ-240은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-241
+  status: covered
+  evidence: REQ-241은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-242
+  status: covered
+  evidence: REQ-242은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-243
+  status: covered
+  evidence: REQ-243은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-244
+  status: covered
+  evidence: REQ-244은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-245
+  status: covered
+  evidence: REQ-245은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-246
+  status: covered
+  evidence: REQ-246은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-449
+  status: data-constraint
+  evidence: REQ-449은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-450
+  status: out-of-scope
+  evidence: REQ-450은 변경 범위 제외 항목(Excel에 없는 운영기관의 로그인 인증방식)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-451
+  status: out-of-scope
+  evidence: REQ-451은 변경 범위 제외 항목(실제 외부연계 규격)으로 spec.md 범위 제한에 보존한다.
+- canonical_id: REQ-452
+  status: non-functional
+  evidence: REQ-452은 물리 스택 비기능/문서 제약으로 plan.md 검증 접근에 반영한다.
+- canonical_id: REQ-453
+  status: non-functional
+  evidence: REQ-453은 디렉터리 구조 비기능/문서 제약으로 plan.md 검증 접근에 반영한다.
+- canonical_id: REQ-454
+  status: non-functional
+  evidence: REQ-454은 컨테이너 검증계약 비기능/문서 제약으로 plan.md 검증 접근에 반영한다.
+- canonical_id: REQ-455
+  status: data-constraint
+  evidence: REQ-455은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-456
+  status: data-constraint
+  evidence: REQ-456은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-457
+  status: covered
+  evidence: REQ-457은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-458
+  status: covered
+  evidence: REQ-458은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-459
+  status: covered
+  evidence: REQ-459은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-460
+  status: covered
+  evidence: REQ-460은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-461
+  status: covered
+  evidence: REQ-461은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-462
+  status: covered
+  evidence: REQ-462은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-463
+  status: covered
+  evidence: REQ-463은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-464
+  status: covered
+  evidence: REQ-464은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-465
+  status: covered
+  evidence: REQ-465은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-466
+  status: covered
+  evidence: REQ-466은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-467
+  status: covered
+  evidence: REQ-467은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-468
+  status: covered
+  evidence: REQ-468은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-469
+  status: covered
+  evidence: REQ-469은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-470
+  status: covered
+  evidence: REQ-470은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-471
+  status: covered
+  evidence: REQ-471은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-472
+  status: covered
+  evidence: REQ-472은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-473
+  status: covered
+  evidence: REQ-473은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-474
+  status: covered
+  evidence: REQ-474은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-475
+  status: data-constraint
+  evidence: REQ-475은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-476
+  status: covered
+  evidence: REQ-476은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-477
+  status: covered
+  evidence: REQ-477은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-478
+  status: covered
+  evidence: REQ-478은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-479
+  status: covered
+  evidence: REQ-479은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-480
+  status: covered
+  evidence: REQ-480은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-481
+  status: covered
+  evidence: REQ-481은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
+- canonical_id: REQ-482
+  status: data-constraint
+  evidence: REQ-482은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-483
+  status: data-constraint
+  evidence: REQ-483은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-484
+  status: data-constraint
+  evidence: REQ-484은 roles/attachment_files/file_policies 데이터 제약으로 반영한다.
+- canonical_id: REQ-485
+  status: covered
+  evidence: REQ-485은 공통 화면/운영 규칙으로 SCR-FILE-POLICY-MGMT 또는 SCR-ATTACHMENT-METADATA에
+    적용한다.
 components:
   securitySchemes:
     SessionCookie:
@@ -3771,6 +4898,24 @@ components:
         initializeRequestedYn:
           $ref: '#/components/schemas/SystemUseYnEnum'
         changeReason: { type: string }
+    FilePolicyRequest:
+      type: object
+      required: [businessType, allowedExtensions, maxFileSizeMb, maxFilesPerItem, maxFilenameLength, malwareScanEnabled]
+      properties:
+        businessType: {type: string}
+        allowedExtensions:
+          type: array
+          items: {type: string}
+        maxFileSizeMb: {type: integer, minimum: 1}
+        maxFilesPerItem: {type: integer, minimum: 1}
+        maxTotalSizeMb: {type: integer, minimum: 1}
+        maxFilenameLength: {type: integer, minimum: 1}
+        malwareScanEnabled: {type: boolean}
+    AttachmentDeleteRequest:
+      type: object
+      required: [deleteReason]
+      properties:
+        deleteReason: {type: string, minLength: 1, maxLength: 500}
     RoleCodeEnum:
       type: string
       enum:

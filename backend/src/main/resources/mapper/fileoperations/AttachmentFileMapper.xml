@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.fileoperations.AttachmentFileMapper">
+    <resultMap id="AttachmentFileRowMap" type="kr.ac.knue.commonfoundation.fileoperations.AttachmentFileRow">
+        <constructor>
+            <arg column="fileId" javaType="long"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="businessRecordId" javaType="string"/>
+            <arg column="businessRecordStatus" javaType="string"/>
+            <arg column="originalFilename" javaType="string"/>
+            <arg column="extension" javaType="string"/>
+            <arg column="fileSizeBytes" javaType="long"/>
+            <arg column="uploadedBy" javaType="long"/>
+            <arg column="uploadedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="malwareScanStatus" javaType="string"/>
+            <arg column="deletedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="AttachmentFileInternalRowMap" type="kr.ac.knue.commonfoundation.fileoperations.AttachmentFileInternalRow">
+        <constructor>
+            <arg column="fileId" javaType="long"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="businessRecordId" javaType="string"/>
+            <arg column="businessRecordStatus" javaType="string"/>
+            <arg column="originalFilename" javaType="string"/>
+            <arg column="storedFilename" javaType="string"/>
+            <arg column="storagePath" javaType="string"/>
+            <arg column="extension" javaType="string"/>
+            <arg column="fileSizeBytes" javaType="long"/>
+            <arg column="uploadedBy" javaType="long"/>
+            <arg column="uploadedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="malwareScanStatus" javaType="string"/>
+            <arg column="deletedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="deletedBy" javaType="long"/>
+            <arg column="deleteReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="AttachmentDeleteHistoryRowMap" type="kr.ac.knue.commonfoundation.fileoperations.AttachmentDeleteHistoryRow">
+        <constructor>
+            <arg column="deleteHistoryId" javaType="long"/>
+            <arg column="fileId" javaType="long"/>
+            <arg column="deleteMethod" javaType="string"/>
+            <arg column="reason" javaType="string"/>
+            <arg column="deletedBy" javaType="long"/>
+            <arg column="deletedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="publicAttachmentColumns">
+        file_id as "fileId",
+        business_type as "businessType",
+        business_record_id as "businessRecordId",
+        business_record_status as "businessRecordStatus",
+        original_filename as "originalFilename",
+        extension,
+        file_size_bytes as "fileSizeBytes",
+        uploaded_by as "uploadedBy",
+        uploaded_at as "uploadedAt",
+        malware_scan_status as "malwareScanStatus",
+        deleted_at as "deletedAt"
+    </sql>
+
+    <sql id="internalAttachmentColumns">
+        file_id as "fileId",
+        business_type as "businessType",
+        business_record_id as "businessRecordId",
+        business_record_status as "businessRecordStatus",
+        original_filename as "originalFilename",
+        stored_filename as "storedFilename",
+        storage_path as "storagePath",
+        extension,
+        file_size_bytes as "fileSizeBytes",
+        uploaded_by as "uploadedBy",
+        uploaded_at as "uploadedAt",
+        malware_scan_status as "malwareScanStatus",
+        deleted_at as "deletedAt",
+        deleted_by as "deletedBy",
+        delete_reason as "deleteReason"
+    </sql>
+
+    <select id="listVisibleByBusinessRecordId" resultMap="AttachmentFileRowMap">
+        select <include refid="publicAttachmentColumns"/>
+        from attachment_files
+        where business_record_id = #{businessRecordId}
+          and deleted_at is null
+          and business_record_status not in ('UNPUBLISHED','INACTIVE')
+        order by uploaded_at desc, file_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countVisibleByBusinessRecordId" resultType="long">
+        select count(*)
+        from attachment_files
+        where business_record_id = #{businessRecordId}
+          and deleted_at is null
+          and business_record_status not in ('UNPUBLISHED','INACTIVE')
+    </select>
+
+    <select id="findPublicById" resultMap="AttachmentFileRowMap">
+        select <include refid="publicAttachmentColumns"/>
+        from attachment_files
+        where file_id = #{fileId}
+          and deleted_at is null
+    </select>
+
+    <select id="findInternalById" resultMap="AttachmentFileInternalRowMap">
+        select <include refid="internalAttachmentColumns"/>
+        from attachment_files
+        where file_id = #{fileId}
+    </select>
+
+    <select id="listActiveInternalFiles" resultMap="AttachmentFileInternalRowMap">
+        select <include refid="internalAttachmentColumns"/>
+        from attachment_files
+        where deleted_at is null
+        order by file_id
+    </select>
+
+    <update id="markLogicalDeleted">
+        update attachment_files
+        set deleted_at = CURRENT_TIMESTAMP,
+            deleted_by = #{deletedBy},
+            delete_reason = #{deleteReason}
+        where file_id = #{fileId}
+          and deleted_at is null
+          and business_record_status != 'EVALUATION_CONFIRMED'
+    </update>
+
+    <insert id="insertDeleteHistory">
+        insert into attachment_delete_history (file_id, delete_method, reason, deleted_by)
+        values (#{fileId}, 'LOGICAL', #{reason}, #{deletedBy})
+    </insert>
+
+    <select id="listDeleteHistory" resultMap="AttachmentDeleteHistoryRowMap">
+        select delete_history_id as "deleteHistoryId",
+               file_id as "fileId",
+               delete_method as "deleteMethod",
+               reason,
+               deleted_by as "deletedBy",
+               deleted_at as "deletedAt"
+        from attachment_delete_history
+        where file_id = #{fileId}
+        order by deleted_at desc, delete_history_id desc
+    </select>
+</mapper>

@@ -21,6 +21,10 @@ import { FunctionPermissionManagementPage } from "../pages/admin/SCR-FUNCTION-PE
 import { PeriodPermissionManagementPage } from "../pages/admin/SCR-PERIOD-PERMISSION-MGMT";
 import { TemporaryPermissionManagementPage } from "../pages/admin/SCR-TEMPORARY-PERMISSION-MGMT";
 import { PermissionHistoryPage } from "../pages/admin/SCR-PERMISSION-HISTORY";
+import { FilePolicyManagementPage } from "../pages/admin/SCR-FILE-POLICY-MGMT";
+import { AttachmentDeletePage } from "../pages/admin/SCR-ATTACHMENT-DELETE";
+import { AttachmentIntegrityPage } from "../pages/admin/SCR-ATTACHMENT-INTEGRITY";
+import { AttachmentMetadataPage } from "../pages/admin/SCR-ATTACHMENT-METADATA";
 import { MenuInfoManagementPage } from "../pages/admin/SCR-MENU-INFO-MGMT";
 import { MenuStructureManagementPage } from "../pages/admin/SCR-MENU-STRUCTURE-MGMT";
 import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
@@ -160,6 +164,10 @@ function renderAdminPage(path: string | undefined) {
       return <TemporaryPermissionManagementPage />;
     case "/admin/permission-history":
       return <PermissionHistoryPage />;
+    case "/admin/attachments/delete":
+      return <AttachmentDeletePage />;
+    case "/admin/file-policies":
+      return <FilePolicyManagementPage />;
     case "/admin/menu-info":
       return <MenuInfoManagementPage />;
     case "/admin/menu-structure":
@@ -182,6 +190,10 @@ function renderAdminPage(path: string | undefined) {
       return <DutyAssignmentManagementPage />;
     case "/admin/data-scope-rules":
       return <DataScopeRuleManagementPage />;
+    case "/admin/attachments":
+      return <AttachmentMetadataPage />;
+    case "/admin/attachment-integrity":
+      return <AttachmentIntegrityPage />;
     default:
       return null;
   }

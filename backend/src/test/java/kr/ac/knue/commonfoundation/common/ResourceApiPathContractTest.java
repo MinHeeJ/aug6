@@ -38,12 +38,17 @@ class ResourceApiPathContractTest {
             "/api/admin/system-settings/common-values",
             "/api/admin/system-settings/base-years",
             "/api/admin/system-settings/base-year-current",
-            "/api/admin/system-settings/base-years/{baseYear}/standards-preparation");
+            "/api/admin/system-settings/base-years/{baseYear}/standards-preparation",
             "/api/admin/position-assignments",
             "/api/admin/position-assignments/{positionAssignmentId}",
             "/api/admin/duty-assignments",
             "/api/admin/duty-assignments/{dutyAssignmentId}",
-            "/api/admin/data-scope-rules");
+            "/api/admin/data-scope-rules",
+            "/api/admin/function-permissions",
+            "/api/admin/function-permissions-save",
+            "/api/admin/function-permissions/evaluate",
+            "/api/admin/period-permissions",
+            "/api/admin/period-permissions-save");
 
     @Test
     void openApiUsesResourcePathsInsteadOfEndpointPerRequirementPaths() throws Exception {

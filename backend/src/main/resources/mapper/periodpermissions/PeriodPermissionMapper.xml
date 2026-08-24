@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.periodpermissions.PeriodPermissionMapper">
+    <resultMap id="PeriodPermissionRowMap" type="kr.ac.knue.commonfoundation.periodpermissions.PeriodPermissionRow">
+        <constructor>
+            <arg column="periodPermissionLinkId" javaType="long"/>
+            <arg column="businessPeriodId" javaType="string"/>
+            <arg column="functionPermissionId" javaType="long"/>
+            <arg column="screenId" javaType="string"/>
+            <arg column="screenName" javaType="string"/>
+            <arg column="roleCode" javaType="string"/>
+            <arg column="roleName" javaType="string"/>
+            <arg column="functionType" javaType="string"/>
+            <arg column="permissionAllowed" javaType="string"/>
+            <arg column="effectiveStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="effectiveEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="periodState" javaType="string"/>
+            <arg column="effectiveAllowed" javaType="java.lang.Boolean"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="periodPermissionColumns">
+        ppl.period_permission_link_id as "periodPermissionLinkId",
+        ppl.business_period_id as "businessPeriodId",
+        ppl.function_permission_id as "functionPermissionId",
+        fp.screen_id as "screenId",
+        coalesce(m.menu_name, fp.screen_id) as "screenName",
+        fp.role_code as "roleCode",
+        r.role_name as "roleName",
+        fp.function_type as "functionType",
+        fp.permission_allowed as "permissionAllowed",
+        ppl.effective_start_at as "effectiveStartAt",
+        ppl.effective_end_at as "effectiveEndAt",
+        case
+            when CURRENT_TIMESTAMP &lt; ppl.effective_start_at then 'BEFORE'
+            when ppl.effective_end_at is not null and CURRENT_TIMESTAMP &gt; ppl.effective_end_at then 'AFTER'
+            else 'ACTIVE'
+        end as "periodState",
+        case
+            when fp.permission_allowed = 'ALLOW'
+             and CURRENT_TIMESTAMP &gt;= ppl.effective_start_at
+             and (ppl.effective_end_at is null or CURRENT_TIMESTAMP &lt;= ppl.effective_end_at)
+            then true else false
+        end as "effectiveAllowed",
+        ppl.change_reason as "changeReason",
+        ppl.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="periodPermissionFilters">
+        <where>
+            <if test="criteria.businessPeriodId != null and criteria.businessPeriodId != ''">
+                ppl.business_period_id = #{criteria.businessPeriodId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listPeriodPermissions" resultMap="PeriodPermissionRowMap">
+        select <include refid="periodPermissionColumns"/>
+        from period_permission_links ppl
+        join function_permissions fp on fp.function_permission_id = ppl.function_permission_id
+        left join menus m on m.screen_id = fp.screen_id and m.status = 'ACTIVE'
+        left join roles r on r.role_code = fp.role_code
+        <include refid="periodPermissionFilters"/>
+        order by ppl.business_period_id, fp.screen_id, fp.role_code, fp.function_type
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countPeriodPermissions" resultType="long">
+        select count(*)
+        from period_permission_links ppl
+        <include refid="periodPermissionFilters"/>
+    </select>
+
+    <select id="existsFunctionPermission" resultType="int">
+        select count(*) from function_permissions where function_permission_id = #{functionPermissionId}
+    </select>
+
+    <select id="findByKey" resultMap="PeriodPermissionRowMap">
+        select <include refid="periodPermissionColumns"/>
+        from period_permission_links ppl
+        join function_permissions fp on fp.function_permission_id = ppl.function_permission_id
+        left join menus m on m.screen_id = fp.screen_id and m.status = 'ACTIVE'
+        left join roles r on r.role_code = fp.role_code
+        where ppl.business_period_id = #{businessPeriodId}
+          and ppl.function_permission_id = #{functionPermissionId}
+    </select>
+
+    <insert id="upsertPeriodPermission">
+        insert into period_permission_links (business_period_id, function_permission_id, effective_start_at, effective_end_at, period_state, change_reason, created_by, updated_by)
+        values (#{businessPeriodId}, #{functionPermissionId}, #{effectiveStartAt}, #{effectiveEndAt}, #{periodState}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (business_period_id, function_permission_id)
+        do update set effective_start_at = EXCLUDED.effective_start_at,
+                      effective_end_at = EXCLUDED.effective_end_at,
+                      period_state = EXCLUDED.period_state,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+</mapper>

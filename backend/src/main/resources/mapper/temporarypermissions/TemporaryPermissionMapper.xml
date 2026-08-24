@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.temporarypermissions.TemporaryPermissionMapper">
+    <resultMap id="TemporaryPermissionRowMap" type="kr.ac.knue.commonfoundation.temporarypermissions.TemporaryPermissionRow">
+        <constructor>
+            <arg column="temporaryPermissionId" javaType="long"/>
+            <arg column="userId" javaType="long"/>
+            <arg column="userName" javaType="string"/>
+            <arg column="workDataRef" javaType="string"/>
+            <arg column="functionType" javaType="string"/>
+            <arg column="validStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="validEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="status" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="temporaryPermissionColumns">
+        tp.temporary_permission_id as "temporaryPermissionId",
+        tp.user_id as "userId",
+        case when kps.name is not null then kps.name else u.login_id end as "userName",
+        tp.work_data_ref as "workDataRef",
+        tp.function_type as "functionType",
+        tp.valid_start_at as "validStartAt",
+        tp.valid_end_at as "validEndAt",
+        tp.status as "status",
+        tp.change_reason as "changeReason",
+        tp.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="temporaryPermissionFilters">
+        <where>
+            <if test="criteria.userId != null">
+                tp.user_id = #{criteria.userId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listTemporaryPermissions" resultMap="TemporaryPermissionRowMap">
+        select <include refid="temporaryPermissionColumns"/>
+        from temporary_permissions tp
+        join users u on u.user_id = tp.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="temporaryPermissionFilters"/>
+        order by tp.updated_at desc, tp.temporary_permission_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countTemporaryPermissions" resultType="long">
+        select count(*)
+        from temporary_permissions tp
+        <include refid="temporaryPermissionFilters"/>
+    </select>
+
+    <select id="existsUser" resultType="int">
+        select count(*) from users where user_id = #{userId} and status = 'ACTIVE' and system_use_yn = 'Y'
+    </select>
+
+    <select id="findById" resultMap="TemporaryPermissionRowMap">
+        select <include refid="temporaryPermissionColumns"/>
+        from temporary_permissions tp
+        join users u on u.user_id = tp.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        where tp.temporary_permission_id = #{temporaryPermissionId}
+    </select>
+
+    <insert id="insertTemporaryPermission">
+        insert into temporary_permissions (user_id, work_data_ref, function_type, valid_start_at, valid_end_at, status, change_reason, created_by, updated_by)
+        values (#{userId}, #{workDataRef}, #{functionType}, #{validStartAt}, #{validEndAt}, 'ACTIVE', #{changeReason}, #{createdBy}, #{createdBy})
+    </insert>
+
+    <select id="lastInsertedId" resultType="long">
+        select currval(pg_get_serial_sequence('temporary_permissions', 'temporary_permission_id'))
+    </select>
+
+    <update id="expireElapsedTemporaryPermissions">
+        update temporary_permissions
+        set status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP
+        where status = 'ACTIVE'
+          and valid_end_at &lt; CURRENT_TIMESTAMP
+    </update>
+
+    <select id="countActiveTemporaryPermission" resultType="int">
+        select count(*)
+        from temporary_permissions
+        where user_id = #{userId}
+          and work_data_ref = #{workDataRef}
+          and function_type = #{functionType}
+          and status = 'ACTIVE'
+          and valid_start_at &lt;= CURRENT_TIMESTAMP
+          and valid_end_at &gt;= CURRENT_TIMESTAMP
+    </select>
+</mapper>

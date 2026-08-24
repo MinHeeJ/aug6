@@ -41,6 +41,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 권한 관리",
   },
   {
+    path: "/admin/function-permissions",
+    label: "기능 권한 관리",
+    screenId: "SCR-FUNCTION-PERMISSION-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 기능 권한 관리",
+  },
+  {
+    path: "/admin/period-permissions",
+    label: "기간별 권한 관리",
+    screenId: "SCR-PERIOD-PERMISSION-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 기간별 권한 관리",
+  },
+  {
+    path: "/admin/temporary-permissions",
+    label: "임시 권한 관리",
+    screenId: "SCR-TEMPORARY-PERMISSION-MGMT",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 임시 권한 관리",
+  },
+  {
+    path: "/admin/permission-history",
+    label: "권한 변경 이력 조회",
+    screenId: "SCR-PERMISSION-HISTORY",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 권한 변경 이력 조회",
+  },
+  {
     path: "/admin/menu-structure",
     label: "메뉴 구조 관리",
     screenId: "SCR-MENU-STRUCTURE-MGMT",
@@ -87,6 +111,8 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     label: "기준연도 관리",
     screenId: "SCR-BASE-YEAR-MGMT",
     menuPath: "시스템 관리 > 공통 운영 관리 > 기준연도 관리",
+  },
+  {
     path: "/admin/position-assignments",
     label: "보직 관리",
     screenId: "SCR-POSITION-ASSIGNMENT-MGMT",

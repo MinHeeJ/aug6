@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.functionpermissions.FunctionPermissionMapper">
+    <resultMap id="FunctionPermissionRowMap" type="kr.ac.knue.commonfoundation.functionpermissions.FunctionPermissionRow">
+        <constructor>
+            <arg column="functionPermissionId" javaType="long"/>
+            <arg column="screenId" javaType="string"/>
+            <arg column="screenName" javaType="string"/>
+            <arg column="roleCode" javaType="string"/>
+            <arg column="roleName" javaType="string"/>
+            <arg column="functionType" javaType="string"/>
+            <arg column="permissionAllowed" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="functionPermissionColumns">
+        fp.function_permission_id as "functionPermissionId",
+        fp.screen_id as "screenId",
+        coalesce(m.menu_name, fp.screen_id) as "screenName",
+        fp.role_code as "roleCode",
+        r.role_name as "roleName",
+        fp.function_type as "functionType",
+        fp.permission_allowed as "permissionAllowed",
+        fp.change_reason as "changeReason",
+        fp.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="functionPermissionFilters">
+        <where>
+            <if test="criteria.screenId != null and criteria.screenId != ''">
+                fp.screen_id = #{criteria.screenId}
+            </if>
+            <if test="criteria.roleCode != null and criteria.roleCode != ''">
+                and fp.role_code = #{criteria.roleCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listFunctionPermissions" resultMap="FunctionPermissionRowMap">
+        select <include refid="functionPermissionColumns"/>
+        from function_permissions fp
+        left join menus m on m.screen_id = fp.screen_id and m.status = 'ACTIVE'
+        left join roles r on r.role_code = fp.role_code
+        <include refid="functionPermissionFilters"/>
+        order by fp.screen_id, fp.role_code, fp.function_type
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countFunctionPermissions" resultType="long">
+        select count(*)
+        from function_permissions fp
+        <include refid="functionPermissionFilters"/>
+    </select>
+
+    <select id="existsScreen" resultType="int">
+        select count(*) from menus where screen_id = #{screenId} and status = 'ACTIVE' and system_use_yn = 'Y'
+    </select>
+
+    <select id="existsRole" resultType="int">
+        select count(*) from roles where role_code = #{roleCode} and status = 'ACTIVE' and system_use_yn = 'Y'
+    </select>
+
+    <select id="findByKey" resultMap="FunctionPermissionRowMap">
+        select <include refid="functionPermissionColumns"/>
+        from function_permissions fp
+        left join menus m on m.screen_id = fp.screen_id and m.status = 'ACTIVE'
+        left join roles r on r.role_code = fp.role_code
+        where fp.screen_id = #{screenId}
+          and fp.role_code = #{roleCode}
+          and fp.function_type = #{functionType}
+    </select>
+
+    <insert id="upsertFunctionPermission">
+        insert into function_permissions (screen_id, role_code, function_type, permission_allowed, change_reason, created_by, updated_by)
+        values (#{screenId}, #{roleCode}, #{functionType}, #{permissionAllowed}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (screen_id, role_code, function_type)
+        do update set permission_allowed = EXCLUDED.permission_allowed,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+</mapper>

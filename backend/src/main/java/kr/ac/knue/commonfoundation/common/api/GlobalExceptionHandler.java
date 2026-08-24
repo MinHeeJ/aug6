@@ -14,10 +14,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException exception) {
         List<ValidationError> fields = exception.getBindingResult().getFieldErrors().stream()
-                .sorted(Comparator.comparing(FieldError::getField))
+                .sorted(Comparator.comparingInt(GlobalExceptionHandler::validationFieldPriority)
+                        .thenComparing(FieldError::getField))
                 .map(error -> new ValidationError(error.getField(), error.getDefaultMessage()))
                 .toList();
         return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.validation(fields)));
+    }
+
+    private static int validationFieldPriority(FieldError error) {
+        return "userId".equals(error.getField()) ? 0 : 1;
     }
 
     @ExceptionHandler(BusinessValidationException.class)

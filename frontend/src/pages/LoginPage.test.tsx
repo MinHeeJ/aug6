@@ -34,7 +34,18 @@ describe("LoginPage", () => {
     expect(html).not.toContain('name="password" type="password" value="admin"');
   });
 
-  it("allows seed R09 administrator to access all nine first-scope admin routes after login", () => {
+  it("allows seed R09 administrator to access the nine first-scope admin routes after login", () => {
+    const firstScopeAdminPaths = [
+      "/admin/users",
+      "/admin/organizations",
+      "/admin/roles",
+      "/admin/user-roles",
+      "/admin/menu-permissions",
+      "/admin/function-permissions",
+      "/admin/period-permissions",
+      "/admin/temporary-permissions",
+      "/admin/permission-history",
+    ];
     const adminUser: CurrentUser = {
       userId: 1,
       loginId: "admin",
@@ -53,9 +64,14 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(9);
+    expect(firstScopeAdminPaths).toHaveLength(9);
+    expect(ADMIN_ROUTES.map((route) => route.path)).toEqual(
+      expect.arrayContaining(firstScopeAdminPaths),
+    );
     expect(
-      ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
+      firstScopeAdminPaths.every((path) =>
+        canAccessAdminRoute(adminUser, path),
+      ),
     ).toBe(true);
   });
 });

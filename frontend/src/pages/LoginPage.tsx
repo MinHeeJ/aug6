@@ -130,6 +130,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-DATA-SCOPE-RULE-MGMT",
     menuPath: "시스템 관리 > 역할·권한 관리 > 데이터 범위 권한",
   },
+  {
+    path: "/admin/attachments/delete",
+    label: "첨부파일 삭제",
+    screenId: "SCR-ATTACHMENT-DELETE",
+    menuPath: "파일·데이터 관리 > 첨부파일 관리 > 첨부파일 삭제",
+  },
+  {
+    path: "/admin/attachments",
+    label: "첨부파일 조회",
+    screenId: "SCR-ATTACHMENT-METADATA",
+    menuPath: "파일·데이터 관리 > 첨부파일 관리 > 첨부파일 조회",
+  },
+  {
+    path: "/admin/file-policies",
+    label: "파일정책 관리",
+    screenId: "SCR-FILE-POLICY-MGMT",
+    menuPath: "시스템 관리 > 시스템 환경설정 > 파일정책 관리",
+  },
+  {
+    path: "/admin/attachment-integrity",
+    label: "파일 저장소 정합성 점검",
+    screenId: "SCR-ATTACHMENT-INTEGRITY",
+    menuPath: "파일·데이터 관리 > 첨부파일 관리 > 파일 저장소 정합성 점검",
+  },
 ];
 
 export type LoginValidationErrors = Partial<

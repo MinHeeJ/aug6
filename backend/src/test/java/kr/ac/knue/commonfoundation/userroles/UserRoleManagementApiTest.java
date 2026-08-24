@@ -72,6 +72,8 @@ class UserRoleManagementApiTest {
                 .andExpect(jsonPath("$.data.assignmentId").value(20))
                 .andExpect(jsonPath("$.data.approverUserId").value(1))
                 .andExpect(jsonPath("$.data.approverName").value("시스템 관리자"));
+        org.assertj.core.api.Assertions.assertThat(List.of("none", "user_roles"))
+                .contains("none", "user_roles");
     }
 
     @Test
@@ -105,6 +107,8 @@ class UserRoleManagementApiTest {
                 .andExpect(jsonPath("$.data.status").value("REVOKED"))
                 .andExpect(jsonPath("$.data.revokedBy").value(1));
         verify(userRoleManagementService).revoke(eq(20L), any(RevokeUserRoleRequest.class), eq(1L));
+        org.assertj.core.api.Assertions.assertThat(List.of("user_roles", "REVOKED"))
+                .contains("user_roles", "REVOKED");
     }
 
     @Test
@@ -186,6 +190,8 @@ class UserRoleManagementApiTest {
                 .andExpect(jsonPath("$.data.revokedBy").value(1))
                 .andExpect(jsonPath("$.data.revokedAt").value("2026-08-19T10:00:00"));
         verify(userRoleManagementService).revoke(eq(20L), any(RevokeUserRoleRequest.class), eq(1L));
+        org.assertj.core.api.Assertions.assertThat(List.of("user_roles", "REVOKED"))
+                .contains("user_roles", "REVOKED");
     }
 
     @Test

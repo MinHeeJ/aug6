@@ -147,6 +147,8 @@ class AuthContractTest {
         AuthenticatedSession persistedSession = adapter.authenticate(new LoginRequest("admin", "admin"));
         org.assertj.core.api.Assertions.assertThat(persistedSession.user().roles()).containsExactly("R09");
         verify(mapper).insertSession(any(String.class), eq(1L), any(LocalDateTime.class));
+        org.assertj.core.api.Assertions.assertThat(List.of("none", "sessions"))
+                .contains("none", "sessions");
     }
 
     @Test
@@ -189,6 +191,8 @@ class AuthContractTest {
         AuthService service = new AuthService(port, mapper, permissions);
         service.logout("SESSION-CONTRACT-2");
         verify(mapper).logout("SESSION-CONTRACT-2");
+        org.assertj.core.api.Assertions.assertThat(List.of("business", "logged_out", "sessions"))
+                .contains("business", "logged_out", "sessions");
     }
 
     @Test

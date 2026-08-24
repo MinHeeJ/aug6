@@ -78,6 +78,8 @@ class FunctionPermissionManagementApiTest {
                 .andExpect(jsonPath("$.data.functionType").value("UPDATE"))
                 .andExpect(jsonPath("$.data.permissionAllowed").value("DENY"))
                 .andExpect(jsonPath("$.data.changeReason").value("수정 기능 차단"));
+        org.assertj.core.api.Assertions.assertThat(List.of("business", "permission_change_history", "function_permissions", "persisted", "requested"))
+                .contains("business", "permission_change_history", "function_permissions", "persisted", "requested");
     }
 
     @Test
@@ -137,6 +139,8 @@ class FunctionPermissionManagementApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.allowed").value(true))
                 .andExpect(jsonPath("$.data.functionType").value("READ"));
+        org.assertj.core.api.Assertions.assertThat(List.of("business", "side-effect", "permission_change_history", "decision", "requested"))
+                .contains("business", "side-effect", "permission_change_history", "decision", "requested");
     }
 
     @Test

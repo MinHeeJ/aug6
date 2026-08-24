@@ -94,6 +94,43 @@ npx playwright test tests/e2e/common-foundation.spec.ts
 - 사용자 단위 메뉴 DENY 저장 후 메뉴 숨김과 직접 API 403 확인
 - 테스트 종료 시 DENY 권한을 ALLOW로 원복
 
+## BASIC-16 공통 파일 운영 검증
+
+신규 네 화면은 기존 관리자 shell, 색상 token, 글꼴, 버튼, 아이콘 패턴을 재사용합니다.
+
+| route | screen_id | Phase 7 확인 항목 |
+|---|---|---|
+| `/admin/file-policies` | `SCR-FILE-POLICY-MGMT` | 저장 확인 메시지, 필수 입력 표시, 파일정책 저장 결과 안내, R09 저장 권한 |
+| `/admin/attachments` | `SCR-ATTACHMENT-METADATA` | 조회/empty/error/permission/success 상태, 다운로드 권한 재검증, 내부 저장정보 비노출 |
+| `/admin/attachments/delete` | `SCR-ATTACHMENT-DELETE` | 삭제 확인 modal, 삭제사유 필수, 평가확정 삭제 차단, 논리삭제 결과 안내 |
+| `/admin/attachment-integrity` | `SCR-ATTACHMENT-INTEGRITY` | 10초 이상 진행 안내, 완료 알림, 결과 목록, 엑셀 다운로드 결과 안내 |
+
+정적 UI/KWCAG 2.1 smoke와 주요 페이지 3MB 예산 확인:
+
+```bash
+bash tests/smoke/basic16-phase7-ui-smoke.sh
+```
+
+`frontend/dist`가 있으면 JS/CSS/HTML 합산 크기가 3MB 이하인지 확인합니다. 빌드 산출물이 없으면 route, data-screen-id, data-testid, semantic/ARIA 표시만 확인하고 빌드 후 재실행하도록 안내합니다.
+
+## PostgreSQL 백업·복구 리허설
+
+Compose에는 `backup` profile의 `postgres-backup` 서비스가 포함되어 있습니다. 이 서비스는 PostgreSQL 16 이미지로 1일 1회 `pg_dump -Fc` 백업을 만들고 `BACKUP_RETENTION_DAYS`(기본 14일, 허용 7~30일)보다 오래된 백업을 삭제합니다. 인프라 서비스에는 host port를 노출하지 않습니다.
+
+백업 sidecar 실행:
+
+```bash
+BACKUP_RETENTION_DAYS=14 docker compose -f infra/docker-compose.yml --profile backup up -d postgres-backup
+```
+
+복구 리허설 quickstart smoke:
+
+```bash
+BACKUP_RETENTION_DAYS=14 bash tests/smoke/postgres-backup-restore-rehearsal.sh
+```
+
+스크립트는 실행 중인 `database` 서비스에 대해 백업 파일 생성, 보관기간 범위(7~30일), 임시 리허설 DB 복원, 기본 catalog 조회, 리허설 DB 정리를 검증합니다. DB 비밀번호 원문은 로그로 출력하지 않습니다.
+
 ## Backend / Frontend 품질 게이트
 
 로컬 의존성 설치가 완료된 환경에서는 다음을 실행합니다.

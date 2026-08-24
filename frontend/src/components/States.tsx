@@ -50,10 +50,12 @@ function StateCard({
     warning: "bg-lightwarning text-warning",
     success: "bg-lightsuccess text-success",
   }[tone];
+  const role = tone === "error" ? "alert" : "status";
   return (
     <section
       className={`rounded border border-ld p-6 shadow-sm ${toneClasses}`}
-      role="status"
+      role={role}
+      aria-live={tone === "error" ? "assertive" : "polite"}
     >
       <h2 className="text-lg font-semibold text-dark">{title}</h2>
       <p className="mt-2 text-sm text-bodytext">{message}</p>

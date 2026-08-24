@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.fileoperations.FilePolicyMapper">
+    <resultMap id="FilePolicyRowMap" type="kr.ac.knue.commonfoundation.fileoperations.FilePolicyRow">
+        <constructor>
+            <arg column="filePolicyId" javaType="long"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="allowedExtensions" javaType="string"/>
+            <arg column="maxFileSizeMb" javaType="int"/>
+            <arg column="maxFilesPerItem" javaType="int"/>
+            <arg column="maxTotalSizeMb" javaType="int"/>
+            <arg column="maxFilenameLength" javaType="int"/>
+            <arg column="malwareScanEnabled" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="filePolicyColumns">
+        file_policy_id as "filePolicyId",
+        business_type as "businessType",
+        allowed_extensions as "allowedExtensions",
+        max_file_size_mb as "maxFileSizeMb",
+        max_files_per_item as "maxFilesPerItem",
+        max_total_size_mb as "maxTotalSizeMb",
+        max_filename_length as "maxFilenameLength",
+        malware_scan_enabled as "malwareScanEnabled",
+        updated_at as "updatedAt"
+    </sql>
+
+    <select id="listFilePolicies" resultMap="FilePolicyRowMap">
+        select <include refid="filePolicyColumns"/>
+        from file_policies
+        <where>
+            <if test="businessType != null and businessType != ''">
+                business_type = #{businessType}
+            </if>
+        </where>
+        order by business_type
+    </select>
+
+    <select id="searchFilePolicies" parameterType="kr.ac.knue.commonfoundation.fileoperations.FilePolicySearchCriteria" resultMap="FilePolicyRowMap">
+        select <include refid="filePolicyColumns"/>
+        from file_policies
+        <where>
+            <if test="filter != null and filter != ''">
+                (business_type ilike concat('%', #{filter}, '%')
+                 or allowed_extensions ilike concat('%', #{filter}, '%'))
+            </if>
+        </where>
+        order by business_type
+        limit #{size} offset #{offset}
+    </select>
+
+    <select id="countFilePolicies" parameterType="kr.ac.knue.commonfoundation.fileoperations.FilePolicySearchCriteria" resultType="long">
+        select count(*)
+        from file_policies
+        <where>
+            <if test="filter != null and filter != ''">
+                (business_type ilike concat('%', #{filter}, '%')
+                 or allowed_extensions ilike concat('%', #{filter}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findByBusinessType" resultMap="FilePolicyRowMap">
+        select <include refid="filePolicyColumns"/>
+        from file_policies
+        where business_type = #{businessType}
+    </select>
+
+    <insert id="upsertFilePolicy">
+        insert into file_policies (business_type, allowed_extensions, max_file_size_mb, max_files_per_item, max_total_size_mb, max_filename_length, malware_scan_enabled, created_by, updated_by)
+        values (#{businessType}, #{allowedExtensions}, #{maxFileSizeMb}, #{maxFilesPerItem}, #{maxTotalSizeMb}, #{maxFilenameLength}, #{malwareScanEnabled}, #{updatedBy}, #{updatedBy})
+        on conflict (business_type)
+        do update set allowed_extensions = EXCLUDED.allowed_extensions,
+                      max_file_size_mb = EXCLUDED.max_file_size_mb,
+                      max_files_per_item = EXCLUDED.max_files_per_item,
+                      max_total_size_mb = EXCLUDED.max_total_size_mb,
+                      max_filename_length = EXCLUDED.max_filename_length,
+                      malware_scan_enabled = EXCLUDED.malware_scan_enabled,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+</mapper>

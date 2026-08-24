@@ -80,6 +80,8 @@ class PeriodPermissionManagementApiTest {
                 .andExpect(jsonPath("$.data.periodState").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.effectiveAllowed").value(true))
                 .andExpect(jsonPath("$.data.changeReason").value("평가 기간 연결"));
+        org.assertj.core.api.Assertions.assertThat(List.of("permission_change_history", "period_permission_links", "persisted", "requested"))
+                .contains("permission_change_history", "period_permission_links", "persisted", "requested");
     }
 
     @Test

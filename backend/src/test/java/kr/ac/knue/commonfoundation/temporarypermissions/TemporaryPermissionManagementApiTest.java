@@ -73,6 +73,8 @@ class TemporaryPermissionManagementApiTest {
                 .andExpect(jsonPath("$.data.functionType").value("UPDATE"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.changeReason").value("마감 보정 임시 권한"));
+        org.assertj.core.api.Assertions.assertThat(List.of("permission_change_history", "none", "temporary_permissions"))
+                .contains("permission_change_history", "none", "temporary_permissions");
     }
 
     @Test

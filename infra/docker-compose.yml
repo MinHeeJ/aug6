@@ -8,6 +8,7 @@ services:
       TZ: Asia/Seoul
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - postgres-backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -57,5 +58,28 @@ services:
       retries: 5
       start_period: 10s
 
+  postgres-backup:
+    image: postgres:16.4-alpine
+    profiles: ["backup"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-common_foundation}
+      POSTGRES_USER: ${POSTGRES_USER:-common_foundation}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-common_foundation}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      TZ: Asia/Seoul
+    volumes:
+      - postgres-backups:/backups
+    depends_on:
+      database:
+        condition: service_healthy
+    command: >
+      sh -c 'while true; do
+        stamp=$$(date +%Y%m%d%H%M%S);
+        pg_dump -h database -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -Fc -f "/backups/common_foundation_$${stamp}.dump";
+        find /backups -name "common_foundation_*.dump" -type f -mtime +$${BACKUP_RETENTION_DAYS} -delete;
+        sleep 86400;
+      done'
+
 volumes:
   postgres-data:
+  postgres-backups:

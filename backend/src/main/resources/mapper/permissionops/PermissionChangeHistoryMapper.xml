@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.permissionops.PermissionChangeHistoryMapper">
+    <resultMap id="PermissionChangeHistoryRowMap" type="kr.ac.knue.commonfoundation.permissionops.PermissionChangeHistoryRow">
+        <constructor>
+            <arg column="permissionHistoryId" javaType="long"/>
+            <arg column="targetType" javaType="string"/>
+            <arg column="targetId" javaType="string"/>
+            <arg column="beforeValue" javaType="string"/>
+            <arg column="afterValue" javaType="string"/>
+            <arg column="changedBy" javaType="long"/>
+            <arg column="reason" javaType="string"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="permissionChangeHistoryColumns">
+        permission_history_id as "permissionHistoryId",
+        target_type as "targetType",
+        target_id as "targetId",
+        before_value::text as "beforeValue",
+        after_value::text as "afterValue",
+        changed_by as "changedBy",
+        reason as "reason",
+        changed_at as "changedAt"
+    </sql>
+
+    <sql id="permissionChangeHistoryFilters">
+        <where>
+            <if test="criteria.targetType != null and criteria.targetType != ''">
+                target_type = #{criteria.targetType}
+            </if>
+            <if test="criteria.targetId != null and criteria.targetId != ''">
+                and target_id = #{criteria.targetId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listPermissionChangeHistory" resultMap="PermissionChangeHistoryRowMap">
+        select <include refid="permissionChangeHistoryColumns"/>
+        from permission_change_history
+        <include refid="permissionChangeHistoryFilters"/>
+        order by changed_at desc, permission_history_id desc
+        limit #{criteria.size} offset #{criteria.offset}
+    </select>
+
+    <select id="countPermissionChangeHistory" resultType="long">
+        select count(*)
+        from permission_change_history
+        <include refid="permissionChangeHistoryFilters"/>
+    </select>
+
+    <insert id="insertPermissionChangeHistory">
+        insert into permission_change_history (target_type, target_id, before_value, after_value, changed_by, reason)
+        values (#{targetType}, #{targetId}, CAST(#{beforeValue} AS jsonb), CAST(#{afterValue} AS jsonb), #{changedBy}, #{reason})
+    </insert>
+</mapper>

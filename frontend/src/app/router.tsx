@@ -17,6 +17,10 @@ import {
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
+import { FunctionPermissionManagementPage } from "../pages/admin/SCR-FUNCTION-PERMISSION-MGMT";
+import { PeriodPermissionManagementPage } from "../pages/admin/SCR-PERIOD-PERMISSION-MGMT";
+import { TemporaryPermissionManagementPage } from "../pages/admin/SCR-TEMPORARY-PERMISSION-MGMT";
+import { PermissionHistoryPage } from "../pages/admin/SCR-PERMISSION-HISTORY";
 import { MenuInfoManagementPage } from "../pages/admin/SCR-MENU-INFO-MGMT";
 import { MenuStructureManagementPage } from "../pages/admin/SCR-MENU-STRUCTURE-MGMT";
 import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
@@ -90,120 +94,9 @@ export function AppRouter() {
     );
   }
 
-  if (adminRoute?.path === "/admin/users") {
-    return (
-      <AdminShell>
-        <UserManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/organizations") {
-    return (
-      <AdminShell>
-        <OrganizationManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/roles") {
-    return (
-      <AdminShell>
-        <RoleManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/menu-permissions") {
-    return (
-      <AdminShell>
-        <MenuPermissionManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/menu-info") {
-    return (
-      <AdminShell>
-        <MenuInfoManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/menu-structure") {
-    return (
-      <AdminShell>
-        <MenuStructureManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/user-roles") {
-    return (
-      <AdminShell>
-        <UserRoleManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/code-groups") {
-    return (
-      <AdminShell>
-        <CodeGroupManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/detail-codes") {
-    return (
-      <AdminShell>
-        <DetailCodeManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/menu-usage") {
-    return (
-      <AdminShell>
-        <MenuUsageManagementPage />
-  if (adminRoute?.path === "/admin/position-assignments") {
-    return (
-      <AdminShell>
-        <PositionAssignmentManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/detail-code-usage") {
-    return (
-      <AdminShell>
-        <DetailCodeUsageManagementPage />
-  if (adminRoute?.path === "/admin/duty-assignments") {
-    return (
-      <AdminShell>
-        <DutyAssignmentManagementPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/common-settings") {
-    return (
-      <AdminShell>
-        <CommonSettingsPage />
-      </AdminShell>
-    );
-  }
-
-  if (adminRoute?.path === "/admin/base-years") {
-    return (
-      <AdminShell>
-        <BaseYearManagementPage />
-  if (adminRoute?.path === "/admin/data-scope-rules") {
-    return (
-      <AdminShell>
-        <DataScopeRuleManagementPage />
-      </AdminShell>
-    );
+  const routedPage = renderAdminPage(adminRoute?.path);
+  if (routedPage) {
+    return <AdminShell>{routedPage}</AdminShell>;
   }
 
   if (adminRoute) {
@@ -247,6 +140,53 @@ export function AppRouter() {
   );
 }
 
+function renderAdminPage(path: string | undefined) {
+  switch (path) {
+    case "/admin/users":
+      return <UserManagementPage />;
+    case "/admin/organizations":
+      return <OrganizationManagementPage />;
+    case "/admin/roles":
+      return <RoleManagementPage />;
+    case "/admin/user-roles":
+      return <UserRoleManagementPage />;
+    case "/admin/menu-permissions":
+      return <MenuPermissionManagementPage />;
+    case "/admin/function-permissions":
+      return <FunctionPermissionManagementPage />;
+    case "/admin/period-permissions":
+      return <PeriodPermissionManagementPage />;
+    case "/admin/temporary-permissions":
+      return <TemporaryPermissionManagementPage />;
+    case "/admin/permission-history":
+      return <PermissionHistoryPage />;
+    case "/admin/menu-info":
+      return <MenuInfoManagementPage />;
+    case "/admin/menu-structure":
+      return <MenuStructureManagementPage />;
+    case "/admin/code-groups":
+      return <CodeGroupManagementPage />;
+    case "/admin/detail-codes":
+      return <DetailCodeManagementPage />;
+    case "/admin/menu-usage":
+      return <MenuUsageManagementPage />;
+    case "/admin/detail-code-usage":
+      return <DetailCodeUsageManagementPage />;
+    case "/admin/common-settings":
+      return <CommonSettingsPage />;
+    case "/admin/base-years":
+      return <BaseYearManagementPage />;
+    case "/admin/position-assignments":
+      return <PositionAssignmentManagementPage />;
+    case "/admin/duty-assignments":
+      return <DutyAssignmentManagementPage />;
+    case "/admin/data-scope-rules":
+      return <DataScopeRuleManagementPage />;
+    default:
+      return null;
+  }
+}
+
 function usePathname() {
   const [path, setPath] = useState(() =>
     typeof window === "undefined" ? "/login" : window.location.pathname,
@@ -281,9 +221,8 @@ function AdminRoutePage({
             US-01 관리자 접근 검증
           </h2>
           <p className="mt-3 text-sm text-muted">
-            이 route는 시드 R09 관리자가 로그인 후 1차 목표 9개 화면에 접근할 수
-            있음을 독립 검증하기 위한 보호 화면입니다. 개별 업무 조회·저장
-            기능은 후속 phase의 vertical slice에서 구현합니다.
+            이 route는 시드 R09 관리자가 로그인 후 1차 목표 관리 화면에 접근할
+            수 있음을 독립 검증하기 위한 보호 화면입니다.
           </p>
           <div
             className="mt-5 rounded-md bg-lightsuccess p-4 text-sm text-success"

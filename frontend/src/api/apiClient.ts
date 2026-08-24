@@ -240,6 +240,243 @@ export const menuPermissionApi = {
   },
 };
 
+export type FunctionType = "READ" | "CREATE" | "UPDATE" | "DELETE" | "EXECUTE";
+export type PermissionAllowed = "ALLOW" | "DENY";
+
+export type FunctionPermission = {
+  functionPermissionId: number;
+  screenId: string;
+  screenName?: string;
+  roleCode: string;
+  roleName?: string;
+  functionType: FunctionType;
+  permissionAllowed: PermissionAllowed;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type FunctionPermissionSearchResponse = {
+  permissions: FunctionPermission[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type FunctionPermissionPayload = {
+  screenId: string;
+  roleCode: string;
+  functionType: FunctionType;
+  permissionAllowed: PermissionAllowed;
+  changeReason: string;
+};
+
+export type FunctionPermissionEvaluatePayload = {
+  screenId: string;
+  roleCode: string;
+  functionType: FunctionType;
+  targetDataStatus: string;
+  dataScopeRef?: string;
+};
+
+export type FunctionPermissionEvaluateResult =
+  FunctionPermissionEvaluatePayload & {
+    allowed: boolean;
+    reason: string;
+  };
+
+export const functionPermissionApi = {
+  listFunctionPermissions(
+    params: {
+      screenId?: string;
+      roleCode?: string;
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 10));
+    if (params.screenId) query.set("screenId", params.screenId);
+    if (params.roleCode) query.set("roleCode", params.roleCode);
+    return apiRequest<FunctionPermissionSearchResponse>(
+      `/api/admin/function-permissions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveFunctionPermissions(payload: FunctionPermissionPayload) {
+    return apiRequest<FunctionPermission>(
+      "/api/admin/function-permissions-save",
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  evaluateFunctionPermission(payload: FunctionPermissionEvaluatePayload) {
+    return apiRequest<FunctionPermissionEvaluateResult>(
+      "/api/admin/function-permissions/evaluate",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type PeriodState = "BEFORE" | "ACTIVE" | "AFTER";
+
+export type PeriodPermission = {
+  periodPermissionLinkId: number;
+  businessPeriodId: string;
+  functionPermissionId: number;
+  screenId: string;
+  screenName?: string;
+  roleCode: string;
+  roleName?: string;
+  functionType: FunctionType;
+  permissionAllowed: PermissionAllowed;
+  effectiveStartAt: string;
+  effectiveEndAt?: string | null;
+  periodState: PeriodState;
+  effectiveAllowed: boolean;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type PeriodPermissionSearchResponse = {
+  links: PeriodPermission[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type PeriodPermissionPayload = {
+  businessPeriodId: string;
+  functionPermissionId: number;
+  effectiveStartAt: string;
+  effectiveEndAt?: string | null;
+  changeReason: string;
+};
+
+export const periodPermissionApi = {
+  listPeriodPermissions(
+    params: { businessPeriodId?: string; page?: number; size?: number } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 10));
+    if (params.businessPeriodId)
+      query.set("businessPeriodId", params.businessPeriodId);
+    return apiRequest<PeriodPermissionSearchResponse>(
+      `/api/admin/period-permissions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  savePeriodPermissions(payload: PeriodPermissionPayload) {
+    return apiRequest<PeriodPermission>("/api/admin/period-permissions-save", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type TemporaryPermissionStatus = "ACTIVE" | "REVOKED" | "EXPIRED";
+
+export type TemporaryPermission = {
+  temporaryPermissionId: number;
+  userId: number;
+  userName?: string;
+  workDataRef: string;
+  functionType: FunctionType;
+  validStartAt: string;
+  validEndAt: string;
+  status: TemporaryPermissionStatus;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type TemporaryPermissionSearchResponse = {
+  permissions: TemporaryPermission[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type TemporaryPermissionPayload = {
+  userId: number;
+  workDataRef: string;
+  functionType: FunctionType;
+  validStartAt: string;
+  validEndAt: string;
+  changeReason: string;
+};
+
+export const temporaryPermissionApi = {
+  listTemporaryPermissions(
+    params: { userId?: number; page?: number; size?: number } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 10));
+    if (params.userId !== undefined) query.set("userId", String(params.userId));
+    return apiRequest<TemporaryPermissionSearchResponse>(
+      `/api/admin/temporary-permissions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  createTemporaryPermission(payload: TemporaryPermissionPayload) {
+    return apiRequest<TemporaryPermission>(
+      "/api/admin/temporary-permissions-create",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type PermissionHistoryTargetType =
+  | "ROLE"
+  | "MENU"
+  | "FUNCTION"
+  | "DATA_SCOPE"
+  | "TEMPORARY";
+
+export type PermissionChangeHistory = {
+  permissionHistoryId: number;
+  targetType: PermissionHistoryTargetType;
+  targetId: string;
+  beforeValue?: string | null;
+  afterValue?: string | null;
+  changedBy: number;
+  reason: string;
+  changedAt: string;
+};
+
+export type PermissionChangeHistorySearchResponse = {
+  history: PermissionChangeHistory[];
+  page: number;
+  size: number;
+  total: number;
+};
+
+export const permissionHistoryApi = {
+  listPermissionChangeHistory(
+    params: {
+      targetType?: PermissionHistoryTargetType | "";
+      targetId?: string;
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 10));
+    if (params.targetType) query.set("targetType", params.targetType);
+    if (params.targetId?.trim()) query.set("targetId", params.targetId.trim());
+    return apiRequest<PermissionChangeHistorySearchResponse>(
+      `/api/admin/permission-history?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
 export type MenuTreeNode = {
   menuId: number;
   parentMenuId?: number | null;

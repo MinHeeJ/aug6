@@ -34,6 +34,24 @@ class Basic22SeedContractTest {
     }
 
     @Test
+    void basic22UsesFreshMenuIdsInsteadOfOverwritingExistingMenus() {
+        assertThat(migrationSql)
+                .as("BASIC-22 must allocate menu IDs after the existing V1-V9 menu range")
+                .contains("(162,100,'MIDDLE','시스템 환경설정'")
+                .contains("(163,162,'SCREEN','메시지 관리'")
+                .contains("(164,155,'SCREEN','공지사항 관리'")
+                .contains("(165,155,'SCREEN','도움말 관리'")
+                .contains("(166,155,'SCREEN','매뉴얼 관리'");
+
+        assertThat(migrationSql)
+                .as("BASIC-22 must not reuse existing menu IDs 150-153")
+                .doesNotContain("(150,100,'MIDDLE','시스템 환경설정'")
+                .doesNotContain("(151,150,'SCREEN','메시지 관리'")
+                .doesNotContain("(152,155,'SCREEN','공지사항 관리'")
+                .doesNotContain("(153,155,'SCREEN','도움말 관리'");
+    }
+
+    @Test
     void r09RoleReceivesAllowMenuPermissionsForEveryBasic22ManagementScreen() {
         assertR09PermissionSeed("SCR-MESSAGE-MGMT", "/admin/messages");
         assertR09PermissionSeed("SCR-NOTICE-MGMT", "/admin/notices");

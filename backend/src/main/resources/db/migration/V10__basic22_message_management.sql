@@ -63,12 +63,12 @@ ON CONFLICT (screen_id) DO UPDATE SET business_description = EXCLUDED.business_d
     change_reason = EXCLUDED.change_reason;
 
 INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order, screen_id, url, icon, business_category, description, system_use_yn, status, updated_by, change_reason) VALUES
-(150,100,'MIDDLE','시스템 환경설정',5,NULL,NULL,'settings-2','SYSTEM','공통 운영 환경 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
+(162,100,'MIDDLE','시스템 환경설정',5,NULL,NULL,'settings-2','SYSTEM','공통 운영 환경 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
 (155,100,'MIDDLE','공지·도움말 관리',6,NULL,NULL,'help-circle','SYSTEM','공지사항·도움말·매뉴얼 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
-(151,150,'SCREEN','메시지 관리',1,'SCR-MESSAGE-MGMT','/admin/messages','message-square','SYSTEM','메시지코드와 사용자 문구 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
-(152,155,'SCREEN','공지사항 관리',1,'SCR-NOTICE-MGMT','/admin/notices','megaphone','SYSTEM','공지사항 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
-(153,155,'SCREEN','도움말 관리',2,'SCR-HELP-MGMT','/admin/help-contents','help-circle','SYSTEM','화면 도움말 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
-(154,155,'SCREEN','매뉴얼 관리',3,'SCR-MANUAL-MGMT','/admin/manuals','book-open','SYSTEM','매뉴얼 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed')
+(163,162,'SCREEN','메시지 관리',1,'SCR-MESSAGE-MGMT','/admin/messages','message-square','SYSTEM','메시지코드와 사용자 문구 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
+(164,155,'SCREEN','공지사항 관리',1,'SCR-NOTICE-MGMT','/admin/notices','megaphone','SYSTEM','공지사항 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
+(165,155,'SCREEN','도움말 관리',2,'SCR-HELP-MGMT','/admin/help-contents','help-circle','SYSTEM','화면 도움말 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed'),
+(166,155,'SCREEN','매뉴얼 관리',3,'SCR-MANUAL-MGMT','/admin/manuals','book-open','SYSTEM','매뉴얼 관리','Y','ACTIVE',1,'BASIC-22 메뉴 seed')
 ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
     parent_menu_id = EXCLUDED.parent_menu_id,
     url = EXCLUDED.url,

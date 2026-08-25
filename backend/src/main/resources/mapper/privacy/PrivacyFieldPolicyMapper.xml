@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.privacy.PrivacyFieldPolicyMapper">
+    <resultMap id="PrivacyFieldPolicyRowMap" type="kr.ac.knue.commonfoundation.privacy.PrivacyFieldPolicyRow">
+        <constructor>
+            <arg column="policyId" javaType="long"/>
+            <arg column="fieldKey" javaType="string"/>
+            <arg column="privacyGrade" javaType="string"/>
+            <arg column="encryptionRequiredYn" javaType="string"/>
+            <arg column="maskingRule" javaType="string"/>
+            <arg column="logExclusionYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="privacyFieldPolicyColumns">
+        p.policy_id as "policyId",
+        p.field_key as "fieldKey",
+        p.privacy_grade as "privacyGrade",
+        p.encryption_required_yn as "encryptionRequiredYn",
+        p.masking_rule as "maskingRule",
+        p.log_exclusion_yn as "logExclusionYn",
+        p.change_reason as "changeReason",
+        p.updated_at as "updatedAt",
+        p.updated_by as "updatedBy"
+    </sql>
+
+    <sql id="privacyFieldPolicyFilters">
+        <where>
+            <if test="criteria.fieldKey != null and criteria.fieldKey != ''">
+                p.field_key ilike concat('%', #{criteria.fieldKey}, '%')
+            </if>
+            <if test="criteria.privacyGrade != null and criteria.privacyGrade != ''">
+                and p.privacy_grade = #{criteria.privacyGrade}
+            </if>
+            <if test="criteria.encryptionRequiredYn != null and criteria.encryptionRequiredYn != ''">
+                and p.encryption_required_yn = #{criteria.encryptionRequiredYn}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listPrivacyFieldPolicies" resultMap="PrivacyFieldPolicyRowMap">
+        select <include refid="privacyFieldPolicyColumns"/>
+        from privacy_field_policies p
+        <include refid="privacyFieldPolicyFilters"/>
+        order by p.field_key
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countPrivacyFieldPolicies" resultType="long">
+        select count(*)
+        from privacy_field_policies p
+        <include refid="privacyFieldPolicyFilters"/>
+    </select>
+
+    <select id="findByFieldKey" resultMap="PrivacyFieldPolicyRowMap">
+        select <include refid="privacyFieldPolicyColumns"/>
+        from privacy_field_policies p
+        where p.field_key = #{fieldKey}
+    </select>
+
+    <insert id="upsertPrivacyFieldPolicy">
+        insert into privacy_field_policies (field_key, privacy_grade, encryption_required_yn, masking_rule, log_exclusion_yn, change_reason, created_by, updated_by)
+        values (#{fieldKey}, #{privacyGrade}, #{encryptionRequiredYn}, #{maskingRule}, #{logExclusionYn}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (field_key)
+        do update set privacy_grade = EXCLUDED.privacy_grade,
+                      encryption_required_yn = EXCLUDED.encryption_required_yn,
+                      masking_rule = EXCLUDED.masking_rule,
+                      log_exclusion_yn = EXCLUDED.log_exclusion_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+</mapper>

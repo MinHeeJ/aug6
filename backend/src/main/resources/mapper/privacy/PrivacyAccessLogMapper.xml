@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.privacy.PrivacyAccessLogMapper">
+    <resultMap id="PrivacyAccessLogRowMap" type="kr.ac.knue.commonfoundation.privacy.PrivacyAccessLogRow">
+        <constructor>
+            <arg column="historyId" javaType="long"/>
+            <arg column="processType" javaType="string"/>
+            <arg column="actorUserId" javaType="long"/>
+            <arg column="actorLoginId" javaType="string"/>
+            <arg column="targetRef" javaType="string"/>
+            <arg column="processPurpose" javaType="string"/>
+            <arg column="processedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="requestIp" javaType="string"/>
+            <arg column="processResult" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="privacyAccessLogColumns">
+        l.history_id as "historyId",
+        l.process_type as "processType",
+        l.actor_user_id as "actorUserId",
+        u.login_id as "actorLoginId",
+        l.target_ref as "targetRef",
+        l.process_purpose as "processPurpose",
+        l.processed_at as "processedAt",
+        l.request_ip as "requestIp",
+        l.process_result as "processResult"
+    </sql>
+
+    <sql id="privacyAccessLogFilters">
+        <where>
+            <if test="criteria.actorUserId != null">
+                l.actor_user_id = #{criteria.actorUserId}
+            </if>
+            <if test="criteria.targetRef != null and criteria.targetRef != ''">
+                and l.target_ref ilike concat('%', #{criteria.targetRef}, '%')
+            </if>
+            <if test="criteria.processType != null and criteria.processType != ''">
+                and l.process_type = #{criteria.processType}
+            </if>
+            <if test="criteria.processedFrom != null and criteria.processedFrom != ''">
+                and l.processed_at &gt;= CAST(#{criteria.processedFrom} AS date)
+            </if>
+            <if test="criteria.processedTo != null and criteria.processedTo != ''">
+                and l.processed_at &lt; CAST(#{criteria.processedTo} AS date) + INTERVAL '1 day'
+            </if>
+        </where>
+    </sql>
+
+    <select id="searchPrivacyAccessLogs" resultMap="PrivacyAccessLogRowMap">
+        select <include refid="privacyAccessLogColumns"/>
+        from privacy_access_logs l
+        left join users u on u.user_id = l.actor_user_id
+        <include refid="privacyAccessLogFilters"/>
+        order by l.processed_at desc, l.history_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countPrivacyAccessLogs" resultType="long">
+        select count(*)
+        from privacy_access_logs l
+        <include refid="privacyAccessLogFilters"/>
+    </select>
+
+    <select id="findPrivacyAccessLog" resultMap="PrivacyAccessLogRowMap">
+        select <include refid="privacyAccessLogColumns"/>
+        from privacy_access_logs l
+        left join users u on u.user_id = l.actor_user_id
+        where l.history_id = #{historyId}
+    </select>
+
+    <select id="countPrivacyAccessLogsByHistoryId" resultType="long">
+        select count(*) from privacy_access_logs where history_id = #{historyId}
+    </select>
+
+    <insert id="insertPrivacyAccessLog">
+        insert into privacy_access_logs (process_type, actor_user_id, target_ref, process_purpose, request_ip, process_result)
+        values (#{processType}, #{actorUserId}, #{targetRef}, #{processPurpose}, #{requestIp}, #{processResult})
+    </insert>
+
+    <select id="findLatestForActorTargetPurpose" resultMap="PrivacyAccessLogRowMap">
+        select <include refid="privacyAccessLogColumns"/>
+        from privacy_access_logs l
+        left join users u on u.user_id = l.actor_user_id
+        where l.actor_user_id = #{actorUserId}
+          and l.target_ref = #{targetRef}
+          and l.process_purpose = #{processPurpose}
+        order by l.history_id desc
+        limit 1
+    </select>
+</mapper>

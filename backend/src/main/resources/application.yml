@@ -32,6 +32,11 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
+privacy:
+  crypto:
+    aes256-gcm-key: "${PRIVACY_CRYPTO_KEY:}"
+    hmac-key: "${PRIVACY_HMAC_KEY:${PRIVACY_CRYPTO_KEY:}}"
+
 springdoc:
   api-docs:
     path: /v3/api-docs

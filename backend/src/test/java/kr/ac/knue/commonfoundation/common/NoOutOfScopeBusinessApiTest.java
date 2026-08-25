@@ -25,11 +25,8 @@ class NoOutOfScopeBusinessApiTest {
             "file",
             "files",
             "excel",
-            "privacy",
             "personal-information",
-            "access-log",
             "audit-log",
-            "audit",
             "batch");
 
     @Test

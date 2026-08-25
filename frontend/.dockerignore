@@ -7,5 +7,6 @@ coverage
 .vite
 .cache
 *.log
+*.local
 .env
 .env.*

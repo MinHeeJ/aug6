@@ -26,6 +26,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-common_foundation}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-common_foundation}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-common_foundation}
+      PRIVACY_CRYPTO_KEY: ${PRIVACY_CRYPTO_KEY:-}
+      PRIVACY_HMAC_KEY: ${PRIVACY_HMAC_KEY:-}
       TZ: Asia/Seoul
     depends_on:
       database:

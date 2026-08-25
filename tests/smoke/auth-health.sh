@@ -3,6 +3,11 @@ set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 COOKIE_JAR="${COOKIE_JAR:-/tmp/common-foundation-auth-cookies.txt}"
+TEMP_FILES=()
+cleanup() {
+  rm -f "$COOKIE_JAR" "${TEMP_FILES[@]}"
+}
+trap cleanup EXIT
 rm -f "$COOKIE_JAR"
 
 require_status() {
@@ -17,17 +22,20 @@ require_status() {
 }
 
 health_body="$(mktemp)"
+TEMP_FILES+=("$health_body")
 health_status="$(curl -sS -o "$health_body" -w '%{http_code}' "$BASE_URL/api/health")"
 require_status "200" "$health_status" "health"
 grep -q '"success":true' "$health_body"
 grep -q '"status":"UP"' "$health_body"
 
 unauth_body="$(mktemp)"
+TEMP_FILES+=("$unauth_body")
 unauth_status="$(curl -sS -o "$unauth_body" -w '%{http_code}' "$BASE_URL/api/auth/me")"
 require_status "401" "$unauth_status" "me without session"
 grep -q '"code":"UNAUTHENTICATED"' "$unauth_body"
 
 login_body="$(mktemp)"
+TEMP_FILES+=("$login_body")
 login_status="$(curl -sS -c "$COOKIE_JAR" -o "$login_body" -w '%{http_code}' \
   -H 'Content-Type: application/json' \
   -d '{"loginId":"admin","password":"admin"}' \
@@ -37,17 +45,20 @@ grep -q '"loginId":"admin"' "$login_body"
 grep -q '"R09"' "$login_body"
 
 auth_body="$(mktemp)"
+TEMP_FILES+=("$auth_body")
 auth_status="$(curl -sS -b "$COOKIE_JAR" -o "$auth_body" -w '%{http_code}' "$BASE_URL/api/auth/me")"
 require_status "200" "$auth_status" "me with session"
 grep -q '"loginId":"admin"' "$auth_body"
 grep -q '"R09"' "$auth_body"
 
 logout_body="$(mktemp)"
+TEMP_FILES+=("$logout_body")
 logout_status="$(curl -sS -b "$COOKIE_JAR" -c "$COOKIE_JAR" -o "$logout_body" -w '%{http_code}' -X POST "$BASE_URL/api/auth/logout")"
 require_status "200" "$logout_status" "logout"
 grep -q '"success":true' "$logout_body"
 
 post_logout_body="$(mktemp)"
+TEMP_FILES+=("$post_logout_body")
 post_logout_status="$(curl -sS -b "$COOKIE_JAR" -o "$post_logout_body" -w '%{http_code}' "$BASE_URL/api/auth/me")"
 require_status "401" "$post_logout_status" "me after logout"
 grep -q '"code":"UNAUTHENTICATED"' "$post_logout_body"

@@ -18,6 +18,9 @@ import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
 import { FunctionPermissionManagementPage } from "../pages/admin/SCR-FUNCTION-PERMISSION-MGMT";
+import { PrivacyPolicyManagementPage } from "../pages/admin/SCR-PRIVACY-POLICY-MGMT";
+import { PrivacyAccessLogPage } from "../pages/admin/SCR-PRIVACY-ACCESS-LOG";
+import { PrivacyPermissionManagementPage } from "../pages/admin/SCR-PRIVACY-ACCESS-PERMISSION-MGMT";
 import { PeriodPermissionManagementPage } from "../pages/admin/SCR-PERIOD-PERMISSION-MGMT";
 import { TemporaryPermissionManagementPage } from "../pages/admin/SCR-TEMPORARY-PERMISSION-MGMT";
 import { PermissionHistoryPage } from "../pages/admin/SCR-PERMISSION-HISTORY";
@@ -154,6 +157,12 @@ function renderAdminPage(path: string | undefined) {
       return <MenuPermissionManagementPage />;
     case "/admin/function-permissions":
       return <FunctionPermissionManagementPage />;
+    case "/admin/privacy/policies":
+      return <PrivacyPolicyManagementPage />;
+    case "/admin/privacy/permissions":
+      return <PrivacyPermissionManagementPage />;
+    case "/admin/privacy/access-logs":
+      return <PrivacyAccessLogPage />;
     case "/admin/period-permissions":
       return <PeriodPermissionManagementPage />;
     case "/admin/temporary-permissions":

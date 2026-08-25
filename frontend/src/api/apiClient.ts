@@ -322,6 +322,215 @@ export const functionPermissionApi = {
   },
 };
 
+export type PrivacyGrade = "PUBLIC" | "PERSONAL" | "SENSITIVE" | "ACCOUNT";
+export type YesNo = "Y" | "N";
+
+export type PrivacyFieldPolicy = {
+  policyId: number;
+  fieldKey: string;
+  privacyGrade: PrivacyGrade;
+  encryptionRequiredYn: YesNo;
+  maskingRule?: string | null;
+  logExclusionYn: YesNo;
+  changeReason?: string;
+  updatedAt?: string;
+  updatedBy?: number;
+};
+
+export type PrivacyFieldPolicySearchResponse = {
+  policies: PrivacyFieldPolicy[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type PrivacyFieldPolicyPayload = {
+  fieldKey: string;
+  privacyGrade: PrivacyGrade;
+  encryptionRequiredYn: YesNo;
+  maskingRule?: string | null;
+  logExclusionYn: YesNo;
+  changeReason: string;
+};
+
+export const privacyPolicyApi = {
+  listPrivacyFieldPolicies(
+    params: {
+      fieldKey?: string;
+      privacyGrade?: string;
+      encryptionRequiredYn?: string;
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.fieldKey) query.set("fieldKey", params.fieldKey);
+    if (params.privacyGrade) query.set("privacyGrade", params.privacyGrade);
+    if (params.encryptionRequiredYn)
+      query.set("encryptionRequiredYn", params.encryptionRequiredYn);
+    return apiRequest<PrivacyFieldPolicySearchResponse>(
+      `/api/admin/privacy/policies?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  savePrivacyFieldPolicies(payload: PrivacyFieldPolicyPayload[]) {
+    return apiRequest<PrivacyFieldPolicy[]>(
+      "/api/admin/privacy/policies-save",
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type PrivacyProcessType = "VIEW" | "PRINT" | "DOWNLOAD";
+export type PrivacyProcessResult = "SUCCESS" | "DENIED" | "FAILED";
+
+export type PrivacyAccessLog = {
+  historyId: number;
+  processType: PrivacyProcessType;
+  actorUserId: number;
+  actorLoginId?: string | null;
+  targetRef: string;
+  processPurpose: string;
+  processedAt: string;
+  requestIp: string;
+  processResult: PrivacyProcessResult;
+};
+
+export type PrivacyAccessLogSearchResponse = {
+  logs: PrivacyAccessLog[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export const privacyAccessLogApi = {
+  searchPrivacyAccessLogs(
+    params: {
+      actorUserId?: number;
+      targetRef?: string;
+      processType?: PrivacyProcessType | "";
+      processedFrom?: string;
+      processedTo?: string;
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.actorUserId !== undefined)
+      query.set("actorUserId", String(params.actorUserId));
+    if (params.targetRef?.trim())
+      query.set("targetRef", params.targetRef.trim());
+    if (params.processType) query.set("processType", params.processType);
+    if (params.processedFrom) query.set("processedFrom", params.processedFrom);
+    if (params.processedTo) query.set("processedTo", params.processedTo);
+    return apiRequest<PrivacyAccessLogSearchResponse>(
+      `/api/admin/privacy/access-logs?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getPrivacyAccessLog(historyId: number) {
+    return apiRequest<PrivacyAccessLog>(
+      `/api/admin/privacy/access-logs/${encodeURIComponent(String(historyId))}` as `/api/${string}`,
+    );
+  },
+};
+
+export type PrivacyAccessType =
+  | "RAW_VIEW"
+  | "MASKED_VIEW"
+  | "EXPORT"
+  | "ACCOUNT_VIEW";
+
+export type PrivacyAccessPermission = {
+  permissionId: number;
+  roleCode: string;
+  roleName?: string;
+  fieldKey: string;
+  rawViewAllowedYn: YesNo;
+  maskedViewAllowedYn: YesNo;
+  exportAllowedYn: YesNo;
+  accountViewAllowedYn: YesNo;
+  changeReason?: string;
+  updatedAt?: string;
+  updatedBy?: number;
+};
+
+export type PrivacyAccessPermissionSearchResponse = {
+  permissions: PrivacyAccessPermission[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type PrivacyAccessPermissionPayload = {
+  roleCode: string;
+  fieldKey: string;
+  rawViewAllowedYn: YesNo;
+  maskedViewAllowedYn: YesNo;
+  exportAllowedYn: YesNo;
+  accountViewAllowedYn: YesNo;
+  changeReason: string;
+};
+
+export type PrivacyAccessEvaluatePayload = {
+  roleCode: string;
+  fieldKey: string;
+  accessType: PrivacyAccessType;
+  processPurpose: string;
+};
+
+export type PrivacyAccessEvaluateResult = {
+  roleCode: string;
+  fieldKey: string;
+  accessType: PrivacyAccessType;
+  allowed: boolean;
+  reason: string;
+  rawValueExposed: boolean;
+};
+
+export const privacyPermissionApi = {
+  listPrivacyAccessPermissions(
+    params: {
+      roleCode?: string;
+      fieldKey?: string;
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.roleCode) query.set("roleCode", params.roleCode);
+    if (params.fieldKey) query.set("fieldKey", params.fieldKey);
+    return apiRequest<PrivacyAccessPermissionSearchResponse>(
+      `/api/admin/privacy/permissions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  savePrivacyAccessPermissions(payload: PrivacyAccessPermissionPayload[]) {
+    return apiRequest<PrivacyAccessPermission[]>(
+      "/api/admin/privacy/permissions-save",
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  evaluatePrivacyAccessPermission(payload: PrivacyAccessEvaluatePayload) {
+    return apiRequest<PrivacyAccessEvaluateResult>(
+      "/api/admin/privacy/permissions/evaluate",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type PeriodState = "BEFORE" | "ACTIVE" | "AFTER";
 
 export type PeriodPermission = {

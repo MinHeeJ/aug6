@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.privacy.PrivacyAccessPermissionMapper">
+    <resultMap id="PrivacyAccessPermissionRowMap" type="kr.ac.knue.commonfoundation.privacy.PrivacyAccessPermissionRow">
+        <constructor>
+            <arg column="permissionId" javaType="long"/>
+            <arg column="roleCode" javaType="string"/>
+            <arg column="roleName" javaType="string"/>
+            <arg column="fieldKey" javaType="string"/>
+            <arg column="rawViewAllowedYn" javaType="string"/>
+            <arg column="maskedViewAllowedYn" javaType="string"/>
+            <arg column="exportAllowedYn" javaType="string"/>
+            <arg column="accountViewAllowedYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="privacyAccessPermissionColumns">
+        p.permission_id as "permissionId",
+        p.role_code as "roleCode",
+        r.role_name as "roleName",
+        p.field_key as "fieldKey",
+        p.raw_view_allowed_yn as "rawViewAllowedYn",
+        p.masked_view_allowed_yn as "maskedViewAllowedYn",
+        p.export_allowed_yn as "exportAllowedYn",
+        p.account_view_allowed_yn as "accountViewAllowedYn",
+        p.change_reason as "changeReason",
+        p.updated_at as "updatedAt",
+        p.updated_by as "updatedBy"
+    </sql>
+
+    <sql id="privacyAccessPermissionFrom">
+        from privacy_access_permissions p
+        left join roles r on r.role_code = p.role_code
+    </sql>
+
+    <sql id="privacyAccessPermissionFilters">
+        <where>
+            <if test="criteria.roleCode != null and criteria.roleCode != ''">
+                p.role_code = #{criteria.roleCode}
+            </if>
+            <if test="criteria.fieldKey != null and criteria.fieldKey != ''">
+                and p.field_key ilike concat('%', #{criteria.fieldKey}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listPrivacyAccessPermissions" resultMap="PrivacyAccessPermissionRowMap">
+        select <include refid="privacyAccessPermissionColumns"/>
+        <include refid="privacyAccessPermissionFrom"/>
+        <include refid="privacyAccessPermissionFilters"/>
+        order by p.role_code, p.field_key
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countPrivacyAccessPermissions" resultType="long">
+        select count(*)
+        from privacy_access_permissions p
+        <include refid="privacyAccessPermissionFilters"/>
+    </select>
+
+    <select id="findByRoleCodeAndFieldKey" resultMap="PrivacyAccessPermissionRowMap">
+        select <include refid="privacyAccessPermissionColumns"/>
+        <include refid="privacyAccessPermissionFrom"/>
+        where p.role_code = #{roleCode}
+          and p.field_key = #{fieldKey}
+    </select>
+
+    <insert id="upsertPrivacyAccessPermission">
+        insert into privacy_access_permissions (role_code, field_key, raw_view_allowed_yn, masked_view_allowed_yn, export_allowed_yn, account_view_allowed_yn, change_reason, created_by, updated_by)
+        values (#{roleCode}, #{fieldKey}, #{rawViewAllowedYn}, #{maskedViewAllowedYn}, #{exportAllowedYn}, #{accountViewAllowedYn}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (role_code, field_key)
+        do update set raw_view_allowed_yn = EXCLUDED.raw_view_allowed_yn,
+                      masked_view_allowed_yn = EXCLUDED.masked_view_allowed_yn,
+                      export_allowed_yn = EXCLUDED.export_allowed_yn,
+                      account_view_allowed_yn = EXCLUDED.account_view_allowed_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+</mapper>

@@ -47,6 +47,24 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 역할·권한 관리 > 기능 권한 관리",
   },
   {
+    path: "/admin/privacy/policies",
+    label: "개인정보 항목 관리",
+    screenId: "SCR-PRIVACY-POLICY-MGMT",
+    menuPath: "보안·감사 관리 > 개인정보 관리 > 개인정보 항목 관리",
+  },
+  {
+    path: "/admin/privacy/permissions",
+    label: "개인정보 조회권한",
+    screenId: "SCR-PRIVACY-ACCESS-PERMISSION-MGMT",
+    menuPath: "보안·감사 관리 > 개인정보 관리 > 개인정보 조회권한",
+  },
+  {
+    path: "/admin/privacy/access-logs",
+    label: "개인정보 처리이력",
+    screenId: "SCR-PRIVACY-ACCESS-LOG",
+    menuPath: "보안·감사 관리 > 개인정보 관리 > 개인정보 처리이력",
+  },
+  {
     path: "/admin/period-permissions",
     label: "기간별 권한 관리",
     screenId: "SCR-PERIOD-PERMISSION-MGMT",

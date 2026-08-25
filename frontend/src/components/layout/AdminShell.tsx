@@ -108,6 +108,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 currentPath={currentPath}
                 miniSidebar={miniSidebar}
                 onNavigate={closeMobile}
+                depth={0}
               />
             ))
           ) : (
@@ -274,58 +275,93 @@ function MenuNode({
   currentPath,
   miniSidebar,
   onNavigate,
+  depth,
 }: {
   menu: MenuItem;
   currentPath: string;
   miniSidebar: boolean;
   onNavigate: () => void;
+  depth: number;
 }) {
   const childActive = menu.children?.some((child) =>
     hasActivePath(child, currentPath),
   );
   const isActive = menu.url === currentPath;
   const hasChildren = Boolean(menu.children?.length);
-  const [open, setOpen] = useState(childActive || !menu.parentMenuId);
+  const [open, setOpen] = useState(childActive || depth === 0);
   const activeClasses = isActive
     ? "bg-primary text-white shadow-btn-shadow hover:bg-primary hover:text-white dark:text-white"
     : childActive
       ? "bg-lightprimary text-primary dark:bg-primary/15 dark:text-primary"
       : "text-link hover:bg-lightprimary hover:text-primary dark:text-white/75 dark:hover:bg-white/5";
-
+  const depthClasses = menuDepthClasses(depth);
   const icon = renderMenuIcon(menu.icon);
+  const testId = `sidebar-menu-item-${menu.menuId}`;
+  const title = menu.menuName;
+  const chevron = hasChildren ? (
+    <ChevronDown
+      className={`transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"} ${miniSidebar ? "xl:hidden" : ""}`}
+      size={16}
+    />
+  ) : null;
 
   return (
-    <div className="mt-1">
-      <a
-        className={`group flex w-full min-w-0 items-center gap-3 rounded-xl p-3 text-sm font-semibold transition-all duration-200 ease-in-out hover:translate-x-1 ${activeClasses}`}
-        href={menu.url ?? "#"}
-        onClick={(event) => {
-          if (hasChildren && !menu.url) {
-            event.preventDefault();
-            setOpen((value) => !value);
-            return;
-          }
-          if (menu.url) {
-            navigateInsideApp(event, menu.url, onNavigate);
-          }
-        }}
-        title={miniSidebar ? menu.menuName : undefined}
+    <div className="mt-1" data-testid={`sidebar-menu-node-${menu.menuId}`}>
+      <div
+        className={`group flex min-w-0 items-center rounded-xl ${depthClasses.container}`}
       >
-        {icon}
-        <span
-          className={`max-w-36 flex-1 truncate leading-normal ${miniSidebar ? "xl:hidden" : ""}`}
-        >
-          {menu.menuName}
-        </span>
-        {hasChildren ? (
-          <ChevronDown
-            className={`transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"} ${miniSidebar ? "xl:hidden" : ""}`}
-            size={16}
-          />
+        {menu.url ? (
+          <a
+            className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl p-3 text-sm font-semibold transition-all duration-200 ease-in-out hover:translate-x-0.5 ${activeClasses} ${depthClasses.item}`}
+            data-menu-depth={depth}
+            data-testid={testId}
+            href={menu.url}
+            onClick={(event) => navigateInsideApp(event, menu.url!, onNavigate)}
+            title={title}
+          >
+            {icon}
+            <span
+              className={`min-w-0 flex-1 truncate leading-normal ${miniSidebar ? "xl:hidden" : ""}`}
+            >
+              {menu.menuName}
+            </span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl p-3 text-left text-sm font-semibold transition-all duration-200 ease-in-out hover:translate-x-0.5 ${activeClasses} ${depthClasses.item}`}
+            aria-label={`${menu.menuName} 하위 메뉴 ${open ? "접기" : "펼치기"}`}
+            data-menu-depth={depth}
+            data-testid={testId}
+            onClick={() => setOpen((value) => !value)}
+            title={title}
+          >
+            {icon}
+            <span
+              className={`min-w-0 flex-1 truncate leading-normal ${miniSidebar ? "xl:hidden" : ""}`}
+            >
+              {menu.menuName}
+            </span>
+            {chevron}
+          </button>
+        )}
+        {menu.url && hasChildren ? (
+          <button
+            type="button"
+            className={`ml-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-link transition-colors hover:bg-lightprimary hover:text-primary dark:text-white/75 dark:hover:bg-white/10 ${miniSidebar ? "xl:hidden" : ""}`}
+            aria-label={`${menu.menuName} 하위 메뉴 ${open ? "접기" : "펼치기"}`}
+            data-testid={`sidebar-menu-toggle-${menu.menuId}`}
+            onClick={() => setOpen((value) => !value)}
+            title={`${menu.menuName} 하위 메뉴 ${open ? "접기" : "펼치기"}`}
+          >
+            {chevron}
+          </button>
         ) : null}
-      </a>
+      </div>
       {hasChildren && open && !miniSidebar ? (
-        <div className="ml-4 flex flex-col border-l border-ld py-2 pl-3 dark:border-white/10">
+        <div
+          className={`mt-1 flex flex-col rounded-2xl py-1 ${menuChildrenClasses(depth)}`}
+        >
           {menu.children.map((child) => (
             <MenuNode
               key={child.menuId}
@@ -333,12 +369,47 @@ function MenuNode({
               currentPath={currentPath}
               miniSidebar={miniSidebar}
               onNavigate={onNavigate}
+              depth={depth + 1}
             />
           ))}
         </div>
       ) : null}
     </div>
   );
+}
+
+function menuDepthClasses(depth: number) {
+  if (depth === 0) {
+    return {
+      container: "",
+      item: "text-[15px]",
+    };
+  }
+  if (depth === 1) {
+    return {
+      container: "bg-lightgray/70 dark:bg-white/[0.03]",
+      item: "text-[13px] font-semibold",
+    };
+  }
+  if (depth === 2) {
+    return {
+      container:
+        "bg-white/70 ring-1 ring-ld/70 dark:bg-white/[0.04] dark:ring-white/10",
+      item: "text-[13px] font-medium",
+    };
+  }
+  return {
+    container:
+      "bg-lightsecondary/80 ring-1 ring-primary/10 dark:bg-primary/10 dark:ring-primary/20",
+    item: "text-[12px] font-medium",
+  };
+}
+
+function menuChildrenClasses(depth: number) {
+  if (depth === 0) return "gap-1 border-l-0 bg-transparent pl-0";
+  if (depth === 1)
+    return "gap-1 border-l-2 border-primary/20 bg-lightgray/40 pl-2 dark:bg-white/[0.02]";
+  return "gap-1 border-l-2 border-primary/30 bg-lightprimary/30 pl-2 dark:bg-primary/10";
 }
 
 function renderMenuIcon(icon?: string | null) {

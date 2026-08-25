@@ -34,6 +34,27 @@ describe("LoginPage", () => {
     expect(html).not.toContain('name="password" type="password" value="admin"');
   });
 
+  it("describes BASIC-19 menu paths with menu screens under roles and privacy screens under system management", () => {
+    expect(routePath("/admin/menu-structure")).toBe(
+      "시스템 관리 > 역할·권한 관리 > 메뉴 구조 관리",
+    );
+    expect(routePath("/admin/menu-info")).toBe(
+      "시스템 관리 > 역할·권한 관리 > 메뉴 정보 관리",
+    );
+    expect(routePath("/admin/menu-usage")).toBe(
+      "시스템 관리 > 역할·권한 관리 > 메뉴 사용 관리",
+    );
+    expect(routePath("/admin/privacy/policies")).toBe(
+      "시스템 관리 > 개인정보 관리 > 개인정보 항목 관리",
+    );
+    expect(routePath("/admin/privacy/permissions")).toBe(
+      "시스템 관리 > 개인정보 관리 > 개인정보 조회권한",
+    );
+    expect(routePath("/admin/privacy/access-logs")).toBe(
+      "시스템 관리 > 개인정보 관리 > 개인정보 처리이력",
+    );
+  });
+
   it("allows seed R09 administrator to access all configured admin routes after login", () => {
     const adminUser: CurrentUser = {
       userId: 1,
@@ -59,3 +80,9 @@ describe("LoginPage", () => {
     ).toBe(true);
   });
 });
+
+function routePath(path: string) {
+  const route = ADMIN_ROUTES.find((candidate) => candidate.path === path);
+  if (!route) throw new Error(`Missing route: ${path}`);
+  return route.menuPath;
+}

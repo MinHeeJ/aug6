@@ -50,19 +50,19 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     path: "/admin/privacy/policies",
     label: "개인정보 항목 관리",
     screenId: "SCR-PRIVACY-POLICY-MGMT",
-    menuPath: "보안·감사 관리 > 개인정보 관리 > 개인정보 항목 관리",
+    menuPath: "시스템 관리 > 개인정보 관리 > 개인정보 항목 관리",
   },
   {
     path: "/admin/privacy/permissions",
     label: "개인정보 조회권한",
     screenId: "SCR-PRIVACY-ACCESS-PERMISSION-MGMT",
-    menuPath: "보안·감사 관리 > 개인정보 관리 > 개인정보 조회권한",
+    menuPath: "시스템 관리 > 개인정보 관리 > 개인정보 조회권한",
   },
   {
     path: "/admin/privacy/access-logs",
     label: "개인정보 처리이력",
     screenId: "SCR-PRIVACY-ACCESS-LOG",
-    menuPath: "보안·감사 관리 > 개인정보 관리 > 개인정보 처리이력",
+    menuPath: "시스템 관리 > 개인정보 관리 > 개인정보 처리이력",
   },
   {
     path: "/admin/period-permissions",
@@ -86,13 +86,13 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     path: "/admin/menu-structure",
     label: "메뉴 구조 관리",
     screenId: "SCR-MENU-STRUCTURE-MGMT",
-    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 구조 관리",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 구조 관리",
   },
   {
     path: "/admin/menu-info",
     label: "메뉴 정보 관리",
     screenId: "SCR-MENU-INFO-MGMT",
-    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 정보 관리",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 정보 관리",
   },
   {
     path: "/admin/code-groups",
@@ -110,7 +110,7 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     path: "/admin/menu-usage",
     label: "메뉴 사용 관리",
     screenId: "SCR-MENU-USAGE-MGMT",
-    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 사용 관리",
+    menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 사용 관리",
   },
   {
     path: "/admin/detail-code-usage",

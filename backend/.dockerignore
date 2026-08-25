@@ -6,5 +6,6 @@ coverage
 .git
 target
 *.log
+*.local
 .env
 .env.*

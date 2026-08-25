@@ -5,6 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY vite.config.ts ./
+COPY vitest.config.ts ./
 COPY tsconfig*.json ./
 COPY tailwind.config.js ./
 COPY postcss.config.js ./

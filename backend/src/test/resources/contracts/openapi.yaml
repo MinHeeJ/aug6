@@ -2898,152 +2898,6 @@ paths:
         - 'validation: 필수 field 누락 요청 -> ApiError.fields에 누락 field가 기록된다'
         - 'business: 허용 범위를 벗어난 기간 또는 중복 key -> 400 ApiError이고 standard_year_preparation_history 기존 상태가 유지된다'
         - 'side-effect: 저장 성공 -> standard_year_preparation_history.updated_at 또는 history row가 생성된다'
-  /api/admin/position-assignments:
-    get:
-      operationId: listPositionAssignments
-      summary: 보직 발령 조회
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, minimum: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, minimum: 1 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    post:
-      operationId: createPositionAssignment
-      summary: 보직 발령 등록
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/position-assignments/{positionAssignmentId}:
-    put:
-      operationId: updatePositionAssignment
-      summary: 보직 발령 수정
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: positionAssignmentId
-          in: path
-          required: true
-          schema: { type: integer, format: int64 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    delete:
-      operationId: deletePositionAssignment
-      summary: 보직 발령 삭제
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-128, REQ-129, REQ-130]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/duty-assignments:
-    get:
-      operationId: listDutyAssignments
-      summary: 직무 발령 조회
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, minimum: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, minimum: 1 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    post:
-      operationId: createDutyAssignment
-      summary: 직무 발령 등록
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/duty-assignments/{dutyAssignmentId}:
-    put:
-      operationId: updateDutyAssignment
-      summary: 직무 발령 수정
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: dutyAssignmentId
-          in: path
-          required: true
-          schema: { type: integer, format: int64 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    delete:
-      operationId: deleteDutyAssignment
-      summary: 직무 발령 삭제
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-131, REQ-132, REQ-133]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-  /api/admin/data-scope-rules:
-    get:
-      operationId: listDataScopeRules
-      summary: 데이터 범위 규칙 조회
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, minimum: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, minimum: 1 }
-      x-related-requirements: [REQ-134, REQ-135, REQ-136]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
-    put:
-      operationId: saveDataScopeRules
-      summary: 데이터 범위 규칙 저장
-      responses:
-        '200': { description: 성공 }
-        '400': { description: 요청 검증 오류 }
-        '401': { description: 인증 필요 }
-        '403': { description: 권한 없음 }
-      x-related-requirements: [REQ-134, REQ-135, REQ-136]
-      security: [{SessionCookie: []}]
-      x-roles: [R09]
   /api/admin/function-permissions:
     get:
       operationId: listFunctionPermissions
@@ -3124,7 +2978,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FunctionPermissionRequest'
-      x-contract-fields: [screenId, roleCode, functionType, permissionAllowed, changeReason]
+      x-request-fields: [screenId, roleCode, functionType, permissionAllowed]
       x-related-requirements: [REQ-149, REQ-152, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3269,7 +3123,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PeriodPermissionRequest'
-      x-contract-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt, changeReason]
+      x-request-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt]
       x-related-requirements: [REQ-153, REQ-169, REQ-170, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3363,7 +3217,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TemporaryPermissionRequest'
-      x-contract-fields: [userId, workDataRef, functionType, validStartAt, validEndAt, changeReason]
+      x-request-fields: [userId, workDataRef, functionType, validStartAt, validEndAt]
       x-related-requirements: [REQ-157, REQ-158, REQ-159, REQ-160, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3425,6 +3279,172 @@ paths:
       x-related-requirements: [REQ-161, REQ-162, REQ-163, REQ-164, REQ-171]
       security: [{SessionCookie: []}]
       x-roles: [R09]
+
+  /api/admin/privacy/policies:
+    get:
+      operationId: listPrivacyFieldPolicies
+      summary: 개인정보 보호정책 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: fieldKey, in: query, required: false, schema: { type: string } }
+        - { name: privacyGrade, in: query, required: false, schema: { type: string, enum: [PUBLIC, PERSONAL, SENSITIVE, ACCOUNT] } }
+        - { name: encryptionRequiredYn, in: query, required: false, schema: { type: string, enum: [Y, N] } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-195]
+  /api/admin/privacy/policies-save:
+    put:
+      operationId: savePrivacyFieldPolicies
+      summary: 개인정보 보호정책 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: array, items: { $ref: '#/components/schemas/PrivacyFieldPolicySaveRequest' } }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: Validation Error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-196, REQ-197, REQ-198, REQ-199]
+      x-business-rules: [실제 개인정보 원문값은 보호정책 payload에 포함할 수 없다., 암호화 대상으로 설정된 필드는 저장 시 DEC-016 crypto service 적용 대상이 된다.]
+      x-side-effects: [privacy_field_policies 변경 메타정보를 기록한다.]
+      x-state-transitions: [field policy draft -> applied]
+      x-required-tests:
+        - "happy: R09가 SENSITIVE/Y 정책을 저장 -> privacy_field_policies.encryption_required_yn=Y 재조회"
+        - "auth: R01 세션으로 저장 요청 -> 403 ApiError"
+        - "validation: fieldKey 누락 -> fields.fieldKey 오류"
+        - "business: actualValue 포함 payload -> 저장 차단 및 privacy_field_policies 변경 없음"
+        - "side-effect: 저장 성공 -> updated_at/updated_by 변경 메타정보 존재"
+  /api/admin/privacy/permissions:
+    get:
+      operationId: listPrivacyAccessPermissions
+      summary: 개인정보 권한 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: roleCode, in: query, required: false, schema: { $ref: '#/components/schemas/RoleCodeEnum' } }
+        - { name: fieldKey, in: query, required: false, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-201]
+  /api/admin/privacy/permissions-save:
+    put:
+      operationId: savePrivacyAccessPermissions
+      summary: 개인정보 권한 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: array, items: { $ref: '#/components/schemas/PrivacyAccessPermissionSaveRequest' } }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: Validation Error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-202, REQ-203, REQ-204, REQ-205]
+      x-business-rules: [roleCode는 기존 R01~R09만 허용하고 새 역할을 생성하지 않는다., 원문·마스킹·출력·계좌정보 권한은 독립 플래그로 저장한다.]
+      x-side-effects: [privacy_access_permissions 변경 메타정보를 기록한다.]
+      x-state-transitions: [permission denied -> allowed 또는 allowed -> denied]
+      x-required-tests:
+        - "happy: R09 raw_view_allowed_yn=Y 저장 -> privacy_access_permissions.raw_view_allowed_yn=Y 재조회"
+        - "auth: R01 세션으로 저장 요청 -> 403 ApiError"
+        - "validation: roleCode=R10 입력 -> fields.roleCode 오류"
+        - "business: userId 기반 역할 부여 payload 포함 -> 저장 차단 및 user_roles 변경 없음"
+        - "side-effect: 저장 성공 -> permission 변경 메타정보 존재"
+  /api/admin/privacy/permissions/evaluate:
+    post:
+      operationId: evaluatePrivacyAccessPermission
+      summary: 개인정보 권한 판정
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R02, R03, R04, R05, R06, R07, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PrivacyAccessEvaluateRequest' }
+      responses:
+        '200': { description: 판정 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '403': { description: Forbidden, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-206]
+      x-business-rules: [미설정 역할·필드 조합은 원문 조회 마스킹 조회 출력 계좌정보 조회를 모두 차단한다., 마스킹 조회권한만 있으면 원문값은 제공하지 않는다.]
+      x-side-effects: [판정 결과가 개인정보 처리로 이어질 때 privacy_access_logs 기록 대상이 된다.]
+      x-state-transitions: [requested -> allowed 또는 requested -> denied]
+      x-required-tests:
+        - "happy: 허용된 R09 RAW_VIEW 판정 -> allowed=true와 raw access 가능 결과"
+        - "auth: 미인증 요청 -> 401 ApiError"
+        - "validation: accessType 누락 -> fields.accessType 오류"
+        - "business: 미설정 R01 RAW_VIEW -> 403 또는 allowed=false 및 원문값 없음"
+        - "side-effect: denied 판정 후 처리 시도 -> privacy_access_logs.process_result=DENIED 기록"
+  /api/admin/privacy/access-logs:
+    get:
+      operationId: searchPrivacyAccessLogs
+      summary: 개인정보 처리이력 검색
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: actorUserId, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: targetRef, in: query, required: false, schema: { type: string } }
+        - { name: processType, in: query, required: false, schema: { type: string, enum: [VIEW, PRINT, DOWNLOAD] } }
+        - { name: processedFrom, in: query, required: false, schema: { type: string, format: date } }
+        - { name: processedTo, in: query, required: false, schema: { type: string, format: date } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-207]
+  /api/admin/privacy/access-logs-record:
+    post:
+      operationId: recordPrivacyAccessLog
+      summary: 개인정보 처리이력 기록
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R02, R03, R04, R05, R06, R07, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PrivacyAccessLogRecordRequest' }
+      responses:
+        '201': { description: 기록 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: Validation Error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-209]
+      x-business-rules: [처리목적이 없으면 개인정보 처리 전 목적 확인을 요구한다., 보호 대상 개인정보 원문은 처리이력에 저장하지 않는다.]
+      x-side-effects: [privacy_access_logs에 append-only row를 생성한다.]
+      x-state-transitions: [privacy process requested -> history recorded]
+      x-required-tests:
+        - "happy: DOWNLOAD 처리 기록 -> privacy_access_logs.process_type=DOWNLOAD row 존재"
+        - "auth: 미인증 기록 요청 -> 401 ApiError"
+        - "validation: processPurpose 누락 -> fields.processPurpose 오류"
+        - "business: originalValue 포함 payload -> 저장 차단 및 privacy_access_logs row 미생성"
+        - "side-effect: 기록 성공 -> processed_at/request_ip/process_result 값 존재"
+  /api/admin/privacy/access-logs/{historyId}:
+    get:
+      operationId: getPrivacyAccessLog
+      summary: 개인정보 처리이력 상세
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      parameters:
+        - { name: historyId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '404': { description: Not Found, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-208, REQ-210]
 components:
   securitySchemes:
     SessionCookie:
@@ -3465,9 +3485,13 @@ components:
             message:
               type: string
             fields:
-              type: object
-              additionalProperties:
-                type: string
+              type: array
+              items:
+                type: object
+                required: [field, message]
+                properties:
+                  field: { type: string }
+                  message: { type: string }
         meta:
           type: object
           additionalProperties: true
@@ -3510,6 +3534,48 @@ components:
         validStartAt: { type: string, format: date-time }
         validEndAt: { type: string, format: date-time }
         changeReason: { type: string }
+
+    PrivacyFieldPolicySaveRequest:
+      type: object
+      required: [fieldKey, privacyGrade, encryptionRequiredYn, logExclusionYn, changeReason]
+      properties:
+        fieldKey: { type: string }
+        privacyGrade: { type: string, enum: [PUBLIC, PERSONAL, SENSITIVE, ACCOUNT] }
+        encryptionRequiredYn: { type: string, enum: [Y, N] }
+        maskingRule: { type: string }
+        logExclusionYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    PrivacyAccessPermissionSaveRequest:
+      type: object
+      required: [roleCode, fieldKey, rawViewAllowedYn, maskedViewAllowedYn, exportAllowedYn, accountViewAllowedYn, changeReason]
+      properties:
+        roleCode:
+          $ref: '#/components/schemas/RoleCodeEnum'
+        fieldKey: { type: string }
+        rawViewAllowedYn: { type: string, enum: [Y, N] }
+        maskedViewAllowedYn: { type: string, enum: [Y, N] }
+        exportAllowedYn: { type: string, enum: [Y, N] }
+        accountViewAllowedYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    PrivacyAccessEvaluateRequest:
+      type: object
+      required: [roleCode, fieldKey, accessType, processPurpose]
+      properties:
+        roleCode:
+          $ref: '#/components/schemas/RoleCodeEnum'
+        fieldKey: { type: string }
+        accessType: { type: string, enum: [RAW_VIEW, MASKED_VIEW, EXPORT, ACCOUNT_VIEW] }
+        processPurpose: { type: string }
+    PrivacyAccessLogRecordRequest:
+      type: object
+      required: [processType, actorUserId, targetRef, processPurpose, requestIp, processResult]
+      properties:
+        processType: { type: string, enum: [VIEW, PRINT, DOWNLOAD] }
+        actorUserId: { type: integer, format: int64 }
+        targetRef: { type: string }
+        processPurpose: { type: string }
+        requestIp: { type: string }
+        processResult: { type: string, enum: [SUCCESS, DENIED, FAILED] }
     LoginRequest:
       type: object
       required:
@@ -4152,6 +4218,27 @@ x-uncovered-requirements:
   - {canonical_id: REQ-110, status: data-constraint, evidence: 기준정보 복사 대상은 data-model/prepareBaseYearStandards 이력으로 검증한다}
   - {canonical_id: REQ-123, status: data-constraint, evidence: common_settings.setting_key UNIQUE 제약으로 검증한다}
   - {canonical_id: REQ-124, status: non-functional, evidence: 세션 인증방식과 대량처리 구현방식은 architecture boundary로만 제한한다}
+  - {canonical_id: REQ-175, status: out-of-scope, evidence: 기존 역할코드 참조은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
+  - {canonical_id: REQ-176, status: out-of-scope, evidence: 역할 신규정의 금지은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
+  - {canonical_id: REQ-177, status: out-of-scope, evidence: 역할명 변경 금지은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
+  - {canonical_id: REQ-178, status: out-of-scope, evidence: 사용자 역할 부여 제외은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
+  - {canonical_id: REQ-179, status: data-constraint, evidence: 개인정보 및 평가 결과 조회 이력 보관은 API operation 직접 매핑 없이 data-contract artifact에서 검증한다}
+  - {canonical_id: REQ-180, status: screen-only, evidence: 목록 페이지 크기은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
+  - {canonical_id: REQ-181, status: screen-only, evidence: 목록 Excel 다운로드은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
+  - {canonical_id: REQ-182, status: screen-only, evidence: 필수 입력 표시와 저장 차단은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
+  - {canonical_id: REQ-183, status: screen-only, evidence: 처리 확인 및 결과 안내은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
+  - {canonical_id: REQ-184, status: non-functional, evidence: UI 표준화은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-185, status: non-functional, evidence: 웹 접근성 준수은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-186, status: data-constraint, evidence: 임시 데이터 삭제은 API operation 직접 매핑 없이 data-contract artifact에서 검증한다}
+  - {canonical_id: REQ-187, status: data-constraint, evidence: 보안 필드 암호화은 API operation 직접 매핑 없이 data-contract artifact에서 검증한다}
+  - {canonical_id: REQ-188, status: non-functional, evidence: 평균 질의 응답시간은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-189, status: non-functional, evidence: 건별 질의 응답시간은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-190, status: non-functional, evidence: 주요 페이지 용량은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-191, status: non-functional, evidence: 시큐어 코딩은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-192, status: non-functional, evidence: 개인정보 보호와 구간 암호화은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-193, status: non-functional, evidence: 지원 환경 정상 동작은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
+  - {canonical_id: REQ-194, status: non-functional, evidence: AES-256-GCM 암복호화 서비스은 API operation 직접 매핑 없이 architecture-runtime artifact에서 검증한다}
+  - {canonical_id: REQ-200, status: screen-only, evidence: 정책 화면 실제 개인정보 값 제외은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
 x-shared-contract-reference:
   technology_stack:
     backend: Java 17 + Spring Boot 3.3.x + Maven + MyBatis + PostgreSQL 16

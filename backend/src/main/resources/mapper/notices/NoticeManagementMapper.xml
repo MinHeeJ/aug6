@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.notices.NoticeManagementMapper">
+    <resultMap id="NoticeSummaryRowMap" type="kr.ac.knue.commonfoundation.notices.NoticeSummaryRow">
+        <constructor>
+            <arg column="noticeId" javaType="long"/>
+            <arg column="title" javaType="string"/>
+            <arg column="content" javaType="string"/>
+            <arg column="publishStartDate" javaType="java.time.LocalDate"/>
+            <arg column="publishEndDate" javaType="java.time.LocalDate"/>
+            <arg column="importantYn" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="NoticeRowMap" type="kr.ac.knue.commonfoundation.notices.NoticeRow">
+        <constructor>
+            <arg column="noticeId" javaType="long"/>
+            <arg column="title" javaType="string"/>
+            <arg column="content" javaType="string"/>
+            <arg column="publishStartDate" javaType="java.time.LocalDate"/>
+            <arg column="publishEndDate" javaType="java.time.LocalDate"/>
+            <arg column="importantYn" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="NoticeTargetRowMap" type="kr.ac.knue.commonfoundation.notices.NoticeTargetRow">
+        <constructor>
+            <arg column="noticeTargetId" javaType="long"/>
+            <arg column="noticeId" javaType="long"/>
+            <arg column="targetType" javaType="string"/>
+            <arg column="targetIdValue" javaType="string"/>
+            <arg column="targetName" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="NoticeAttachmentRowMap" type="kr.ac.knue.commonfoundation.notices.NoticeAttachmentRow">
+        <constructor>
+            <arg column="attachmentId" javaType="long"/>
+            <arg column="noticeId" javaType="long"/>
+            <arg column="originalFileName" javaType="string"/>
+            <arg column="fileSize" javaType="long"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="NoticeAttachmentDownloadMap" type="kr.ac.knue.commonfoundation.notices.NoticeAttachmentDownload">
+        <constructor>
+            <arg column="attachmentId" javaType="long"/>
+            <arg column="noticeId" javaType="long"/>
+            <arg column="originalFileName" javaType="string"/>
+            <arg column="fileContent" javaType="byte[]"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="noticeSelect">
+        select n.notice_id as "noticeId",
+               n.title as "title",
+               n.content as "content",
+               n.publish_start_date as "publishStartDate",
+               n.publish_end_date as "publishEndDate",
+               n.important_yn as "importantYn",
+               n.status as "status",
+               n.updated_at as "updatedAt",
+               n.updated_by as "updatedBy"
+        from notices n
+    </sql>
+
+    <sql id="noticeWhere">
+        <where>
+            <if test="criteria.activeOnly == null or criteria.activeOnly">
+                n.status = 'ACTIVE'
+                and CURRENT_DATE between n.publish_start_date and n.publish_end_date
+            </if>
+            <if test="criteria.publishStartDate != null">
+                <if test="criteria.activeOnly == null or criteria.activeOnly">and</if>
+                n.publish_end_date &gt;= #{criteria.publishStartDate}
+            </if>
+            <if test="criteria.publishEndDate != null">
+                <if test="criteria.activeOnly == null or criteria.activeOnly or criteria.publishStartDate != null">and</if>
+                n.publish_start_date &lt;= #{criteria.publishEndDate}
+            </if>
+            <if test="criteria.targetRoleCode != null and criteria.targetRoleCode != ''">
+                <if test="criteria.activeOnly == null or criteria.activeOnly or criteria.publishStartDate != null or criteria.publishEndDate != null">and</if>
+                exists (
+                    select 1 from notice_targets role_target
+                    where role_target.notice_id = n.notice_id
+                      and role_target.target_type = 'ROLE'
+                      and role_target.target_id = #{criteria.targetRoleCode}
+                )
+            </if>
+            <if test="criteria.targetOrganizationCode != null and criteria.targetOrganizationCode != ''">
+                <if test="criteria.activeOnly == null or criteria.activeOnly or criteria.publishStartDate != null or criteria.publishEndDate != null or (criteria.targetRoleCode != null and criteria.targetRoleCode != '')">and</if>
+                exists (
+                    with recursive ancestors(organization_code) as (
+                        select #{criteria.targetOrganizationCode}
+                        union all
+                        select rel.parent_organization_code
+                        from organization_relations rel
+                        join ancestors a on a.organization_code = rel.organization_code
+                        where rel.status = 'ACTIVE'
+                          and (rel.effective_end_date is null or rel.effective_end_date &gt;= CURRENT_DATE)
+                    )
+                    select 1
+                    from notice_targets org_target
+                    join ancestors a on a.organization_code = org_target.target_id
+                    where org_target.notice_id = n.notice_id
+                      and org_target.target_type = 'ORGANIZATION'
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="nextNoticeId" resultType="long">
+        select nextval('notices_notice_id_seq')
+    </select>
+
+    <select id="listNotices" resultMap="NoticeSummaryRowMap">
+        <include refid="noticeSelect"/>
+        <include refid="noticeWhere"/>
+        order by n.important_yn desc, n.publish_start_date desc, n.notice_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countNotices" resultType="long">
+        select count(*)
+        from notices n
+        <include refid="noticeWhere"/>
+    </select>
+
+    <select id="findNotice" resultMap="NoticeRowMap">
+        select n.notice_id as "noticeId",
+               n.title as "title",
+               n.content as "content",
+               n.publish_start_date as "publishStartDate",
+               n.publish_end_date as "publishEndDate",
+               n.important_yn as "importantYn",
+               n.status as "status",
+               n.created_at as "createdAt",
+               n.created_by as "createdBy",
+               n.updated_at as "updatedAt",
+               n.updated_by as "updatedBy"
+        from notices n
+        where n.notice_id = #{noticeId}
+          and n.status != 'DELETED'
+    </select>
+
+    <insert id="insertNotice">
+        insert into notices (notice_id, title, content, publish_start_date, publish_end_date, important_yn, created_by, updated_by, change_reason)
+        values (#{noticeId}, #{request.title}, #{request.content}, #{request.publishStartDate}, #{request.publishEndDate}, #{request.importantYn}, #{userId}, #{userId}, #{request.changeReason})
+    </insert>
+
+    <update id="updateNotice">
+        update notices
+        set title = #{request.title},
+            content = #{request.content},
+            publish_start_date = #{request.publishStartDate},
+            publish_end_date = #{request.publishEndDate},
+            important_yn = #{request.importantYn},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId},
+            change_reason = #{request.changeReason}
+        where notice_id = #{noticeId}
+          and status != 'DELETED'
+    </update>
+
+    <delete id="deleteNoticeTargets">
+        delete from notice_targets where notice_id = #{noticeId}
+    </delete>
+
+    <insert id="insertNoticeTarget">
+        insert into notice_targets (notice_id, target_type, target_id, created_by)
+        values (#{noticeId}, #{target.targetType}, #{target.targetId}, #{userId})
+    </insert>
+
+    <delete id="deleteNoticeAttachments">
+        delete from notice_attachments where notice_id = #{noticeId}
+    </delete>
+
+    <insert id="insertNoticeAttachment">
+        insert into notice_attachments (notice_id, original_file_name, stored_file_name, content_type, file_size, file_content, created_by)
+        values (#{noticeId}, #{originalFileName}, #{storedFileName}, #{contentType}, #{fileSize}, #{fileContent}, #{userId})
+    </insert>
+
+    <select id="listTargets" resultMap="NoticeTargetRowMap">
+        select nt.notice_target_id as "noticeTargetId",
+               nt.notice_id as "noticeId",
+               nt.target_type as "targetType",
+               nt.target_id as "targetIdValue",
+               coalesce(r.role_name, o.organization_name, nt.target_id) as "targetName"
+        from notice_targets nt
+        left join roles r on nt.target_type = 'ROLE' and r.role_code = nt.target_id
+        left join organizations o on nt.target_type = 'ORGANIZATION' and o.organization_code = nt.target_id
+        where nt.notice_id = #{noticeId}
+        order by nt.target_type, nt.target_id
+    </select>
+
+    <select id="listAttachments" resultMap="NoticeAttachmentRowMap">
+        select attachment_id as "attachmentId",
+               notice_id as "noticeId",
+               original_file_name as "originalFileName",
+               file_size as "fileSize",
+               created_at as "createdAt",
+               created_by as "createdBy"
+        from notice_attachments
+        where notice_id = #{noticeId}
+        order by attachment_id
+    </select>
+
+    <select id="findAttachmentForDownload" resultMap="NoticeAttachmentDownloadMap">
+        select a.attachment_id as "attachmentId",
+               a.notice_id as "noticeId",
+               a.original_file_name as "originalFileName",
+               a.file_content as "fileContent"
+        from notice_attachments a
+        join notices n on n.notice_id = a.notice_id
+        where a.notice_id = #{noticeId}
+          and a.attachment_id = #{attachmentId}
+          and n.status = 'ACTIVE'
+          and CURRENT_DATE between n.publish_start_date and n.publish_end_date
+          and exists (
+              select 1 from notice_targets role_target
+              where role_target.notice_id = n.notice_id
+                and role_target.target_type = 'ROLE'
+                and role_target.target_id in
+                <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+                    #{roleCode}
+                </foreach>
+          )
+        <if test="organizationCode != null and organizationCode != ''">
+          and exists (
+              with recursive ancestors(organization_code) as (
+                  select #{organizationCode}
+                  union all
+                  select rel.parent_organization_code
+                  from organization_relations rel
+                  join ancestors a2 on a2.organization_code = rel.organization_code
+                  where rel.status = 'ACTIVE'
+                    and (rel.effective_end_date is null or rel.effective_end_date &gt;= CURRENT_DATE)
+              )
+              select 1
+              from notice_targets org_target
+              join ancestors anc on anc.organization_code = org_target.target_id
+              where org_target.notice_id = n.notice_id
+                and org_target.target_type = 'ORGANIZATION'
+          )
+        </if>
+    </select>
+</mapper>

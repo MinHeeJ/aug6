@@ -107,6 +107,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 공통코드 관리 > 상세코드 관리",
   },
   {
+    path: "/admin/messages",
+    label: "메시지 관리",
+    screenId: "SCR-MESSAGE-MGMT",
+    menuPath: "시스템 관리 > 시스템 환경설정 > 메시지 관리",
+  },
+  {
+    path: "/admin/notices",
+    label: "공지사항 관리",
+    screenId: "SCR-NOTICE-MGMT",
+    menuPath: "시스템 관리 > 공지·도움말 관리 > 공지사항 관리",
+  },
+  {
+    path: "/admin/manuals",
+    label: "매뉴얼 관리",
+    screenId: "SCR-MANUAL-MGMT",
+    menuPath: "시스템 관리 > 공지·도움말 관리 > 매뉴얼 관리",
+  },
+  {
+    path: "/admin/help-contents",
+    label: "도움말 관리",
+    screenId: "SCR-HELP-MGMT",
+    menuPath: "시스템 관리 > 공지·도움말 관리 > 도움말 관리",
+  },
+  {
     path: "/admin/menu-usage",
     label: "메뉴 사용 관리",
     screenId: "SCR-MENU-USAGE-MGMT",

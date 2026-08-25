@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.messages.MessageManagementMapper">
+    <resultMap id="MessageCodeRowMap" type="kr.ac.knue.commonfoundation.messages.MessageCodeRow">
+        <constructor>
+            <arg column="messageCode" javaType="string"/>
+            <arg column="messageType" javaType="string"/>
+            <arg column="userMessage" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="MessageTextResponseMap" type="kr.ac.knue.commonfoundation.messages.MessageTextResponse">
+        <constructor>
+            <arg column="messageCode" javaType="string"/>
+            <arg column="userMessage" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="messageSelect">
+        select message_code as "messageCode",
+               message_type as "messageType",
+               user_message as "userMessage",
+               created_at as "createdAt",
+               created_by as "createdBy",
+               updated_at as "updatedAt",
+               updated_by as "updatedBy"
+        from message_codes
+    </sql>
+
+    <sql id="messageWhere">
+        <where>
+            <if test="messageType != null and messageType != ''">
+                message_type = #{messageType}
+            </if>
+            <if test="messageCode != null and messageCode != ''">
+                <if test="messageType != null and messageType != ''">and</if>
+                (message_code ilike concat('%', #{messageCode}, '%') or user_message ilike concat('%', #{messageCode}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listMessages" resultMap="MessageCodeRowMap">
+        <include refid="messageSelect"/>
+        <include refid="messageWhere"/>
+        order by message_type, message_code
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countMessages" resultType="long">
+        select count(*) from message_codes
+        <include refid="messageWhere"/>
+    </select>
+
+    <select id="findMessage" resultMap="MessageCodeRowMap">
+        <include refid="messageSelect"/>
+        where message_code = #{messageCode}
+    </select>
+
+    <select id="findMessageText" resultMap="MessageTextResponseMap">
+        select message_code as "messageCode", user_message as "userMessage"
+        from message_codes
+        where message_code = #{messageCode}
+    </select>
+
+    <insert id="upsertMessage">
+        insert into message_codes (message_code, message_type, user_message, created_by, updated_by, change_reason)
+        values (#{messageCode}, #{messageType}, #{userMessage}, #{userId}, #{userId}, #{changeReason})
+        on conflict (message_code)
+        do update set message_type = EXCLUDED.message_type,
+                      user_message = EXCLUDED.user_message,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+</mapper>

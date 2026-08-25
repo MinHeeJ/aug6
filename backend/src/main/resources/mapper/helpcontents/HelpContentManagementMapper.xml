@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.helpcontents.HelpContentManagementMapper">
+    <resultMap id="HelpContentRowMap" type="kr.ac.knue.commonfoundation.helpcontents.HelpContentRow">
+        <constructor>
+            <arg column="screenId" javaType="string"/>
+            <arg column="businessDescription" javaType="string"/>
+            <arg column="inputCriteria" javaType="string"/>
+            <arg column="faq" javaType="string"/>
+            <arg column="contact" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="HelpContentResponseMap" type="kr.ac.knue.commonfoundation.helpcontents.HelpContentResponse">
+        <constructor>
+            <arg column="screenId" javaType="string"/>
+            <arg column="businessDescription" javaType="string"/>
+            <arg column="inputCriteria" javaType="string"/>
+            <arg column="faq" javaType="string"/>
+            <arg column="contact" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="helpContentSelect">
+        select screen_id as "screenId",
+               business_description as "businessDescription",
+               input_criteria as "inputCriteria",
+               faq as "faq",
+               contact as "contact",
+               created_at as "createdAt",
+               created_by as "createdBy",
+               updated_at as "updatedAt",
+               updated_by as "updatedBy"
+        from help_contents
+    </sql>
+
+    <sql id="helpContentWhere">
+        <where>
+            <if test="screenId != null and screenId != ''">
+                screen_id ilike concat('%', #{screenId}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listHelpContents" resultMap="HelpContentRowMap">
+        <include refid="helpContentSelect"/>
+        <include refid="helpContentWhere"/>
+        order by screen_id
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countHelpContents" resultType="long">
+        select count(*) from help_contents
+        <include refid="helpContentWhere"/>
+    </select>
+
+    <select id="findHelpContentRow" resultMap="HelpContentRowMap">
+        <include refid="helpContentSelect"/>
+        where screen_id = #{screenId}
+    </select>
+
+    <select id="findHelpContent" resultMap="HelpContentResponseMap">
+        select screen_id as "screenId",
+               business_description as "businessDescription",
+               input_criteria as "inputCriteria",
+               faq as "faq",
+               contact as "contact"
+        from help_contents
+        where screen_id = #{screenId}
+    </select>
+
+    <insert id="upsertHelpContent">
+        insert into help_contents (screen_id, business_description, input_criteria, faq, contact, created_by, updated_by, change_reason)
+        values (#{screenId}, #{businessDescription}, #{inputCriteria}, #{faq}, #{contact}, #{userId}, #{userId}, #{changeReason})
+        on conflict (screen_id)
+        do update set business_description = EXCLUDED.business_description,
+                      input_criteria = EXCLUDED.input_criteria,
+                      faq = EXCLUDED.faq,
+                      contact = EXCLUDED.contact,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by,
+                      change_reason = EXCLUDED.change_reason
+    </insert>
+</mapper>

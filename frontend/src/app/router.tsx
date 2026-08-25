@@ -30,6 +30,10 @@ import { UserRoleManagementPage } from "../pages/admin/SCR-USER-ROLE-MGMT";
 import { UserManagementPage } from "../pages/admin/SCR-USER-MGMT";
 import { CodeGroupManagementPage } from "../pages/admin/SCR-CODE-GROUP-MGMT";
 import { DetailCodeManagementPage } from "../pages/admin/SCR-DETAIL-CODE-MGMT";
+import { MessageManagementPage } from "../pages/admin/SCR-MESSAGE-MGMT";
+import { NoticeManagementPage } from "../pages/admin/SCR-NOTICE-MGMT";
+import { ManualManagementPage } from "../pages/admin/SCR-MANUAL-MGMT";
+import { HelpContentManagementPage } from "../pages/admin/SCR-HELP-MGMT";
 import {
   BaseYearManagementPage,
   CommonSettingsPage,
@@ -177,6 +181,14 @@ function renderAdminPage(path: string | undefined) {
       return <CodeGroupManagementPage />;
     case "/admin/detail-codes":
       return <DetailCodeManagementPage />;
+    case "/admin/messages":
+      return <MessageManagementPage />;
+    case "/admin/notices":
+      return <NoticeManagementPage />;
+    case "/admin/manuals":
+      return <ManualManagementPage />;
+    case "/admin/help-contents":
+      return <HelpContentManagementPage />;
     case "/admin/menu-usage":
       return <MenuUsageManagementPage />;
     case "/admin/detail-code-usage":

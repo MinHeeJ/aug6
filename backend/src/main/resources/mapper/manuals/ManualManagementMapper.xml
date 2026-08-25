@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.manuals.ManualManagementMapper">
+    <resultMap id="ManualRowMap" type="kr.ac.knue.commonfoundation.manuals.ManualRow">
+        <constructor>
+            <arg column="manualId" javaType="long"/>
+            <arg column="manualType" javaType="string"/>
+            <arg column="version" javaType="string"/>
+            <arg column="targetUser" javaType="string"/>
+            <arg column="effectiveDate" javaType="java.time.LocalDate"/>
+            <arg column="originalFileName" javaType="string"/>
+            <arg column="latest" javaType="boolean"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ManualDownloadMap" type="kr.ac.knue.commonfoundation.manuals.ManualDownload">
+        <constructor>
+            <arg column="manualId" javaType="long"/>
+            <arg column="originalFileName" javaType="string"/>
+            <arg column="fileContent" javaType="[B"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="manualSelect">
+        select m.manual_id as "manualId",
+               m.manual_type as "manualType",
+               m.version as "version",
+               m.target_user as "targetUser",
+               m.effective_date as "effectiveDate",
+               mf.original_file_name as "originalFileName",
+               not exists (
+                   select 1 from manuals newer
+                   where newer.manual_type = m.manual_type
+                     and newer.target_user = m.target_user
+                     and newer.effective_date &lt;= #{effectiveDate}
+                     and newer.effective_date &gt; m.effective_date
+               ) as "latest",
+               m.created_at as "createdAt",
+               m.created_by as "createdBy",
+               m.updated_at as "updatedAt",
+               m.updated_by as "updatedBy"
+        from manuals m
+        left join manual_files mf on mf.manual_id = m.manual_id
+    </sql>
+
+    <sql id="manualWhere">
+        <where>
+            m.effective_date &lt;= #{effectiveDate}
+            <if test="manualType != null and manualType != ''">
+                and m.manual_type = #{manualType}
+            </if>
+            <if test="targetUser != null and targetUser != ''">
+                and m.target_user = #{targetUser}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listManuals" resultMap="ManualRowMap">
+        <include refid="manualSelect"/>
+        <include refid="manualWhere"/>
+        order by m.manual_type, m.target_user, m.effective_date desc, m.version desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countManuals" resultType="long">
+        select count(*) from manuals m
+        <include refid="manualWhere"/>
+    </select>
+
+    <select id="findManual" resultMap="ManualRowMap">
+        <include refid="manualSelect"/>
+        where m.manual_id = #{manualId}
+    </select>
+
+    <select id="findDuplicate" resultMap="ManualRowMap">
+        select m.manual_id as "manualId",
+               m.manual_type as "manualType",
+               m.version as "version",
+               m.target_user as "targetUser",
+               m.effective_date as "effectiveDate",
+               mf.original_file_name as "originalFileName",
+               false as "latest",
+               m.created_at as "createdAt",
+               m.created_by as "createdBy",
+               m.updated_at as "updatedAt",
+               m.updated_by as "updatedBy"
+        from manuals m
+        left join manual_files mf on mf.manual_id = m.manual_id
+        where m.manual_type = #{manualType}
+          and m.target_user = #{targetUser}
+          and m.version = #{version}
+    </select>
+
+    <insert id="insertManual">
+        insert into manuals (manual_type, version, target_user, effective_date, created_by, updated_by, change_reason)
+        values (#{manualType}, #{version}, #{targetUser}, #{effectiveDate}, #{userId}, #{userId}, #{changeReason})
+    </insert>
+
+    <select id="lastManualId" resultType="long">
+        select currval(pg_get_serial_sequence('manuals','manual_id'))
+    </select>
+
+    <insert id="insertManualFile">
+        insert into manual_files (manual_id, original_file_name, internal_storage_name, file_content, created_by)
+        values (#{manualId}, #{originalFileName}, #{internalStorageName}, #{fileContent}, #{userId})
+    </insert>
+
+    <select id="findDownload" resultMap="ManualDownloadMap">
+        select m.manual_id as "manualId",
+               mf.original_file_name as "originalFileName",
+               mf.file_content as "fileContent"
+        from manuals m
+        join manual_files mf on mf.manual_id = m.manual_id
+        where m.manual_id = #{manualId}
+    </select>
+</mapper>

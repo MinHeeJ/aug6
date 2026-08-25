@@ -3280,171 +3280,717 @@ paths:
       security: [{SessionCookie: []}]
       x-roles: [R09]
 
-  /api/admin/privacy/policies:
+  /api/admin/system-settings/messages:
     get:
-      operationId: listPrivacyFieldPolicies
-      summary: 개인정보 보호정책 목록
+      operationId: listMessages
+      summary: 메시지 목록 조회
       security:
         - SessionCookie: []
-      x-roles: [R09]
+      x-roles:
+        - R09
       parameters:
-        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
-        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
-        - { name: fieldKey, in: query, required: false, schema: { type: string } }
-        - { name: privacyGrade, in: query, required: false, schema: { type: string, enum: [PUBLIC, PERSONAL, SENSITIVE, ACCOUNT] } }
-        - { name: encryptionRequiredYn, in: query, required: false, schema: { type: string, enum: [Y, N] } }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
       responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-195]
-  /api/admin/privacy/policies-save:
-    put:
-      operationId: savePrivacyFieldPolicies
-      summary: 개인정보 보호정책 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: array, items: { $ref: '#/components/schemas/PrivacyFieldPolicySaveRequest' } }
-      responses:
-        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: Validation Error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-196, REQ-197, REQ-198, REQ-199]
-      x-business-rules: [실제 개인정보 원문값은 보호정책 payload에 포함할 수 없다., 암호화 대상으로 설정된 필드는 저장 시 DEC-016 crypto service 적용 대상이 된다.]
-      x-side-effects: [privacy_field_policies 변경 메타정보를 기록한다.]
-      x-state-transitions: [field policy draft -> applied]
-      x-required-tests:
-        - "happy: R09가 SENSITIVE/Y 정책을 저장 -> privacy_field_policies.encryption_required_yn=Y 재조회"
-        - "auth: R01 세션으로 저장 요청 -> 403 ApiError"
-        - "validation: fieldKey 누락 -> fields.fieldKey 오류"
-        - "business: actualValue 포함 payload -> 저장 차단 및 privacy_field_policies 변경 없음"
-        - "side-effect: 저장 성공 -> updated_at/updated_by 변경 메타정보 존재"
-  /api/admin/privacy/permissions:
-    get:
-      operationId: listPrivacyAccessPermissions
-      summary: 개인정보 권한 목록
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      parameters:
-        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
-        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
-        - { name: roleCode, in: query, required: false, schema: { $ref: '#/components/schemas/RoleCodeEnum' } }
-        - { name: fieldKey, in: query, required: false, schema: { type: string } }
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-201]
-  /api/admin/privacy/permissions-save:
-    put:
-      operationId: savePrivacyAccessPermissions
-      summary: 개인정보 권한 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: array, items: { $ref: '#/components/schemas/PrivacyAccessPermissionSaveRequest' } }
-      responses:
-        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: Validation Error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-202, REQ-203, REQ-204, REQ-205]
-      x-business-rules: [roleCode는 기존 R01~R09만 허용하고 새 역할을 생성하지 않는다., 원문·마스킹·출력·계좌정보 권한은 독립 플래그로 저장한다.]
-      x-side-effects: [privacy_access_permissions 변경 메타정보를 기록한다.]
-      x-state-transitions: [permission denied -> allowed 또는 allowed -> denied]
-      x-required-tests:
-        - "happy: R09 raw_view_allowed_yn=Y 저장 -> privacy_access_permissions.raw_view_allowed_yn=Y 재조회"
-        - "auth: R01 세션으로 저장 요청 -> 403 ApiError"
-        - "validation: roleCode=R10 입력 -> fields.roleCode 오류"
-        - "business: userId 기반 역할 부여 payload 포함 -> 저장 차단 및 user_roles 변경 없음"
-        - "side-effect: 저장 성공 -> permission 변경 메타정보 존재"
-  /api/admin/privacy/permissions/evaluate:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-240
+        - REQ-241
+        - REQ-242
+        - REQ-243
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
     post:
-      operationId: evaluatePrivacyAccessPermission
-      summary: 개인정보 권한 판정
+      operationId: createMessage
+      summary: 메시지 등록
       security:
         - SessionCookie: []
-      x-roles: [R01, R02, R03, R04, R05, R06, R07, R08, R09]
+      x-roles:
+        - R09
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/PrivacyAccessEvaluateRequest' }
+            schema:
+              $ref: '#/components/schemas/Basic22GenericRequest'
       responses:
-        '200': { description: 판정 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '403': { description: Forbidden, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-206]
-      x-business-rules: [미설정 역할·필드 조합은 원문 조회 마스킹 조회 출력 계좌정보 조회를 모두 차단한다., 마스킹 조회권한만 있으면 원문값은 제공하지 않는다.]
-      x-side-effects: [판정 결과가 개인정보 처리로 이어질 때 privacy_access_logs 기록 대상이 된다.]
-      x-state-transitions: [requested -> allowed 또는 requested -> denied]
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-242
+        - REQ-243
+        - REQ-244
+        - REQ-245
+        - REQ-246
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+      x-business-rules:
+        - 필수 입력 누락 시 저장하지 않는다.
+        - 권한 없는 사용자의 변경 요청은 기존 row를 유지한다.
+      x-side-effects:
+        - 성공 시 대상 table의 updated_at/updated_by 또는 이력 row를 기록한다.
+      x-state-transitions:
+        - PENDING -> ACTIVE: 권한 있는 저장 성공 시 현재값으로 반영
       x-required-tests:
-        - "happy: 허용된 R09 RAW_VIEW 판정 -> allowed=true와 raw access 가능 결과"
-        - "auth: 미인증 요청 -> 401 ApiError"
-        - "validation: accessType 누락 -> fields.accessType 오류"
-        - "business: 미설정 R01 RAW_VIEW -> 403 또는 allowed=false 및 원문값 없음"
-        - "side-effect: denied 판정 후 처리 시도 -> privacy_access_logs.process_result=DENIED 기록"
-  /api/admin/privacy/access-logs:
-    get:
-      operationId: searchPrivacyAccessLogs
-      summary: 개인정보 처리이력 검색
+        - 'happy: R09 valid request -> follow-up read shows persisted target table field'
+        - 'auth: non-R09 session -> 403 ApiError and target table unchanged'
+        - 'validation: missing required field -> ApiError.fields contains missing field'
+        - 'business: duplicate or invalid business guard -> request rejected and previous row unchanged'
+        - 'side-effect: successful save -> updated_at/updated_by or history row exists'
+  /api/admin/system-settings/messages/{messageCode}:
+    put:
+      operationId: saveMessage
+      summary: 메시지 문구 저장
       security:
         - SessionCookie: []
-      x-roles: [R09]
-      parameters:
-        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
-        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
-        - { name: actorUserId, in: query, required: false, schema: { type: integer, format: int64 } }
-        - { name: targetRef, in: query, required: false, schema: { type: string } }
-        - { name: processType, in: query, required: false, schema: { type: string, enum: [VIEW, PRINT, DOWNLOAD] } }
-        - { name: processedFrom, in: query, required: false, schema: { type: string, format: date } }
-        - { name: processedTo, in: query, required: false, schema: { type: string, format: date } }
+      x-roles:
+        - R09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Basic22GenericRequest'
       responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: Bad Request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-207]
-  /api/admin/privacy/access-logs-record:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-243
+        - REQ-244
+        - REQ-245
+        - REQ-246
+        - REQ-247
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+      x-business-rules:
+        - 필수 입력 누락 시 저장하지 않는다.
+        - 권한 없는 사용자의 변경 요청은 기존 row를 유지한다.
+      x-side-effects:
+        - 성공 시 대상 table의 updated_at/updated_by 또는 이력 row를 기록한다.
+      x-state-transitions:
+        - PENDING -> ACTIVE: 권한 있는 저장 성공 시 현재값으로 반영
+      x-required-tests:
+        - 'happy: R09 valid request -> follow-up read shows persisted target table field'
+        - 'auth: non-R09 session -> 403 ApiError and target table unchanged'
+        - 'validation: missing required field -> ApiError.fields contains missing field'
+        - 'business: duplicate or invalid business guard -> request rejected and previous row unchanged'
+        - 'side-effect: successful save -> updated_at/updated_by or history row exists'
+  /api/system/messages/{messageCode}:
+    get:
+      operationId: getMessageText
+      summary: 메시지 문구 제공
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-246
+        - REQ-247
+        - REQ-248
+        - REQ-249
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+  /api/admin/notices:
+    get:
+      operationId: listNotices
+      summary: 공지사항 목록 조회
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-263
+        - REQ-264
+        - REQ-265
+        - REQ-266
+        - REQ-267
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
     post:
-      operationId: recordPrivacyAccessLog
-      summary: 개인정보 처리이력 기록
+      operationId: createNotice
+      summary: 공지사항 등록
       security:
         - SessionCookie: []
-      x-roles: [R01, R02, R03, R04, R05, R06, R07, R08, R09]
+      x-roles:
+        - R09
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/PrivacyAccessLogRecordRequest' }
+            schema:
+              $ref: '#/components/schemas/Basic22GenericRequest'
       responses:
-        '201': { description: 기록 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: Validation Error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-209]
-      x-business-rules: [처리목적이 없으면 개인정보 처리 전 목적 확인을 요구한다., 보호 대상 개인정보 원문은 처리이력에 저장하지 않는다.]
-      x-side-effects: [privacy_access_logs에 append-only row를 생성한다.]
-      x-state-transitions: [privacy process requested -> history recorded]
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-264
+        - REQ-265
+        - REQ-266
+        - REQ-267
+        - REQ-268
+        - REQ-269
+        - REQ-270
+        - REQ-271
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+      x-business-rules:
+        - 필수 입력 누락 시 저장하지 않는다.
+        - 권한 없는 사용자의 변경 요청은 기존 row를 유지한다.
+      x-side-effects:
+        - 성공 시 대상 table의 updated_at/updated_by 또는 이력 row를 기록한다.
+      x-state-transitions:
+        - PENDING -> ACTIVE: 권한 있는 저장 성공 시 현재값으로 반영
       x-required-tests:
-        - "happy: DOWNLOAD 처리 기록 -> privacy_access_logs.process_type=DOWNLOAD row 존재"
-        - "auth: 미인증 기록 요청 -> 401 ApiError"
-        - "validation: processPurpose 누락 -> fields.processPurpose 오류"
-        - "business: originalValue 포함 payload -> 저장 차단 및 privacy_access_logs row 미생성"
-        - "side-effect: 기록 성공 -> processed_at/request_ip/process_result 값 존재"
-  /api/admin/privacy/access-logs/{historyId}:
-    get:
-      operationId: getPrivacyAccessLog
-      summary: 개인정보 처리이력 상세
+        - 'happy: R09 valid request -> follow-up read shows persisted target table field'
+        - 'auth: non-R09 session -> 403 ApiError and target table unchanged'
+        - 'validation: missing required field -> ApiError.fields contains missing field'
+        - 'business: duplicate or invalid business guard -> request rejected and previous row unchanged'
+        - 'side-effect: successful save -> updated_at/updated_by or history row exists'
+  /api/admin/notices/{noticeId}:
+    put:
+      operationId: saveNotice
+      summary: 공지사항 저장
       security:
         - SessionCookie: []
-      x-roles: [R09]
-      parameters:
-        - { name: historyId, in: path, required: true, schema: { type: integer, format: int64 } }
+      x-roles:
+        - R09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Basic22GenericRequest'
       responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '404': { description: Not Found, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-208, REQ-210]
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-271
+        - REQ-272
+        - REQ-273
+        - REQ-274
+        - REQ-275
+        - REQ-276
+        - REQ-277
+        - REQ-278
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+      x-business-rules:
+        - 필수 입력 누락 시 저장하지 않는다.
+        - 권한 없는 사용자의 변경 요청은 기존 row를 유지한다.
+      x-side-effects:
+        - 성공 시 대상 table의 updated_at/updated_by 또는 이력 row를 기록한다.
+      x-state-transitions:
+        - PENDING -> ACTIVE: 권한 있는 저장 성공 시 현재값으로 반영
+      x-required-tests:
+        - 'happy: R09 valid request -> follow-up read shows persisted target table field'
+        - 'auth: non-R09 session -> 403 ApiError and target table unchanged'
+        - 'validation: missing required field -> ApiError.fields contains missing field'
+        - 'business: duplicate or invalid business guard -> request rejected and previous row unchanged'
+        - 'side-effect: successful save -> updated_at/updated_by or history row exists'
+  /api/admin/notices/{noticeId}/attachments/{attachmentId}/download:
+    get:
+      operationId: downloadNoticeAttachment
+      summary: 공지 첨부 다운로드
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-270
+        - REQ-271
+        - REQ-272
+        - REQ-273
+        - REQ-274
+        - REQ-275
+        - REQ-276
+        - REQ-277
+        - REQ-278
+        - REQ-279
+        - REQ-280
+        - REQ-281
+        - REQ-282
+        - REQ-283
+        - REQ-284
+        - REQ-285
+        - REQ-286
+        - REQ-287
+        - REQ-288
+        - REQ-289
+        - REQ-290
+        - REQ-291
+        - REQ-292
+        - REQ-293
+        - REQ-294
+        - REQ-295
+        - REQ-296
+        - REQ-297
+        - REQ-298
+        - REQ-299
+        - REQ-300
+        - REQ-301
+        - REQ-302
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+  /api/admin/help-contents:
+    get:
+      operationId: listHelpContents
+      summary: 도움말 목록 조회
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-303
+        - REQ-304
+        - REQ-305
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+  /api/admin/help-contents/{screenId}:
+    put:
+      operationId: saveHelpContent
+      summary: 도움말 저장
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Basic22GenericRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-304
+        - REQ-305
+        - REQ-306
+        - REQ-307
+        - REQ-308
+        - REQ-309
+        - REQ-310
+        - REQ-311
+        - REQ-312
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+      x-business-rules:
+        - 필수 입력 누락 시 저장하지 않는다.
+        - 권한 없는 사용자의 변경 요청은 기존 row를 유지한다.
+      x-side-effects:
+        - 성공 시 대상 table의 updated_at/updated_by 또는 이력 row를 기록한다.
+      x-state-transitions:
+        - PENDING -> ACTIVE: 권한 있는 저장 성공 시 현재값으로 반영
+      x-required-tests:
+        - 'happy: R09 valid request -> follow-up read shows persisted target table field'
+        - 'auth: non-R09 session -> 403 ApiError and target table unchanged'
+        - 'validation: missing required field -> ApiError.fields contains missing field'
+        - 'business: duplicate or invalid business guard -> request rejected and previous row unchanged'
+        - 'side-effect: successful save -> updated_at/updated_by or history row exists'
+  /api/help-contents/{screenId}:
+    get:
+      operationId: getHelpContent
+      summary: 화면 도움말 제공
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-312
+        - REQ-313
+        - REQ-314
+        - REQ-315
+        - REQ-316
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+  /api/admin/manuals:
+    get:
+      operationId: listManuals
+      summary: 매뉴얼 목록 조회
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-329
+        - REQ-330
+        - REQ-331
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+    post:
+      operationId: createManual
+      summary: 매뉴얼 등록
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Basic22GenericRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-331
+        - REQ-332
+        - REQ-333
+        - REQ-334
+        - REQ-335
+        - REQ-336
+        - REQ-337
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
+      x-business-rules:
+        - 필수 입력 누락 시 저장하지 않는다.
+        - 권한 없는 사용자의 변경 요청은 기존 row를 유지한다.
+      x-side-effects:
+        - 성공 시 대상 table의 updated_at/updated_by 또는 이력 row를 기록한다.
+      x-state-transitions:
+        - PENDING -> ACTIVE: 권한 있는 저장 성공 시 현재값으로 반영
+      x-required-tests:
+        - 'happy: R09 valid request -> follow-up read shows persisted target table field'
+        - 'auth: non-R09 session -> 403 ApiError and target table unchanged'
+        - 'validation: missing required field -> ApiError.fields contains missing field'
+        - 'business: duplicate or invalid business guard -> request rejected and previous row unchanged'
+        - 'side-effect: successful save -> updated_at/updated_by or history row exists'
+  /api/admin/manuals/{manualId}/download:
+    get:
+      operationId: downloadManualFile
+      summary: 매뉴얼 파일 다운로드
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-335
+        - REQ-336
+        - REQ-337
+        - REQ-338
+        - REQ-339
+        - REQ-340
+        - REQ-341
+        - REQ-342
+        - REQ-343
+        - REQ-344
+        - REQ-345
+        - REQ-346
+        - REQ-347
+        - REQ-348
+        - REQ-349
+        - REQ-350
+        - REQ-351
+        - REQ-352
+        - REQ-353
+        - REQ-354
+        - REQ-355
+        - REQ-356
+        - REQ-357
+        - REQ-358
+        - REQ-359
+        - REQ-195
+        - REQ-196
+        - REQ-197
+        - REQ-198
+        - REQ-199
+        - REQ-200
 components:
   securitySchemes:
     SessionCookie:
@@ -3487,14 +4033,20 @@ components:
             fields:
               type: array
               items:
-                type: object
-                required: [field, message]
-                properties:
-                  field: { type: string }
-                  message: { type: string }
+                $ref: '#/components/schemas/ValidationError'
         meta:
           type: object
           additionalProperties: true
+    ValidationError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
     FunctionPermissionRequest:
       type: object
       required: [screenId, roleCode, functionType, permissionAllowed, changeReason]
@@ -3534,48 +4086,10 @@ components:
         validStartAt: { type: string, format: date-time }
         validEndAt: { type: string, format: date-time }
         changeReason: { type: string }
-
-    PrivacyFieldPolicySaveRequest:
+    Basic22GenericRequest:
       type: object
-      required: [fieldKey, privacyGrade, encryptionRequiredYn, logExclusionYn, changeReason]
-      properties:
-        fieldKey: { type: string }
-        privacyGrade: { type: string, enum: [PUBLIC, PERSONAL, SENSITIVE, ACCOUNT] }
-        encryptionRequiredYn: { type: string, enum: [Y, N] }
-        maskingRule: { type: string }
-        logExclusionYn: { type: string, enum: [Y, N] }
-        changeReason: { type: string }
-    PrivacyAccessPermissionSaveRequest:
-      type: object
-      required: [roleCode, fieldKey, rawViewAllowedYn, maskedViewAllowedYn, exportAllowedYn, accountViewAllowedYn, changeReason]
-      properties:
-        roleCode:
-          $ref: '#/components/schemas/RoleCodeEnum'
-        fieldKey: { type: string }
-        rawViewAllowedYn: { type: string, enum: [Y, N] }
-        maskedViewAllowedYn: { type: string, enum: [Y, N] }
-        exportAllowedYn: { type: string, enum: [Y, N] }
-        accountViewAllowedYn: { type: string, enum: [Y, N] }
-        changeReason: { type: string }
-    PrivacyAccessEvaluateRequest:
-      type: object
-      required: [roleCode, fieldKey, accessType, processPurpose]
-      properties:
-        roleCode:
-          $ref: '#/components/schemas/RoleCodeEnum'
-        fieldKey: { type: string }
-        accessType: { type: string, enum: [RAW_VIEW, MASKED_VIEW, EXPORT, ACCOUNT_VIEW] }
-        processPurpose: { type: string }
-    PrivacyAccessLogRecordRequest:
-      type: object
-      required: [processType, actorUserId, targetRef, processPurpose, requestIp, processResult]
-      properties:
-        processType: { type: string, enum: [VIEW, PRINT, DOWNLOAD] }
-        actorUserId: { type: integer, format: int64 }
-        targetRef: { type: string }
-        processPurpose: { type: string }
-        requestIp: { type: string }
-        processResult: { type: string, enum: [SUCCESS, DENIED, FAILED] }
+      additionalProperties: true
+      description: BASIC-22 신규 공통 운영기능 요청 payload.
     LoginRequest:
       type: object
       required:
@@ -4210,6 +4724,65 @@ x-requirement-accounting:
     status: covered
     evidence: getCurrentUser, getHealth, getMenuTree, login
 x-uncovered-requirements:
+  - {canonical_id: REQ-175, status: data-constraint, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-176, status: out-of-scope, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-177, status: out-of-scope, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-178, status: data-constraint, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-179, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-180, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-181, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-182, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-183, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-184, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-185, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-186, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-187, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-188, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-189, status: data-constraint, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-190, status: data-constraint, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-191, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-192, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-193, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-194, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-201, status: data-constraint, evidence: 필수 입력 항목이 미입력된 경우 저장을 차단해야 한은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-202, status: data-constraint, evidence: 삭제 실행 전에 확인 메시지를 제공해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-203, status: data-constraint, evidence: 저장 실행 전에 확인 메시지를 제공해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-204, status: data-constraint, evidence: 일괄처리 실행 전에 확인 메시지를 제공해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-205, status: data-constraint, evidence: 삭제 처리 후 결과를 안내해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-206, status: data-constraint, evidence: 저장 처리 후 결과를 안내해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-207, status: data-constraint, evidence: 일괄처리 처리 후 결과를 안내해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-208, status: data-constraint, evidence: 화면 레이아웃을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-209, status: data-constraint, evidence: 화면 색상을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-210, status: data-constraint, evidence: 화면 글꼴을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-211, status: data-constraint, evidence: 버튼을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-212, status: data-constraint, evidence: 아이콘을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-213, status: data-constraint, evidence: 용어를 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-214, status: data-constraint, evidence: 오류 발생 시 사용자가 조치할 수 있는 안내 문구를은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-215, status: data-constraint, evidence: 파일의 저장 경로를 외부에 노출하지 않아야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-216, status: data-constraint, evidence: 실제 파일명을 외부에 노출하지 않아야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-217, status: data-constraint, evidence: 원본 파일명을 별도로 보존해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-218, status: data-constraint, evidence: 첨부파일 다운로드 시 다운로드 권한을 재검증해야 한은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-219, status: data-constraint, evidence: 오류코드 체계를 수립해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-220, status: data-constraint, evidence: 사용자 안내 문구와 시스템 로그를 구분하여 관리해야은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-221, status: non-functional, evidence: 한국형 웹 콘텐츠 접근성 지침 2.1을 준수해야 한은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-222, status: data-constraint, evidence: 임시 데이터를 사용 완료 후 삭제해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-223, status: non-functional, evidence: 모든 질의는 평균 응답시간 기준 3초 이내에 결과를은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-224, status: non-functional, evidence: 정상 상태에서 사용자의 건별 질의 요청을 5초 이내은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-225, status: non-functional, evidence: 정상 상태에서 처리한 건별 질의 결과를 화면에 표시은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-226, status: non-functional, evidence: 주요 페이지의 용량을 3MB 이하로 최적화해야 한다은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-227, status: non-functional, evidence: 소프트웨어 개발보안 가이드에 따라 시큐어 코딩을 적은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-228, status: non-functional, evidence: 웹 취약점을 제거해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-229, status: non-functional, evidence: 개인정보 안전성 확보조치 기준에 따라 개인정보를 보은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-230, status: non-functional, evidence: 구간 암호화를 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-231, status: non-functional, evidence: 태블릿의 iPadOS 환경에서 정상 동작을 확인해야은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-232, status: non-functional, evidence: 태블릿의 Android 환경에서 정상 동작을 확인해은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-233, status: non-functional, evidence: 데스크탑 및 랩탑의 Windows 환경에서 정상 동은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-234, status: non-functional, evidence: 데스크탑 및 랩탑의 macOS 환경에서 정상 동작을은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-235, status: non-functional, evidence: Edge 브라우저에서 정상 동작을 확인해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-236, status: non-functional, evidence: Chrome 브라우저에서 정상 동작을 확인해야 한다은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-237, status: non-functional, evidence: Safari 브라우저에서 정상 동작을 확인해야 한다은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-238, status: non-functional, evidence: Opera 브라우저에서 정상 동작을 확인해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
+  - {canonical_id: REQ-239, status: non-functional, evidence: Whale 브라우저에서 정상 동작을 확인해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
   - {canonical_id: REQ-167, status: out-of-scope, evidence: 기능 권한 API는 메뉴 진입 권한과 데이터 범위 권한 설정 payload를 받지 않는다}
   - {canonical_id: REQ-168, status: out-of-scope, evidence: 기간별 권한 API는 기존 businessPeriodId만 연결하고 평가연도·영역·소속 기준 생성 payload를 받지 않는다}
   - {canonical_id: REQ-172, status: out-of-scope, evidence: 신규 API는 R01~R09를 참조만 하며 roles seed를 생성하거나 이름 변경하지 않는다}
@@ -4218,27 +4791,6 @@ x-uncovered-requirements:
   - {canonical_id: REQ-110, status: data-constraint, evidence: 기준정보 복사 대상은 data-model/prepareBaseYearStandards 이력으로 검증한다}
   - {canonical_id: REQ-123, status: data-constraint, evidence: common_settings.setting_key UNIQUE 제약으로 검증한다}
   - {canonical_id: REQ-124, status: non-functional, evidence: 세션 인증방식과 대량처리 구현방식은 architecture boundary로만 제한한다}
-  - {canonical_id: REQ-175, status: out-of-scope, evidence: 기존 역할코드 참조은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
-  - {canonical_id: REQ-176, status: out-of-scope, evidence: 역할 신규정의 금지은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
-  - {canonical_id: REQ-177, status: out-of-scope, evidence: 역할명 변경 금지은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
-  - {canonical_id: REQ-178, status: out-of-scope, evidence: 사용자 역할 부여 제외은 API operation 직접 매핑 없이 out-of-scope artifact에서 검증한다}
-  - {canonical_id: REQ-179, status: data-constraint, evidence: 개인정보 및 평가 결과 조회 이력 보관은 API operation 직접 매핑 없이 data-contract artifact에서 검증한다}
-  - {canonical_id: REQ-180, status: screen-only, evidence: 목록 페이지 크기은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
-  - {canonical_id: REQ-181, status: screen-only, evidence: 목록 Excel 다운로드은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
-  - {canonical_id: REQ-182, status: screen-only, evidence: 필수 입력 표시와 저장 차단은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
-  - {canonical_id: REQ-183, status: screen-only, evidence: 처리 확인 및 결과 안내은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
-  - {canonical_id: REQ-184, status: non-functional, evidence: UI 표준화은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-185, status: non-functional, evidence: 웹 접근성 준수은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-186, status: data-constraint, evidence: 임시 데이터 삭제은 API operation 직접 매핑 없이 data-contract artifact에서 검증한다}
-  - {canonical_id: REQ-187, status: data-constraint, evidence: 보안 필드 암호화은 API operation 직접 매핑 없이 data-contract artifact에서 검증한다}
-  - {canonical_id: REQ-188, status: non-functional, evidence: 평균 질의 응답시간은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-189, status: non-functional, evidence: 건별 질의 응답시간은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-190, status: non-functional, evidence: 주요 페이지 용량은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-191, status: non-functional, evidence: 시큐어 코딩은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-192, status: non-functional, evidence: 개인정보 보호와 구간 암호화은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-193, status: non-functional, evidence: 지원 환경 정상 동작은 API operation 직접 매핑 없이 non-functional artifact에서 검증한다}
-  - {canonical_id: REQ-194, status: non-functional, evidence: AES-256-GCM 암복호화 서비스은 API operation 직접 매핑 없이 architecture-runtime artifact에서 검증한다}
-  - {canonical_id: REQ-200, status: screen-only, evidence: 정책 화면 실제 개인정보 값 제외은 API operation 직접 매핑 없이 ui-supporting artifact에서 검증한다}
 x-shared-contract-reference:
   technology_stack:
     backend: Java 17 + Spring Boot 3.3.x + Maven + MyBatis + PostgreSQL 16

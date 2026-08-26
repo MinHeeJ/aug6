@@ -130,6 +130,22 @@ textarea:disabled {
     @apply rounded-xl;
   }
 
+  .form-input {
+    @apply rounded-xl border-ld bg-white px-3 py-2 text-sm text-link shadow-sm outline-none placeholder:text-muted focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 dark:border-white/10 dark:bg-dark dark:text-white/90;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-btn-shadow hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ld bg-white px-4 py-2 text-sm font-semibold text-link hover:bg-lightprimary dark:border-white/10 dark:bg-white/5 dark:text-white;
+  }
+
+  .table {
+    @apply min-w-full overflow-hidden rounded-xl bg-white text-sm dark:bg-transparent;
+  }
+
   .no-scrollbar {
     scrollbar-width: none;
   }

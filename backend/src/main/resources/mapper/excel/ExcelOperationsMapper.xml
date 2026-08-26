@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.excel.ExcelOperationsMapper">
+    <select id="listUploadTemplates" resultType="kr.ac.knue.commonfoundation.excel.ExcelTemplateRow">
+        select t.template_id as "templateId",
+               t.business_type as "businessType",
+               t.template_version as "templateVersion",
+               t.effective_date as "effectiveDate",
+               t.system_use_yn as "systemUseYn",
+               t.status as "status",
+               f.file_token as "fileToken",
+               f.original_file_name as "originalFileName"
+        from excel_upload_templates t
+        left join excel_upload_template_files f on f.template_id = t.template_id
+        <where>
+            t.status != 'DELETED'
+            <if test="businessType != null and businessType != ''">
+                and t.business_type = #{businessType}
+            </if>
+            <if test="effectiveDate != null and effectiveDate != ''">
+                and t.effective_date &lt;= CAST(#{effectiveDate} AS date)
+            </if>
+        </where>
+        order by t.effective_date desc, t.template_version desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countUploadTemplates" resultType="long">
+        select count(*)
+        from excel_upload_templates t
+        <where>
+            t.status != 'DELETED'
+            <if test="businessType != null and businessType != ''">
+                and t.business_type = #{businessType}
+            </if>
+            <if test="effectiveDate != null and effectiveDate != ''">
+                and t.effective_date &lt;= CAST(#{effectiveDate} AS date)
+            </if>
+        </where>
+    </select>
+
+    <select id="listTemplateRules" resultType="kr.ac.knue.commonfoundation.excel.ExcelTemplateRuleRow">
+        select rule_id as "ruleId", required_column as "requiredColumn", column_order as "columnOrder", code_rule_ref as "codeRuleRef"
+        from excel_upload_template_rules
+        where template_id = #{templateId}
+        order by column_order
+    </select>
+
+    <insert id="upsertUploadTemplate">
+        insert into excel_upload_templates (template_id, business_type, template_version, effective_date, created_by, updated_by, change_reason)
+        values (#{templateId}, #{request.businessType}, #{request.templateVersion}, CAST(#{request.effectiveDate} AS date), #{userId}, #{userId}, #{request.changeReason})
+        on conflict (template_id) do update set business_type = excluded.business_type, template_version = excluded.template_version,
+            effective_date = excluded.effective_date, updated_at = current_timestamp, updated_by = excluded.updated_by, change_reason = excluded.change_reason
+    </insert>
+
+    <delete id="deleteTemplateRules">
+        delete from excel_upload_template_rules where template_id = #{templateId}
+    </delete>
+
+    <insert id="insertTemplateRule">
+        insert into excel_upload_template_rules (rule_id, template_id, required_column, column_order, code_rule_ref, created_by, updated_by)
+        values (#{ruleId}, #{templateId}, #{rule.requiredColumn}, #{rule.columnOrder}, #{rule.codeRuleRef}, #{userId}, #{userId})
+    </insert>
+
+    <insert id="upsertTemplateFile">
+        insert into excel_upload_template_files (file_token, template_id, original_file_name, content_type, file_size_bytes, created_by)
+        values (#{fileToken}, #{templateId}, #{originalFileName}, 'text/csv', 0, #{userId})
+        on conflict (file_token) do update set original_file_name = excluded.original_file_name
+    </insert>
+
+    <select id="findUploadTemplate" resultType="kr.ac.knue.commonfoundation.excel.ExcelTemplateRow">
+        select t.template_id as "templateId", t.business_type as "businessType", t.template_version as "templateVersion",
+               t.effective_date as "effectiveDate", t.system_use_yn as "systemUseYn", t.status as "status",
+               f.file_token as "fileToken", f.original_file_name as "originalFileName"
+        from excel_upload_templates t
+        left join excel_upload_template_files f on f.template_id = t.template_id
+        where t.template_id = #{templateId} and t.status != 'DELETED'
+    </select>
+
+    <select id="countTemplateFile" resultType="int">
+        select count(*) from excel_upload_template_files where template_id = #{templateId}
+    </select>
+
+    <insert id="insertUploadFile">
+        insert into excel_upload_files (upload_id, business_type, template_id, file_token, original_file_name, validation_status, uploader_user_id)
+        values (#{uploadId}, #{businessType}, #{templateId}, #{fileToken}, #{originalFileName}, #{validationStatus}, #{userId})
+    </insert>
+
+    <insert id="insertStagingRow">
+        insert into excel_upload_staging_rows (staging_row_id, upload_id, row_number, row_payload, validation_status)
+        values (#{stagingRowId}, #{uploadId}, #{rowNumber}, CAST(#{payload} AS jsonb), #{validationStatus})
+    </insert>
+
+    <insert id="insertUploadError">
+        insert into excel_upload_errors (error_id, upload_id, row_number, column_name, input_value, error_code, error_reason, correction_guide)
+        values (#{error.errorId}, #{error.uploadId}, #{error.rowNumber}, #{error.columnName}, #{error.inputValue}, #{error.errorCode}, #{error.errorReason}, #{error.correctionGuide})
+    </insert>
+
+    <insert id="upsertUploadHistory">
+        insert into excel_upload_histories (upload_id, total_count, success_count, error_count, excluded_count, saved_count, processing_time_millis, processor_user_id)
+        values (#{uploadId}, #{totalCount}, #{successCount}, #{errorCount}, #{excludedCount}, #{savedCount}, #{processingTimeMillis}, #{userId})
+        on conflict (upload_id) do update set total_count = excluded.total_count, success_count = excluded.success_count,
+            error_count = excluded.error_count, excluded_count = excluded.excluded_count, saved_count = excluded.saved_count,
+            processing_time_millis = excluded.processing_time_millis, processed_at = current_timestamp, processor_user_id = excluded.processor_user_id
+    </insert>
+
+    <select id="countUploadErrorsForCommit" resultType="int">
+        select count(*) from excel_upload_errors where upload_id = #{uploadId} and status != 'DELETED'
+    </select>
+
+    <select id="countNormalStagingRows" resultType="int">
+        select count(*) from excel_upload_staging_rows where upload_id = #{uploadId} and validation_status = 'NORMAL'
+    </select>
+
+    <select id="existsUpload" resultType="int">
+        select count(*) from excel_upload_files where upload_id = #{uploadId} and status != 'DELETED'
+    </select>
+
+    <update id="markUploadCommitted">
+        update excel_upload_files set validation_status = 'COMMITTED' where upload_id = #{uploadId}
+    </update>
+
+    <delete id="deleteNormalStagingRows">
+        delete from excel_upload_staging_rows where upload_id = #{uploadId} and validation_status = 'NORMAL'
+    </delete>
+
+    <select id="listExcelUploadHistories" resultType="kr.ac.knue.commonfoundation.excel.ExcelUploadHistoryRow">
+        select h.upload_id as "uploadId", f.original_file_name as "originalFileName", f.uploader_user_id as "uploaderUserId", h.total_count as "totalCount",
+               h.success_count as "successCount", h.error_count as "errorCount", h.excluded_count as "excludedCount",
+               h.saved_count as "savedCount", h.processing_time_millis as "processingTimeMillis", h.processed_at as "processedAt"
+        from excel_upload_histories h
+        join excel_upload_files f on f.upload_id = h.upload_id
+        <where>
+            h.status != 'DELETED'
+            <if test="uploadId != null and uploadId != ''">
+                and h.upload_id = #{uploadId}
+            </if>
+            <if test="originalFileName != null and originalFileName != ''">
+                and f.original_file_name ilike concat('%', #{originalFileName}, '%')
+            </if>
+        </where>
+        order by h.processed_at desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countExcelUploadHistories" resultType="long">
+        select count(*)
+        from excel_upload_histories h
+        join excel_upload_files f on f.upload_id = h.upload_id
+        <where>
+            h.status != 'DELETED'
+            <if test="uploadId != null and uploadId != ''">
+                and h.upload_id = #{uploadId}
+            </if>
+            <if test="originalFileName != null and originalFileName != ''">
+                and f.original_file_name ilike concat('%', #{originalFileName}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="listExcelUploadErrors" resultType="kr.ac.knue.commonfoundation.excel.ExcelUploadErrorRow">
+        select error_id as "errorId", upload_id as "uploadId", row_number as "rowNumber", column_name as "columnName",
+               input_value as "inputValue", error_code as "errorCode", error_reason as "errorReason", correction_guide as "correctionGuide"
+        from excel_upload_errors
+        where upload_id = #{uploadId} and status != 'DELETED'
+        order by row_number, column_name
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countExcelUploadErrors" resultType="long">
+        select count(*) from excel_upload_errors where upload_id = #{uploadId} and status != 'DELETED'
+    </select>
+
+    <insert id="insertDownloadJob">
+        insert into excel_download_jobs (download_id, requester_user_id, output_type, query_condition, data_scope_ref, file_token, original_file_name, generated_at)
+        values (#{downloadId}, #{requesterUserId}, #{outputType}, CAST(#{queryCondition} AS jsonb), #{dataScopeRef}, #{fileToken}, #{originalFileName}, current_timestamp)
+    </insert>
+
+    <select id="findDownloadJob" resultType="kr.ac.knue.commonfoundation.excel.ExcelDownloadJobRow">
+        select download_id as "downloadId", requester_user_id as "requesterUserId", output_type as "outputType",
+               query_condition::text as "queryCondition", data_scope_ref as "dataScopeRef", file_token as "fileToken",
+               original_file_name as "originalFileName", status as "status"
+        from excel_download_jobs where download_id = #{downloadId}
+    </select>
+</mapper>

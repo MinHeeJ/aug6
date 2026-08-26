@@ -14,5 +14,5 @@ public record BatchResultRow(
         Integer failureCount,
         Integer excludedCount,
         Long elapsedMillis,
-        boolean hasLog) {
+        Boolean hasLog) {
 }

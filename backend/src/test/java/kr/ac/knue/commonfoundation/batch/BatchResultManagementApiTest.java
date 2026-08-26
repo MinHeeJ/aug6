@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,6 +96,19 @@ class BatchResultManagementApiTest {
     }
 
     @Test
+    void batchResultRowHasBoxedBooleanConstructorForMyBatisResultMapInstantiation() throws Exception {
+        Class<?>[] constructorParameterTypes = Stream.of(BatchResultRow.class.getRecordComponents())
+                .map(component -> component.getType().isPrimitive()
+                        ? primitiveWrapper(component.getType())
+                        : component.getType())
+                .toArray(Class<?>[]::new);
+
+        assertThat(BatchResultRow.class.getDeclaredConstructor(constructorParameterTypes))
+                .as("MyBatis constructor resultMap resolves boolean columns as java.lang.Boolean")
+                .isNotNull();
+    }
+
+    @Test
     void serviceQueriesLogsByExecutionIdAndProvidesNoWriteMethodSideEffect() {
         BatchResultMapper mapper = mock(BatchResultMapper.class);
         BatchResultService resultService = new BatchResultService(mapper);
@@ -109,5 +123,18 @@ class BatchResultManagementApiTest {
         assertThat(List.of(BatchResultMapper.class.getDeclaredMethods()).stream()
                 .map(method -> method.getName()).toList())
                 .doesNotContain("updateBatchResultLog", "deleteBatchResultLog", "updateBatchResult");
+    }
+
+    private Class<?> primitiveWrapper(Class<?> type) {
+        if (type == boolean.class) {
+            return Boolean.class;
+        }
+        if (type == int.class) {
+            return Integer.class;
+        }
+        if (type == long.class) {
+            return Long.class;
+        }
+        return type;
     }
 }

@@ -1,16 +1,16 @@
 INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order, screen_id, url, icon, business_category, description, system_use_yn, status, updated_by) VALUES
 (113,110,'SCREEN','보직 관리',3,'SCR-POSITION-ASSIGNMENT-MGMT','/admin/position-assignments','badge','SYSTEM','보직 대상자 및 유효기간 관리','Y','ACTIVE',1),
 (114,110,'SCREEN','업무담당자 관리',4,'SCR-DUTY-ASSIGNMENT-MGMT','/admin/duty-assignments','briefcase','SYSTEM','업무조직별 담당자·담당영역 지정','Y','ACTIVE',1),
-(124,120,'SCREEN','데이터 범위 권한',4,'SCR-DATA-SCOPE-RULE-MGMT','/admin/data-scope-rules','filter','SYSTEM','역할별 데이터 범위 규칙 설정','Y','ACTIVE',1)
+(170,120,'SCREEN','데이터 범위 권한',4,'SCR-DATA-SCOPE-RULE-MGMT','/admin/data-scope-rules','filter','SYSTEM','역할별 데이터 범위 규칙 설정','Y','ACTIVE',1)
 ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name, parent_menu_id = EXCLUDED.parent_menu_id, url = EXCLUDED.url, screen_id = EXCLUDED.screen_id, updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_execution_info (menu_id, screen_id, url, icon, business_category, description, updated_by)
-SELECT menu_id, screen_id, url, icon, business_category, description, 1 FROM menus WHERE menu_id IN (113,114,124)
+SELECT menu_id, screen_id, url, icon, business_category, description, 1 FROM menus WHERE menu_id IN (113,114,170)
 ON CONFLICT (menu_id) DO UPDATE SET screen_id = EXCLUDED.screen_id, url = EXCLUDED.url, icon = EXCLUDED.icon, updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_permissions (target_type, target_id, menu_id, access_allowed, status, created_by, updated_by, change_reason)
 SELECT 'ROLE', 'R09', menu_id, 'ALLOW', 'ACTIVE', 1, 1, '시스템관리자 BASIC-10 운영기능 메뉴 접근'
-FROM menus WHERE menu_id IN (113,114,124)
+FROM menus WHERE menu_id IN (113,114,170)
 ON CONFLICT (target_type, target_id, menu_id) DO UPDATE SET access_allowed = EXCLUDED.access_allowed, status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO position_assignments (position_code, user_id, organization_code, effective_start_date, effective_end_date, status, confirmed_at, created_by, updated_by, change_reason)

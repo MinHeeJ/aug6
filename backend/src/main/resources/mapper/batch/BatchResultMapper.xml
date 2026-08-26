@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.batch.BatchResultMapper">
+    <resultMap id="BatchResultRowMap" type="kr.ac.knue.commonfoundation.batch.BatchResultRow">
+        <constructor>
+            <arg column="executionId" javaType="string"/>
+            <arg column="batchId" javaType="string"/>
+            <arg column="batchType" javaType="string"/>
+            <arg column="executionStatus" javaType="string"/>
+            <arg column="startedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="endedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="totalCount" javaType="java.lang.Integer"/>
+            <arg column="successCount" javaType="java.lang.Integer"/>
+            <arg column="failureCount" javaType="java.lang.Integer"/>
+            <arg column="excludedCount" javaType="java.lang.Integer"/>
+            <arg column="elapsedMillis" javaType="java.lang.Long"/>
+            <arg column="hasLog" javaType="boolean"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="BatchResultLogResponseMap" type="kr.ac.knue.commonfoundation.batch.BatchResultLogResponse">
+        <constructor>
+            <arg column="executionId" javaType="string"/>
+            <arg column="logFileRef" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="batchResultSelect">
+        select be.execution_id as "executionId",
+               be.batch_id as "batchId",
+               bd.batch_type as "batchType",
+               be.execution_status as "executionStatus",
+               ber.started_at as "startedAt",
+               ber.ended_at as "endedAt",
+               ber.total_count as "totalCount",
+               ber.success_count as "successCount",
+               ber.failure_count as "failureCount",
+               ber.excluded_count as "excludedCount",
+               ber.elapsed_millis as "elapsedMillis",
+               (bel.execution_id is not null) as "hasLog"
+        from batch_execution_results ber
+        join batch_executions be on be.execution_id = ber.execution_id
+        join batch_definitions bd on bd.batch_id = be.batch_id
+        left join batch_execution_logs bel on bel.execution_id = ber.execution_id
+    </sql>
+
+    <sql id="batchResultWhere">
+        <where>
+            <if test="criteria.executionId != null and criteria.executionId != ''">
+                be.execution_id ilike concat('%', #{criteria.executionId}, '%')
+            </if>
+            <if test="criteria.batchId != null and criteria.batchId != ''">
+                <if test="criteria.executionId != null and criteria.executionId != ''">and</if>
+                be.batch_id ilike concat('%', #{criteria.batchId}, '%')
+            </if>
+            <if test="criteria.executionStatus != null and criteria.executionStatus != ''">
+                <if test="(criteria.executionId != null and criteria.executionId != '') or (criteria.batchId != null and criteria.batchId != '')">and</if>
+                be.execution_status = #{criteria.executionStatus}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listBatchResults" resultMap="BatchResultRowMap">
+        <include refid="batchResultSelect"/>
+        <include refid="batchResultWhere"/>
+        order by ber.started_at desc nulls last, be.execution_id
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countBatchResults" resultType="long">
+        select count(*)
+        from batch_execution_results ber
+        join batch_executions be on be.execution_id = ber.execution_id
+        <include refid="batchResultWhere"/>
+    </select>
+
+    <select id="findBatchResultLog" resultMap="BatchResultLogResponseMap">
+        select execution_id as "executionId",
+               log_file_ref as "logFileRef"
+        from batch_execution_logs
+        where execution_id = #{executionId}
+    </select>
+</mapper>

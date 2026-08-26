@@ -26,8 +26,7 @@ class NoOutOfScopeBusinessApiTest {
             "files",
             "excel",
             "personal-information",
-            "audit-log",
-            "batch");
+            "audit-log");
 
     @Test
     void openApiDoesNotExposeOutOfScopeBusinessApis() throws Exception {

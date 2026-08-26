@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.batch.BatchExecutionMapper">
+    <resultMap id="BatchExecutionRowMap" type="kr.ac.knue.commonfoundation.batch.BatchExecutionRow">
+        <constructor>
+            <arg column="executionId" javaType="string"/>
+            <arg column="batchId" javaType="string"/>
+            <arg column="batchType" javaType="string"/>
+            <arg column="executionStatus" javaType="string"/>
+            <arg column="processType" javaType="string"/>
+            <arg column="reason" javaType="string"/>
+            <arg column="operatorUserId" javaType="java.lang.Long"/>
+            <arg column="operatorName" javaType="string"/>
+            <arg column="originalExecutionId" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="executionParameterJson" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="batchExecutionSelect">
+        select be.execution_id as "executionId",
+               be.batch_id as "batchId",
+               bd.batch_type as "batchType",
+               be.execution_status as "executionStatus",
+               be.process_type as "processType",
+               be.reason as "reason",
+               be.operator_user_id as "operatorUserId",
+               coalesce(kps.name, u.login_id, cast(be.operator_user_id as varchar)) as "operatorName",
+               be.original_execution_id as "originalExecutionId",
+               be.request_id as "requestId",
+               be.created_at as "createdAt",
+               be.updated_at as "updatedAt",
+               coalesce(be.execution_parameter_json::text, '{}') as "executionParameterJson"
+        from batch_executions be
+        join batch_definitions bd on bd.batch_id = be.batch_id
+        left join users u on u.user_id = be.operator_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+    </sql>
+
+    <sql id="batchExecutionWhere">
+        <where>
+            <if test="criteria.batchId != null and criteria.batchId != ''">
+                be.batch_id ilike concat('%', #{criteria.batchId}, '%')
+            </if>
+            <if test="criteria.executionStatus != null and criteria.executionStatus != ''">
+                <if test="criteria.batchId != null and criteria.batchId != ''">and</if>
+                be.execution_status = #{criteria.executionStatus}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listBatchExecutions" resultMap="BatchExecutionRowMap">
+        <include refid="batchExecutionSelect"/>
+        <include refid="batchExecutionWhere"/>
+        order by be.updated_at desc, be.execution_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countBatchExecutions" resultType="long">
+        select count(*)
+        from batch_executions be
+        <include refid="batchExecutionWhere"/>
+    </select>
+
+    <select id="findBatchExecution" resultMap="BatchExecutionRowMap">
+        <include refid="batchExecutionSelect"/>
+        where be.execution_id = #{executionId}
+    </select>
+
+    <select id="existsBatchDefinition" resultType="int">
+        select count(*) from batch_definitions where batch_id = #{batchId}
+    </select>
+
+    <insert id="insertBatchExecution">
+        insert into batch_executions (execution_id, batch_id, process_type, reason, operator_user_id, execution_status,
+                                      original_execution_id, request_id, execution_parameter_json)
+        values (#{row.executionId}, #{row.batchId}, #{row.processType}, #{row.reason}, #{row.operatorUserId},
+                #{row.executionStatus}, #{row.originalExecutionId}, #{row.requestId}, CAST(#{row.executionParameterJson} AS jsonb))
+    </insert>
+
+    <update id="stopBatchExecution">
+        update batch_executions
+        set execution_status = 'STOPPED',
+            process_type = 'STOP',
+            reason = #{reason},
+            operator_user_id = #{operatorUserId},
+            request_id = #{requestId},
+            updated_at = CURRENT_TIMESTAMP
+        where execution_id = #{executionId}
+          and execution_status = 'RUNNING'
+    </update>
+</mapper>

@@ -10,6 +10,14 @@ public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String
         return new ApiResponse<>(true, data, null, defaultMeta());
     }
 
+    public static <T> ApiResponse<T> ok(T data, String requestId) {
+        Map<String, Object> meta = defaultMeta();
+        if (requestId != null && !requestId.trim().isBlank()) {
+            meta.put("requestId", requestId.trim());
+        }
+        return new ApiResponse<>(true, data, null, meta);
+    }
+
     public static ApiResponse<Void> empty() {
         return new ApiResponse<>(true, null, null, defaultMeta());
     }

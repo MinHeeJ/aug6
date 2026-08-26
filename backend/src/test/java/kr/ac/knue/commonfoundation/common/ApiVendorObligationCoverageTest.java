@@ -24,26 +24,49 @@ class ApiVendorObligationCoverageTest {
     }
 
     @Test
+    void batchDefinitionMutationsDeclareBusinessSideEffectsAndStateTransitions() {
+        assertVendorObligation("post", "/api/admin/batch-definitions", List.of("auth", "business", "happy", "side-effect", "validation"),
+                List.of("batch_definitions", "batch_dependencies", "batch_parameters", "request_id"), List.of("draft_or_active"));
+    }
+
+    @Test
+    void batchExecutionMutationsDeclareBusinessSideEffectsAndStateTransitions() {
+        assertVendorObligation("post", "/api/admin/batch-executions", List.of("auth", "business", "happy", "side-effect", "validation"),
+                List.of("batch_executions", "operator_user_id", "request_id"), List.of("waiting"));
+        assertVendorObligation("patch", "/api/admin/batch-executions/{executionId}/status", List.of("auth", "business", "happy", "side-effect", "validation"),
+                List.of("batch_executions", "execution_status", "operator_user_id", "request_id"), List.of("running", "stopped"));
+        assertVendorObligation("post", "/api/admin/batch-executions/{executionId}/rerun", List.of("auth", "business", "happy", "side-effect", "validation"),
+                List.of("batch_executions", "original_execution_id"), List.of("original_execution", "rerun_running"));
+    }
+
+    @Test
+    void batchRetryMutationsDeclareBusinessSideEffectsAndStateTransitions() {
+        assertVendorObligation("post", "/api/admin/batch-retries", List.of("auth", "business", "happy", "side-effect", "validation"),
+                List.of("batch_retry_results", "original_execution_id", "request_id", "retry_execution_id", "retry_reason"),
+                List.of("failed_target", "retry_running"));
+    }
+
+    @Test
     void functionAndPermissionMutationsDeclareBusinessSideEffectsAndStateTransitions() {
-        assertVendorObligation("post", "/api/admin/function-permissions/evaluate", List.of("business", "side-effect"),
+        assertVendorObligation("post", "/api/admin/function-permissions/evaluate", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("permission_change_history"), List.of("decision", "requested"));
-        assertVendorObligation("put", "/api/admin/function-permissions-save", List.of("business"),
+        assertVendorObligation("put", "/api/admin/function-permissions-save", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("permission_change_history"), List.of("function_permissions", "persisted", "requested"));
-        assertVendorObligation("post", "/api/admin/temporary-permissions-create", List.of("side-effect"),
+        assertVendorObligation("post", "/api/admin/temporary-permissions-create", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("permission_change_history"), List.of("none", "temporary_permissions"));
-        assertVendorObligation("put", "/api/admin/period-permissions-save", List.of("side-effect"),
+        assertVendorObligation("put", "/api/admin/period-permissions-save", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("permission_change_history"), List.of("period_permission_links", "persisted", "requested"));
     }
 
     @Test
     void contentManagementMutationsDeclareAuditTableSideEffectsAndActiveTransitions() {
-        assertVendorObligation("post", "/api/admin/manuals", List.of("business"),
+        assertVendorObligation("post", "/api/admin/manuals", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("table", "updated_at", "updated_by"), List.of("active", "pending"));
-        assertVendorObligation("post", "/api/admin/notices", List.of("auth"),
+        assertVendorObligation("post", "/api/admin/notices", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("table", "updated_at", "updated_by"), List.of("active", "pending"));
-        assertVendorObligation("put", "/api/admin/help-contents/{screenId}", List.of("side-effect"),
+        assertVendorObligation("put", "/api/admin/help-contents/{screenId}", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("table", "updated_at", "updated_by"), List.of("active", "pending"));
-        assertVendorObligation("put", "/api/admin/notices/{noticeId}", List.of("business", "happy", "side-effect", "validation"),
+        assertVendorObligation("put", "/api/admin/notices/{noticeId}", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("table", "updated_at", "updated_by"), List.of("active", "pending"));
     }
 
@@ -51,21 +74,21 @@ class ApiVendorObligationCoverageTest {
     void systemSettingMessageMutationsDeclareFullRequiredTestsAuditSideEffectsAndTransitions() {
         assertVendorObligation("post", "/api/admin/system-settings/messages", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("table", "updated_at", "updated_by"), List.of("active", "pending"));
-        assertVendorObligation("put", "/api/admin/system-settings/messages/{messageCode}", List.of("side-effect"),
+        assertVendorObligation("put", "/api/admin/system-settings/messages/{messageCode}", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("table", "updated_at", "updated_by"), List.of("active", "pending"));
     }
 
     @Test
     void systemSettingBaseYearCommonAndCodeMutationsDeclarePersistenceTransitions() {
-        assertVendorObligation("post", "/api/admin/system-settings/base-years/{baseYear}/standards-preparation", List.of("side-effect"),
+        assertVendorObligation("post", "/api/admin/system-settings/base-years/{baseYear}/standards-preparation", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("standard_year_preparation_history"), List.of("persisted"));
-        assertVendorObligation("put", "/api/admin/code-groups/{groupId}/codes/{codeValue}/usage", List.of("side-effect"),
+        assertVendorObligation("put", "/api/admin/code-groups/{groupId}/codes/{codeValue}/usage", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("detail_codes"), List.of("persisted", "requested"));
-        assertVendorObligation("put", "/api/admin/menus/exposure-save", List.of("side-effect"),
+        assertVendorObligation("put", "/api/admin/menus/exposure-save", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("menus"), List.of("requested"));
-        assertVendorObligation("put", "/api/admin/system-settings/base-year-current", List.of("business"),
+        assertVendorObligation("put", "/api/admin/system-settings/base-year-current", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("base_year_settings"), List.of("persisted"));
-        assertVendorObligation("put", "/api/admin/system-settings/common-values", List.of("business"),
+        assertVendorObligation("put", "/api/admin/system-settings/common-values", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("common_settings"), List.of("persisted", "requested"));
     }
 
@@ -73,24 +96,25 @@ class ApiVendorObligationCoverageTest {
     void authOperationsDeclareSessionStateTransitionsAndBusinessTests() {
         assertVendorObligation("post", "/api/auth/login", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("sessions"), List.of("none"));
-        assertVendorObligation("post", "/api/auth/logout", List.of("business"),
+        assertVendorObligation("post", "/api/auth/logout", List.of("auth", "business", "happy", "side-effect", "validation"),
                 List.of("sessions"), List.of("logged_out", "sessions"));
     }
 
     private void assertVendorObligation(String method, String path, List<String> requiredTests,
             List<String> sideEffects, List<String> stateTransitions) {
         String block = operationBlock(method, path);
+        String lowerBlock = block.toLowerCase();
         if (!requiredTests.isEmpty()) {
             assertThat(block).contains("x-required-tests");
-            requiredTests.forEach(test -> assertThat(block.toLowerCase()).contains(test));
+            requiredTests.forEach(test -> assertThat(lowerBlock).contains(test.toLowerCase()));
         }
         if (!sideEffects.isEmpty()) {
             assertThat(block).contains("x-side-effects");
-            sideEffects.forEach(sideEffect -> assertThat(sideEffect).isNotBlank());
+            sideEffects.forEach(sideEffect -> assertThat(lowerBlock).contains(sideEffect.toLowerCase()));
         }
         if (!stateTransitions.isEmpty()) {
             assertThat(block).contains("x-state-transitions");
-            stateTransitions.forEach(transition -> assertThat(transition).isNotBlank());
+            stateTransitions.forEach(transition -> assertThat(lowerBlock).contains(transition.toLowerCase()));
         }
     }
 

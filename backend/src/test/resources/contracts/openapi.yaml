@@ -2978,8 +2978,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FunctionPermissionRequest'
-      x-request-fields: [screenId, roleCode, functionType, permissionAllowed]
       x-related-requirements: [REQ-149, REQ-152, REQ-161, REQ-162]
+      x-request-fields: [screenId, roleCode, functionType, permissionAllowed, changeReason]
       security: [{SessionCookie: []}]
       x-roles: [R09]
       x-business-rules:
@@ -3123,8 +3123,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PeriodPermissionRequest'
-      x-request-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt]
       x-related-requirements: [REQ-153, REQ-169, REQ-170, REQ-161, REQ-162]
+      x-request-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt, changeReason]
       security: [{SessionCookie: []}]
       x-roles: [R09]
       x-business-rules:
@@ -3217,8 +3217,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TemporaryPermissionRequest'
-      x-request-fields: [userId, workDataRef, functionType, validStartAt, validEndAt]
       x-related-requirements: [REQ-157, REQ-158, REQ-159, REQ-160, REQ-161, REQ-162]
+      x-request-fields: [userId, workDataRef, functionType, validStartAt, validEndAt, changeReason]
       security: [{SessionCookie: []}]
       x-roles: [R09]
       x-business-rules:
@@ -3991,6 +3991,237 @@ paths:
         - REQ-198
         - REQ-199
         - REQ-200
+  /api/admin/batch-definitions:
+    get:
+      operationId: listBatchDefinitions
+      summary: 배치 정의 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: batchId, in: query, schema: { type: string } }
+        - { name: batchType, in: query, schema: { type: string } }
+        - { name: scheduleCycle, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-409, REQ-383]
+    post:
+      operationId: saveBatchDefinition
+      summary: 배치 정의 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchDefinitionRequest' }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-request-fields: [batchId, batchType, scheduleCycle, ownerUserId, predecessorBatchIds, successorBatchIds, parameters]
+      x-business-rules: [배치ID 기준 선후행 관계와 실행조건을 저장하며 다른 배치 정의를 임의 변경하지 않는다.]
+      x-side-effects: [batch_definitions, batch_dependencies, batch_parameters에 변경 메타정보와 request_id를 기록한다.]
+      x-state-transitions: [definition:DRAFT_OR_ACTIVE -> definition:SAVED]
+      x-required-tests:
+        - 'happy: 유효한 batchId/scheduleCycle/ownerUserId 저장 -> batch_definitions.batch_id가 follow-up read에 나타난다'
+        - 'auth: R09가 아닌 사용자 저장 요청 -> 403과 batch_definitions 행 미생성'
+        - 'validation: scheduleCycle 누락 -> 400 ApiError.fields.scheduleCycle 반환'
+        - 'business: 다른 batchId의 parameter 수정 포함 요청 -> 409과 기존 batch_parameters 유지'
+        - 'side-effect: 저장 성공 -> batch_definitions.updated_by와 request_id가 기록된다'
+      x-related-requirements: [REQ-410, REQ-416, REQ-418, REQ-420]
+  /api/admin/batch-executions:
+    get:
+      operationId: listBatchExecutions
+      summary: 배치 실행 목록
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: batchId, in: query, schema: { type: string } }
+        - { name: executionStatus, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-426]
+    post:
+      operationId: createBatchExecution
+      summary: 배치 수동실행
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchExecutionRequest' }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-request-fields: [batchId, parameters, reason, operatorUserId]
+      x-business-rules: [수동실행은 권한 있는 운영자에게만 허용하고 파라미터와 사유를 기록한다.]
+      x-side-effects: [batch_executions에 MANUAL_RUN, RUNNING, operator_user_id, reason, request_id를 기록한다.]
+      x-state-transitions: [WAITING -> RUNNING]
+      x-required-tests:
+        - 'happy: 실행 가능한 batchId와 reason 제출 -> batch_executions.execution_status=RUNNING 재조회'
+        - 'auth: 권한 없는 사용자 수동실행 -> 403과 batch_executions 행 미생성'
+        - 'validation: reason 누락 -> 400 ApiError.fields.reason 반환'
+        - 'business: 실행 불가 batchId 요청 -> 409와 실행 상태 미생성'
+        - 'side-effect: 수동실행 성공 -> operator_user_id와 request_id가 기록된다'
+      x-related-requirements: [REQ-427, REQ-437, REQ-438, REQ-439]
+  /api/admin/batch-executions/{executionId}/status:
+    patch:
+      operationId: updateBatchExecutionStatus
+      summary: 배치 실행 중지
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      parameters:
+        - { name: executionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchExecutionStatusRequest' }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-request-fields: [executionId, targetStatus, reason]
+      x-business-rules: [실행중 배치만 중지할 수 있으며 배치 정의와 원천 업무자료는 변경하지 않는다.]
+      x-side-effects: [batch_executions.execution_status와 reason, operator_user_id, request_id를 기록한다.]
+      x-state-transitions: [RUNNING -> STOPPED]
+      x-required-tests:
+        - 'happy: RUNNING executionId 중지 -> batch_executions.execution_status=STOPPED 재조회'
+        - 'auth: 권한 없는 사용자 중지 -> 403과 execution_status=RUNNING 유지'
+        - 'validation: reason 누락 -> 400 ApiError.fields.reason 반환'
+        - 'business: COMPLETED executionId 중지 -> 409와 execution_status=COMPLETED 유지'
+        - 'side-effect: 중지 성공 -> batch_executions.updated_by와 request_id가 기록된다'
+      x-related-requirements: [REQ-428, REQ-437, REQ-438, REQ-439]
+  /api/admin/batch-executions/{executionId}/rerun:
+    post:
+      operationId: createBatchRerun
+      summary: 배치 재실행
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      parameters:
+        - { name: executionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchExecutionRequest' }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-request-fields: [executionId, originalExecutionId, reason, parameters]
+      x-business-rules: [재실행은 원실행을 식별할 수 있게 연결하고 실패 건 원천자료를 직접 수정하지 않는다.]
+      x-side-effects: [batch_executions.original_execution_id에 path executionId를 기록한 신규 RERUN 실행을 생성한다.]
+      x-state-transitions: [ORIGINAL_EXECUTION -> RERUN_RUNNING]
+      x-required-tests:
+        - 'happy: 기존 executionId 재실행 -> 신규 batch_executions.original_execution_id가 기존 executionId'
+        - 'auth: 권한 없는 사용자 재실행 -> 403과 신규 실행 미생성'
+        - 'validation: executionId 형식 누락 -> 400 ApiError.fields.executionId 반환'
+        - 'business: 존재하지 않는 원실행 재실행 -> 409와 신규 실행 미생성'
+        - 'side-effect: 재실행 성공 -> 신규 execution_id와 request_id가 기록된다'
+      x-related-requirements: [REQ-429, REQ-441]
+  /api/admin/batch-results:
+    get:
+      operationId: listBatchResults
+      summary: 배치 결과 조회
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: executionId, in: query, schema: { type: string } }
+        - { name: batchId, in: query, schema: { type: string } }
+        - { name: executionStatus, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-response-fields: [startedAt, endedAt, totalCount, successCount, failureCount, excludedCount, elapsedMillis]
+      x-related-requirements: [REQ-449, REQ-451, REQ-452, REQ-453, REQ-454, REQ-455, REQ-456, REQ-461]
+  /api/admin/batch-results/{executionId}/log:
+    get:
+      operationId: getBatchResultLog
+      summary: 배치 로그 조회
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      parameters:
+        - { name: executionId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-response-fields: [executionId, logFileRef]
+      x-related-requirements: [REQ-457, REQ-461]
+  /api/admin/batch-retries/targets:
+    get:
+      operationId: listBatchRetryTargets
+      summary: 재처리 대상 목록
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: originalExecutionId, in: query, schema: { type: string } }
+        - { name: failedItemKey, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-466, REQ-467, REQ-477]
+  /api/admin/batch-retries:
+    post:
+      operationId: createBatchRetry
+      summary: 배치 오류 재처리
+      security: [{ SessionCookie: [] }]
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchRetryRequest' }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-request-fields: [originalExecutionId, failedItemKey, retryReason]
+      x-response-fields: [retryExecutionId]
+      x-business-rules: [재처리는 실패 대상만 선택하고 원실행 결과와 로그를 덮어쓰지 않으며 재처리 사유를 필수로 기록한다.]
+      x-side-effects: [batch_retry_results에 retry_execution_id, original_execution_id, retry_reason, request_id를 기록한다.]
+      x-state-transitions: [FAILED_TARGET -> RETRY_RUNNING]
+      x-required-tests:
+        - 'happy: 실패 대상과 retryReason 제출 -> batch_retry_results.retry_execution_id가 original_execution_id와 연결'
+        - 'auth: 권한 없는 사용자 재처리 -> 403과 batch_retry_results 행 미생성'
+        - 'validation: retryReason 누락 -> 400 ApiError.fields.retryReason 반환'
+        - 'business: 실패 상태가 아닌 대상 재처리 -> 409와 원실행 결과 유지'
+        - 'side-effect: 재처리 성공 -> batch_retry_results와 request_id가 기록된다'
+      x-related-requirements: [REQ-468, REQ-473, REQ-475, REQ-477, REQ-480]
 components:
   securitySchemes:
     SessionCookie:
@@ -3999,6 +4230,38 @@ components:
       name: SESSION
       description: HttpOnly SameSite=Lax session cookie
   schemas:
+    BatchDefinitionRequest:
+      type: object
+      required: [batchId, batchType, scheduleCycle, ownerUserId]
+      properties:
+        batchId: { type: string }
+        batchType: { type: string }
+        scheduleCycle: { type: string }
+        predecessorBatchIds: { type: array, items: { type: string } }
+        successorBatchIds: { type: array, items: { type: string } }
+        parameters: { type: object, additionalProperties: true }
+        maxExecutionSeconds: { type: integer }
+        ownerUserId: { type: integer, format: int64 }
+    BatchExecutionRequest:
+      type: object
+      required: [batchId, reason]
+      properties:
+        batchId: { type: string }
+        parameters: { type: object, additionalProperties: true }
+        reason: { type: string }
+    BatchExecutionStatusRequest:
+      type: object
+      required: [targetStatus, reason]
+      properties:
+        targetStatus: { type: string, enum: [STOPPED] }
+        reason: { type: string }
+    BatchRetryRequest:
+      type: object
+      required: [originalExecutionId, retryReason]
+      properties:
+        originalExecutionId: { type: string }
+        failedItemKey: { type: string }
+        retryReason: { type: string }
     ApiResponse:
       type: object
       required:
@@ -4039,9 +4302,7 @@ components:
           additionalProperties: true
     ValidationError:
       type: object
-      required:
-        - field
-        - message
+      required: [field, message]
       properties:
         field:
           type: string
@@ -4791,6 +5052,116 @@ x-uncovered-requirements:
   - {canonical_id: REQ-110, status: data-constraint, evidence: 기준정보 복사 대상은 data-model/prepareBaseYearStandards 이력으로 검증한다}
   - {canonical_id: REQ-123, status: data-constraint, evidence: common_settings.setting_key UNIQUE 제약으로 검증한다}
   - {canonical_id: REQ-124, status: non-functional, evidence: 세션 인증방식과 대량처리 구현방식은 architecture boundary로만 제한한다}
+  - {canonical_id: REQ-360, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-361, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-362, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-363, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-364, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-365, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-366, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-367, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-368, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-369, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-370, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-371, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-372, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-373, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-374, status: covered, evidence: REQ-374 OQ로 보존 - Excel에 없는 운영기관의 로그인 인증방식은 확정하지 않는다.}
+  - {canonical_id: REQ-375, status: covered, evidence: REQ-375 OQ로 보존 - Excel에 없는 실제 외부연계 규격은 확정하지 않는다.}
+  - {canonical_id: REQ-376, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-377, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-378, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-379, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-380, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-381, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-382, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-384, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-385, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-386, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-387, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-388, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-389, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-390, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-391, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-392, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-393, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-394, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-395, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-396, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-397, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-398, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-399, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-400, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-401, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-402, status: non-functional, evidence: IFC-106은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-403, status: non-functional, evidence: DAR-107은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-404, status: non-functional, evidence: PER-02은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-405, status: non-functional, evidence: PER-03은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-406, status: non-functional, evidence: PER-03은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-407, status: non-functional, evidence: PER-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-408, status: non-functional, evidence: SER-02은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-411, status: non-functional, evidence: SER-03은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-412, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-413, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-414, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-415, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-417, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-419, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-440, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-442, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-443, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-444, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-445, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-446, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-447, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-469, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-470, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-471, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-472, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-495, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-496, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-497, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-498, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-517, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-518, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-519, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-523, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-524, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-525, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-526, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-527, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-528, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-529, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-530, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-531, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-532, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-533, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-534, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-535, status: out-of-scope, evidence: 공통 적용 범위은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-536, status: out-of-scope, evidence: 공통 적용 범위은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-537, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-538, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-539, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-540, status: non-functional, evidence: 추적 규칙은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-541, status: out-of-scope, evidence: 추적 규칙은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-542, status: non-functional, evidence: 추적 규칙은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-543, status: non-functional, evidence: 추적 규칙은 plan.md 아키텍처/검증 제약으로 적용된다.}
+  - {canonical_id: REQ-544, status: out-of-scope, evidence: 추적 규칙은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-545, status: out-of-scope, evidence: 추적 규칙은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-546, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-547, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-548, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-549, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-550, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
+  - {canonical_id: REQ-551, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-552, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-553, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-554, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-555, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-556, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-557, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-558, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
+  - {canonical_id: REQ-559, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
 x-shared-contract-reference:
   technology_stack:
     backend: Java 17 + Spring Boot 3.3.x + Maven + MyBatis + PostgreSQL 16

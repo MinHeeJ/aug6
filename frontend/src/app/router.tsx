@@ -39,6 +39,13 @@ import { BatchExecutionManagementPage } from "../pages/admin/SCR-BATCH-EXECUTION
 import { BatchResultManagementPage } from "../pages/admin/SCR-BATCH-RESULT-MGMT";
 import { BatchRetryManagementPage } from "../pages/admin/SCR-BATCH-RETRY-MGMT";
 import {
+  ExcelDownloadManagementPage,
+  ExcelUploadErrorManagementPage,
+  ExcelUploadHistoryManagementPage,
+  ExcelUploadManagementPage,
+  UploadTemplateManagementPage,
+} from "../pages/admin/ExcelOperationsPages";
+import {
   BaseYearManagementPage,
   CommonSettingsPage,
   DetailCodeUsageManagementPage,
@@ -201,6 +208,16 @@ function renderAdminPage(path: string | undefined) {
       return <BatchResultManagementPage />;
     case "/admin/batch-retries":
       return <BatchRetryManagementPage />;
+    case "/admin/excel-upload-templates":
+      return <UploadTemplateManagementPage />;
+    case "/admin/excel-uploads":
+      return <ExcelUploadManagementPage />;
+    case "/admin/excel-upload-histories":
+      return <ExcelUploadHistoryManagementPage />;
+    case "/admin/excel-upload-errors":
+      return <ExcelUploadErrorManagementPage />;
+    case "/admin/excel-downloads":
+      return <ExcelDownloadManagementPage />;
     case "/admin/menu-usage":
       return <MenuUsageManagementPage />;
     case "/admin/detail-code-usage":

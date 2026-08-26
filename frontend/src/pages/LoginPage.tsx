@@ -155,6 +155,36 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 운영 관리 > 배치작업 관리 > 배치 오류 재처리",
   },
   {
+    path: "/admin/excel-upload-templates",
+    label: "업로드 양식 관리",
+    screenId: "SCR-UPLOAD-TEMPLATE-MGMT",
+    menuPath: "파일·데이터 관리 > 엑셀 관리 > 업로드 양식 관리",
+  },
+  {
+    path: "/admin/excel-uploads",
+    label: "엑셀 업로드",
+    screenId: "SCR-EXCEL-UPLOAD-MGMT",
+    menuPath: "파일·데이터 관리 > 엑셀 관리 > 엑셀 업로드",
+  },
+  {
+    path: "/admin/excel-upload-histories",
+    label: "업로드 이력",
+    screenId: "SCR-UPLOAD-HISTORY-MGMT",
+    menuPath: "파일·데이터 관리 > 엑셀 관리 > 업로드 이력",
+  },
+  {
+    path: "/admin/excel-upload-errors",
+    label: "업로드 오류 관리",
+    screenId: "SCR-UPLOAD-ERROR-MGMT",
+    menuPath: "파일·데이터 관리 > 엑셀 관리 > 업로드 오류 관리",
+  },
+  {
+    path: "/admin/excel-downloads",
+    label: "엑셀 다운로드",
+    screenId: "SCR-EXCEL-DOWNLOAD-MGMT",
+    menuPath: "파일·데이터 관리 > 엑셀 관리 > 엑셀 다운로드",
+  },
+  {
     path: "/admin/menu-usage",
     label: "메뉴 사용 관리",
     screenId: "SCR-MENU-USAGE-MGMT",

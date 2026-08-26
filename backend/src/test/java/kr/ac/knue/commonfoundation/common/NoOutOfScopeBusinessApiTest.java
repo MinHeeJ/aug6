@@ -22,9 +22,6 @@ class NoOutOfScopeBusinessApiTest {
             "business-report",
             "application",
             "grant",
-            "file",
-            "files",
-            "excel",
             "personal-information",
             "audit-log");
 

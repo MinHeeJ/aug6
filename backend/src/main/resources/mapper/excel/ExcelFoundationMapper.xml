@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.excel.ExcelFoundationMapper">
+    <select id="listUploadTemplates" resultType="map">
+        select t.template_id as "templateId",
+               t.business_type as "businessType",
+               t.template_version as "templateVersion",
+               t.effective_date as "effectiveDate",
+               t.system_use_yn as "systemUseYn",
+               t.status as "status",
+               f.file_token as "fileToken",
+               f.original_file_name as "originalFileName"
+        from excel_upload_templates t
+        left join excel_upload_template_files f on f.template_id = t.template_id
+        <where>
+            t.status != 'DELETED'
+            <if test="businessType != null and businessType != ''">
+                and t.business_type = #{businessType}
+            </if>
+            <if test="effectiveDate != null and effectiveDate != ''">
+                and t.effective_date &lt;= CAST(#{effectiveDate} AS date)
+            </if>
+        </where>
+        order by t.effective_date desc, t.template_version desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="listUploadFiles" resultType="map">
+        select upload_id as "uploadId",
+               business_type as "businessType",
+               template_id as "templateId",
+               file_token as "fileToken",
+               original_file_name as "originalFileName",
+               validation_status as "validationStatus",
+               uploader_user_id as "uploaderUserId",
+               uploaded_at as "uploadedAt"
+        from excel_upload_files
+        <where>
+            status != 'DELETED'
+            <if test="businessType != null and businessType != ''">
+                and business_type = #{businessType}
+            </if>
+            <if test="uploadId != null and uploadId != ''">
+                and upload_id = #{uploadId}
+            </if>
+        </where>
+        order by uploaded_at desc, upload_id
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="listUploadErrors" resultType="map">
+        select error_id as "errorId",
+               upload_id as "uploadId",
+               row_number as "rowNumber",
+               column_name as "columnName",
+               input_value as "inputValue",
+               error_code as "errorCode",
+               error_reason as "errorReason",
+               correction_guide as "correctionGuide"
+        from excel_upload_errors
+        where upload_id = #{uploadId}
+          and status != 'DELETED'
+        order by row_number, column_name
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="listUploadHistories" resultType="map">
+        select h.upload_id as "uploadId",
+               f.original_file_name as "originalFileName",
+               h.total_count as "totalCount",
+               h.success_count as "successCount",
+               h.error_count as "errorCount",
+               h.excluded_count as "excludedCount",
+               h.saved_count as "savedCount",
+               h.processing_time_millis as "processingTimeMillis",
+               h.processed_at as "processedAt"
+        from excel_upload_histories h
+        join excel_upload_files f on f.upload_id = h.upload_id
+        <where>
+            h.status != 'DELETED'
+            <if test="uploadId != null and uploadId != ''">
+                and h.upload_id = #{uploadId}
+            </if>
+            <if test="originalFileName != null and originalFileName != ''">
+                and f.original_file_name ilike concat('%', #{originalFileName}, '%')
+            </if>
+        </where>
+        order by h.processed_at desc, h.upload_id
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="listDownloadJobs" resultType="map">
+        select download_id as "downloadId",
+               requester_user_id as "requesterUserId",
+               output_type as "outputType",
+               query_condition::text as "queryCondition",
+               data_scope_ref as "dataScopeRef",
+               file_token as "fileToken",
+               original_file_name as "originalFileName",
+               requested_at as "requestedAt",
+               generated_at as "generatedAt",
+               status as "status"
+        from excel_download_jobs
+        <where>
+            status != 'DELETED'
+            <if test="requesterUserId != null">
+                and requester_user_id = #{requesterUserId}
+            </if>
+            <if test="outputType != null and outputType != ''">
+                and output_type = #{outputType}
+            </if>
+        </where>
+        order by requested_at desc, download_id
+        limit #{limit} offset #{offset}
+    </select>
+</mapper>

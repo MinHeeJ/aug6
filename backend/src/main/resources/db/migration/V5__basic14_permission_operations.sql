@@ -95,7 +95,7 @@ CREATE INDEX IF NOT EXISTS idx_permission_change_history_filter ON permission_ch
 CREATE INDEX IF NOT EXISTS idx_permission_change_history_changed_by ON permission_change_history(changed_by, changed_at DESC);
 
 INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order, screen_id, url, icon, business_category, description, system_use_yn, status, updated_by)
-VALUES (124, 120, 'SCREEN', '기능 권한 관리', 4, 'SCR-FUNCTION-PERMISSION-MGMT', '/admin/function-permissions', 'lock-keyhole', 'SYSTEM', '화면·역할·기능구분별 기능 권한 관리', 'Y', 'ACTIVE', 1)
+VALUES (172, 120, 'SCREEN', '기능 권한 관리', 4, 'SCR-FUNCTION-PERMISSION-MGMT', '/admin/function-permissions', 'lock-keyhole', 'SYSTEM', '화면·역할·기능구분별 기능 권한 관리', 'Y', 'ACTIVE', 1)
 ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
                                       parent_menu_id = EXCLUDED.parent_menu_id,
                                       display_order = EXCLUDED.display_order,
@@ -104,7 +104,7 @@ ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
                                       updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_execution_info (menu_id, screen_id, url, icon, business_category, description, updated_by)
-VALUES (124, 'SCR-FUNCTION-PERMISSION-MGMT', '/admin/function-permissions', 'lock-keyhole', 'SYSTEM', '화면·역할·기능구분별 기능 권한 관리', 1)
+VALUES (172, 'SCR-FUNCTION-PERMISSION-MGMT', '/admin/function-permissions', 'lock-keyhole', 'SYSTEM', '화면·역할·기능구분별 기능 권한 관리', 1)
 ON CONFLICT (menu_id) DO UPDATE SET screen_id = EXCLUDED.screen_id,
                                       url = EXCLUDED.url,
                                       icon = EXCLUDED.icon,
@@ -113,7 +113,7 @@ ON CONFLICT (menu_id) DO UPDATE SET screen_id = EXCLUDED.screen_id,
                                       updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_permissions (target_type, target_id, menu_id, access_allowed, status, created_by, updated_by, change_reason)
-VALUES ('ROLE', 'R09', 124, 'ALLOW', 'ACTIVE', 1, 1, '시스템관리자 기능 권한 관리 메뉴 접근')
+VALUES ('ROLE', 'R09', 172, 'ALLOW', 'ACTIVE', 1, 1, '시스템관리자 기능 권한 관리 메뉴 접근')
 ON CONFLICT (target_type, target_id, menu_id) DO UPDATE SET access_allowed = EXCLUDED.access_allowed,
                                                             status = EXCLUDED.status,
                                                             updated_at = CURRENT_TIMESTAMP,

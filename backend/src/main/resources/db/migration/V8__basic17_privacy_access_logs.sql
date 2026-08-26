@@ -25,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_privacy_access_logs_target_time ON privacy_access
 CREATE INDEX IF NOT EXISTS idx_privacy_access_logs_type_time ON privacy_access_logs(process_type, processed_at DESC);
 
 INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order, screen_id, url, icon, business_category, description, system_use_yn, status, updated_by)
-VALUES (130, 120, 'SCREEN', '개인정보 처리이력', 10, 'SCR-PRIVACY-ACCESS-LOG', '/admin/privacy/access-logs', 'shield', 'SECURITY', '개인정보 조회·출력·다운로드 처리이력 조회', 'Y', 'ACTIVE', 1)
+VALUES (171, 120, 'SCREEN', '개인정보 처리이력', 10, 'SCR-PRIVACY-ACCESS-LOG', '/admin/privacy/access-logs', 'shield', 'SECURITY', '개인정보 조회·출력·다운로드 처리이력 조회', 'Y', 'ACTIVE', 1)
 ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
                                       parent_menu_id = EXCLUDED.parent_menu_id,
                                       display_order = EXCLUDED.display_order,
@@ -34,7 +34,7 @@ ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
                                       updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_execution_info (menu_id, screen_id, url, icon, business_category, description, updated_by)
-VALUES (130, 'SCR-PRIVACY-ACCESS-LOG', '/admin/privacy/access-logs', 'shield', 'SECURITY', '개인정보 조회·출력·다운로드 처리이력 조회', 1)
+VALUES (171, 'SCR-PRIVACY-ACCESS-LOG', '/admin/privacy/access-logs', 'shield', 'SECURITY', '개인정보 조회·출력·다운로드 처리이력 조회', 1)
 ON CONFLICT (menu_id) DO UPDATE SET screen_id = EXCLUDED.screen_id,
                                       url = EXCLUDED.url,
                                       icon = EXCLUDED.icon,
@@ -43,7 +43,7 @@ ON CONFLICT (menu_id) DO UPDATE SET screen_id = EXCLUDED.screen_id,
                                       updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO menu_permissions (target_type, target_id, menu_id, access_allowed, status, created_by, updated_by, change_reason)
-VALUES ('ROLE', 'R09', 130, 'ALLOW', 'ACTIVE', 1, 1, '시스템관리자 개인정보 처리이력 메뉴 접근')
+VALUES ('ROLE', 'R09', 171, 'ALLOW', 'ACTIVE', 1, 1, '시스템관리자 개인정보 처리이력 메뉴 접근')
 ON CONFLICT (target_type, target_id, menu_id) DO UPDATE SET access_allowed = EXCLUDED.access_allowed,
                                                             status = EXCLUDED.status,
                                                             updated_at = CURRENT_TIMESTAMP,

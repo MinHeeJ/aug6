@@ -8,5 +8,4 @@ coverage
 .cache
 *.log
 *.local
-.env
-.env.*
+target

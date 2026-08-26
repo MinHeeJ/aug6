@@ -4,8 +4,8 @@ dist
 build
 coverage
 .git
-target
+.vite
+.cache
 *.log
 *.local
-.env
-.env.*
+target

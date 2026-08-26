@@ -34,6 +34,10 @@ import { MessageManagementPage } from "../pages/admin/SCR-MESSAGE-MGMT";
 import { NoticeManagementPage } from "../pages/admin/SCR-NOTICE-MGMT";
 import { ManualManagementPage } from "../pages/admin/SCR-MANUAL-MGMT";
 import { HelpContentManagementPage } from "../pages/admin/SCR-HELP-MGMT";
+import { BatchDefinitionManagementPage } from "../pages/admin/SCR-BATCH-DEFINITION-MGMT";
+import { BatchExecutionManagementPage } from "../pages/admin/SCR-BATCH-EXECUTION-MGMT";
+import { BatchResultManagementPage } from "../pages/admin/SCR-BATCH-RESULT-MGMT";
+import { BatchRetryManagementPage } from "../pages/admin/SCR-BATCH-RETRY-MGMT";
 import {
   BaseYearManagementPage,
   CommonSettingsPage,
@@ -189,6 +193,14 @@ function renderAdminPage(path: string | undefined) {
       return <ManualManagementPage />;
     case "/admin/help-contents":
       return <HelpContentManagementPage />;
+    case "/admin/batch-definitions":
+      return <BatchDefinitionManagementPage />;
+    case "/admin/batch-executions":
+      return <BatchExecutionManagementPage />;
+    case "/admin/batch-results":
+      return <BatchResultManagementPage />;
+    case "/admin/batch-retries":
+      return <BatchRetryManagementPage />;
     case "/admin/menu-usage":
       return <MenuUsageManagementPage />;
     case "/admin/detail-code-usage":

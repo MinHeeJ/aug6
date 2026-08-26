@@ -35,7 +35,7 @@ ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
 INSERT INTO menu_permissions (target_type, target_id, menu_id, access_allowed, status, created_by, updated_by, change_reason)
 SELECT target_type, target_id, 161, access_allowed, status, created_by, 1, 'BASIC-19 개인정보 처리이력 메뉴 ID 이관'
 FROM menu_permissions
-WHERE menu_id = 130
+WHERE menu_id = 171
 ON CONFLICT (target_type, target_id, menu_id) DO UPDATE SET access_allowed = EXCLUDED.access_allowed,
                                                             status = EXCLUDED.status,
                                                             updated_at = CURRENT_TIMESTAMP,
@@ -53,25 +53,26 @@ ON CONFLICT (menu_id) DO UPDATE SET screen_id = EXCLUDED.screen_id,
                                       updated_by = EXCLUDED.updated_by,
                                       updated_at = CURRENT_TIMESTAMP;
 
-DELETE FROM menu_permissions WHERE menu_id = 130;
-DELETE FROM menu_execution_info WHERE menu_id = 130;
+DELETE FROM menu_permissions WHERE menu_id = 171;
+DELETE FROM menu_execution_info WHERE menu_id = 171;
+DELETE FROM menus WHERE menu_id = 171;
 
-INSERT INTO menus (menu_id, parent_menu_id, menu_type, menu_name, display_order, screen_id, url, icon, business_category, description, system_use_yn, status, updated_by, change_reason)
-VALUES (130, 100, 'MIDDLE', '메뉴 관리', 3, NULL, NULL, 'menu', 'SYSTEM', '메뉴 구조와 정보 관리', 'Y', 'ACTIVE', 1, 'BASIC-19 메뉴 구조 변경')
-ON CONFLICT (menu_id) DO UPDATE SET menu_name = EXCLUDED.menu_name,
-                                      parent_menu_id = EXCLUDED.parent_menu_id,
-                                      menu_type = EXCLUDED.menu_type,
-                                      display_order = EXCLUDED.display_order,
-                                      screen_id = EXCLUDED.screen_id,
-                                      url = EXCLUDED.url,
-                                      icon = EXCLUDED.icon,
-                                      business_category = EXCLUDED.business_category,
-                                      description = EXCLUDED.description,
-                                      system_use_yn = EXCLUDED.system_use_yn,
-                                      status = EXCLUDED.status,
-                                      updated_by = EXCLUDED.updated_by,
-                                      change_reason = EXCLUDED.change_reason,
-                                      updated_at = CURRENT_TIMESTAMP;
+UPDATE menus
+SET parent_menu_id = 100,
+    menu_type = 'MIDDLE',
+    menu_name = '메뉴 관리',
+    display_order = 3,
+    screen_id = NULL,
+    url = NULL,
+    icon = 'menu',
+    business_category = 'SYSTEM',
+    description = '메뉴 구조와 정보 관리',
+    system_use_yn = 'Y',
+    status = 'ACTIVE',
+    updated_by = 1,
+    change_reason = 'BASIC-19 메뉴 구조 변경',
+    updated_at = CURRENT_TIMESTAMP
+WHERE menu_id = 130;
 
 UPDATE menus
 SET parent_menu_id = CASE menu_id

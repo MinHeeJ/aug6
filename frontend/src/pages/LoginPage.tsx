@@ -131,6 +131,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 공지·도움말 관리 > 도움말 관리",
   },
   {
+    path: "/admin/batch-definitions",
+    label: "배치 정의 관리",
+    screenId: "SCR-BATCH-DEFINITION-MGMT",
+    menuPath: "시스템 운영 관리 > 배치작업 관리 > 배치 정의 관리",
+  },
+  {
+    path: "/admin/batch-executions",
+    label: "배치 실행 관리",
+    screenId: "SCR-BATCH-EXECUTION-MGMT",
+    menuPath: "시스템 운영 관리 > 배치작업 관리 > 배치 실행 관리",
+  },
+  {
+    path: "/admin/batch-results",
+    label: "배치 결과 조회",
+    screenId: "SCR-BATCH-RESULT-MGMT",
+    menuPath: "시스템 운영 관리 > 배치작업 관리 > 배치 결과 조회",
+  },
+  {
+    path: "/admin/batch-retries",
+    label: "배치 오류 재처리",
+    screenId: "SCR-BATCH-RETRY-MGMT",
+    menuPath: "시스템 운영 관리 > 배치작업 관리 > 배치 오류 재처리",
+  },
+  {
     path: "/admin/menu-usage",
     label: "메뉴 사용 관리",
     screenId: "SCR-MENU-USAGE-MGMT",

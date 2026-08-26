@@ -87,6 +87,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.matches("/api/admin/system-settings/base-years/[^/]+/standards-preparation")) {
             return "/admin/base-years";
         }
+        if (apiPath.equals("/api/admin/batch-definitions")) {
+            return "/admin/batch-definitions";
+        }
+        if (apiPath.equals("/api/admin/batch-executions") || apiPath.matches("/api/admin/batch-executions/[^/]+/(status|rerun)")) {
+            return "/admin/batch-executions";
+        }
+        if (apiPath.equals("/api/admin/batch-results") || apiPath.matches("/api/admin/batch-results/[^/]+/log")) {
+            return "/admin/batch-results";
+        }
+        if (apiPath.equals("/api/admin/batch-retries") || apiPath.equals("/api/admin/batch-retries/targets")) {
+            return "/admin/batch-retries";
+        }
         return switch (apiPath) {
             case "/api/admin/organizations" -> "/admin/organizations";
             case "/api/admin/roles" -> "/admin/roles";

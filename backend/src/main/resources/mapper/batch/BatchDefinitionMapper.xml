@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.batch.BatchDefinitionMapper">
+    <resultMap id="BatchDefinitionRowMap" type="kr.ac.knue.commonfoundation.batch.BatchDefinitionRow">
+        <constructor>
+            <arg column="batchId" javaType="string"/>
+            <arg column="batchType" javaType="string"/>
+            <arg column="scheduleCycle" javaType="string"/>
+            <arg column="maxExecutionSeconds" javaType="java.lang.Integer"/>
+            <arg column="ownerUserId" javaType="java.lang.Long"/>
+            <arg column="ownerName" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="java.lang.Long"/>
+            <arg column="parameterJson" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="batchDefinitionSelect">
+        select bd.batch_id as "batchId",
+               bd.batch_type as "batchType",
+               bd.schedule_cycle as "scheduleCycle",
+               bd.max_execution_seconds as "maxExecutionSeconds",
+               bd.owner_user_id as "ownerUserId",
+               coalesce(kps.name, u.login_id, cast(bd.owner_user_id as varchar)) as "ownerName",
+               bd.request_id as "requestId",
+               bd.updated_at as "updatedAt",
+               bd.updated_by as "updatedBy",
+               coalesce(bp.parameter_json::text, '{}') as "parameterJson"
+        from batch_definitions bd
+        left join users u on u.user_id = bd.owner_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        left join batch_parameters bp on bp.batch_id = bd.batch_id
+    </sql>
+
+    <sql id="batchDefinitionWhere">
+        <where>
+            <if test="criteria.batchId != null and criteria.batchId != ''">
+                bd.batch_id ilike concat('%', #{criteria.batchId}, '%')
+            </if>
+            <if test="criteria.batchType != null and criteria.batchType != ''">
+                <if test="criteria.batchId != null and criteria.batchId != ''">and</if>
+                bd.batch_type = #{criteria.batchType}
+            </if>
+            <if test="criteria.scheduleCycle != null and criteria.scheduleCycle != ''">
+                <if test="(criteria.batchId != null and criteria.batchId != '') or (criteria.batchType != null and criteria.batchType != '')">and</if>
+                bd.schedule_cycle ilike concat('%', #{criteria.scheduleCycle}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listBatchDefinitions" resultMap="BatchDefinitionRowMap">
+        <include refid="batchDefinitionSelect"/>
+        <include refid="batchDefinitionWhere"/>
+        order by bd.updated_at desc, bd.batch_id
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countBatchDefinitions" resultType="long">
+        select count(*)
+        from batch_definitions bd
+        <include refid="batchDefinitionWhere"/>
+    </select>
+
+    <select id="findBatchDefinition" resultMap="BatchDefinitionRowMap">
+        <include refid="batchDefinitionSelect"/>
+        where bd.batch_id = #{batchId}
+    </select>
+
+    <select id="existsUser" resultType="int">
+        select count(*) from users where user_id = #{userId}
+    </select>
+
+    <select id="existsBatchDefinition" resultType="int">
+        select count(*) from batch_definitions where batch_id = #{batchId}
+    </select>
+
+    <insert id="upsertBatchDefinition">
+        insert into batch_definitions (batch_id, batch_type, schedule_cycle, max_execution_seconds, owner_user_id,
+                                       request_id, created_by, updated_by)
+        values (#{request.batchId}, #{request.batchType}, #{request.scheduleCycle}, #{request.maxExecutionSeconds},
+                #{request.ownerUserId}, #{requestId}, #{userId}, #{userId})
+        on conflict (batch_id) do update
+        set batch_type = excluded.batch_type,
+            schedule_cycle = excluded.schedule_cycle,
+            max_execution_seconds = excluded.max_execution_seconds,
+            owner_user_id = excluded.owner_user_id,
+            request_id = excluded.request_id,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = excluded.updated_by
+    </insert>
+
+    <insert id="upsertBatchParameters">
+        insert into batch_parameters (batch_id, parameter_json, request_id, created_by, updated_by)
+        values (#{batchId}, CAST(#{parameterJson} AS jsonb), #{requestId}, #{userId}, #{userId})
+        on conflict (batch_id) do update
+        set parameter_json = excluded.parameter_json,
+            request_id = excluded.request_id,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = excluded.updated_by
+    </insert>
+
+    <delete id="deleteDependenciesForBatch">
+        delete from batch_dependencies
+        where predecessor_batch_id = #{batchId}
+           or successor_batch_id = #{batchId}
+    </delete>
+
+    <insert id="insertDependency">
+        insert into batch_dependencies (predecessor_batch_id, successor_batch_id, request_id, created_by, updated_by)
+        values (#{predecessorBatchId}, #{successorBatchId}, #{requestId}, #{userId}, #{userId})
+        on conflict (predecessor_batch_id, successor_batch_id) do update
+        set request_id = excluded.request_id,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = excluded.updated_by
+    </insert>
+
+    <select id="listPredecessorBatchIds" resultType="string">
+        select predecessor_batch_id
+        from batch_dependencies
+        where successor_batch_id = #{batchId}
+        order by predecessor_batch_id
+    </select>
+
+    <select id="listSuccessorBatchIds" resultType="string">
+        select successor_batch_id
+        from batch_dependencies
+        where predecessor_batch_id = #{batchId}
+        order by successor_batch_id
+    </select>
+</mapper>

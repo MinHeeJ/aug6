@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.batch.BatchRetryMapper">
+    <resultMap id="BatchRetryTargetRowMap" type="kr.ac.knue.commonfoundation.batch.BatchRetryTargetRow">
+        <constructor>
+            <arg column="originalExecutionId" javaType="string"/>
+            <arg column="batchId" javaType="string"/>
+            <arg column="executionStatus" javaType="string"/>
+            <arg column="failedItemKey" javaType="string"/>
+            <arg column="failureReason" javaType="string"/>
+            <arg column="startedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="endedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="BatchRetryResultRowMap" type="kr.ac.knue.commonfoundation.batch.BatchRetryResultRow">
+        <constructor>
+            <arg column="retryExecutionId" javaType="string"/>
+            <arg column="originalExecutionId" javaType="string"/>
+            <arg column="failedItemKey" javaType="string"/>
+            <arg column="retryReason" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="java.lang.Long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="retryTargetSelect">
+        select brt.original_execution_id as "originalExecutionId",
+               be.batch_id as "batchId",
+               be.execution_status as "executionStatus",
+               brt.failed_item_key as "failedItemKey",
+               brt.failure_reason as "failureReason",
+               ber.started_at as "startedAt",
+               ber.ended_at as "endedAt"
+        from batch_retry_targets brt
+        join batch_executions be on be.execution_id = brt.original_execution_id
+        left join batch_execution_results ber on ber.execution_id = be.execution_id
+    </sql>
+
+    <sql id="retryTargetWhere">
+        <where>
+            be.execution_status = 'FAILED'
+            <if test="criteria.originalExecutionId != null and criteria.originalExecutionId != ''">
+                and brt.original_execution_id ilike concat('%', #{criteria.originalExecutionId}, '%')
+            </if>
+            <if test="criteria.failedItemKey != null and criteria.failedItemKey != ''">
+                and brt.failed_item_key ilike concat('%', #{criteria.failedItemKey}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listBatchRetryTargets" resultMap="BatchRetryTargetRowMap">
+        <include refid="retryTargetSelect"/>
+        <include refid="retryTargetWhere"/>
+        order by ber.ended_at desc nulls last, brt.original_execution_id, brt.failed_item_key nulls first
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countBatchRetryTargets" resultType="long">
+        select count(*)
+        from batch_retry_targets brt
+        join batch_executions be on be.execution_id = brt.original_execution_id
+        left join batch_execution_results ber on ber.execution_id = be.execution_id
+        <include refid="retryTargetWhere"/>
+    </select>
+
+    <select id="countFailedRetryTarget" resultType="int">
+        select count(*)
+        from batch_retry_targets brt
+        join batch_executions be on be.execution_id = brt.original_execution_id
+        where brt.original_execution_id = #{originalExecutionId}
+          and be.execution_status = 'FAILED'
+          <choose>
+            <when test="failedItemKey != null and failedItemKey != ''">
+                and brt.failed_item_key = #{failedItemKey}
+            </when>
+            <otherwise>
+                and brt.failed_item_key is null
+            </otherwise>
+          </choose>
+    </select>
+
+    <select id="findOriginalBatchId" resultType="string">
+        select batch_id
+        from batch_executions
+        where execution_id = #{originalExecutionId}
+    </select>
+
+    <insert id="insertRetryExecution">
+        insert into batch_executions (execution_id, batch_id, process_type, reason, operator_user_id,
+                                      execution_status, original_execution_id, request_id)
+        values (#{retryExecutionId}, #{batchId}, #{processType}, #{reason}, #{operatorUserId},
+                'RUNNING', #{originalExecutionId}, #{requestId})
+    </insert>
+
+    <insert id="insertRetryResult">
+        insert into batch_retry_results (retry_execution_id, original_execution_id, failed_item_key, retry_reason,
+                                         request_id, created_by)
+        values (#{retryExecutionId}, #{originalExecutionId}, #{failedItemKey}, #{retryReason}, #{requestId},
+                (select operator_user_id from batch_executions where execution_id = #{retryExecutionId}))
+    </insert>
+
+    <select id="findRetryResult" resultMap="BatchRetryResultRowMap">
+        select retry_execution_id as "retryExecutionId",
+               original_execution_id as "originalExecutionId",
+               failed_item_key as "failedItemKey",
+               retry_reason as "retryReason",
+               request_id as "requestId",
+               created_at as "createdAt",
+               created_by as "createdBy"
+        from batch_retry_results
+        where retry_execution_id = #{retryExecutionId}
+    </select>
+</mapper>

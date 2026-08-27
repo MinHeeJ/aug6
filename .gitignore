@@ -5,11 +5,10 @@ build/
 coverage/
 .vite/
 .cache/
+target/
+**/target/
 *.log
 *.local
-.env
-.env.*
-target/
 
 # Playwright verifier artifacts
 test-results/

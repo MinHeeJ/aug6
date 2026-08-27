@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "basic29.requirement-trace-sidecar.v1",
+  "source": "BASIC-29 Phase 1 foundation",
+  "phase": "Phase 1: Foundation",
+  "tasks": [
+    {
+      "taskId": "T001",
+      "requirementIds": ["REQ-622"],
+      "validationTarget": "docs/requirements/basic29/design-doc-change-set.json",
+      "ciGuard": "Basic29TraceabilityValidationTest"
+    },
+    {
+      "taskId": "T002",
+      "requirementIds": ["REQ-690", "REQ-693", "REQ-696", "REQ-703"],
+      "validationTarget": "db/migration/V16__basic29_session_audit_foundation.sql",
+      "ciGuard": "Basic29SchemaMigrationRedTest"
+    },
+    {
+      "taskId": "T003",
+      "requirementIds": ["REQ-644", "REQ-645", "REQ-661", "REQ-662"],
+      "validationTarget": "contracts/openapi.yaml",
+      "ciGuard": "Basic29FoundationContractRedTest"
+    }
+  ],
+  "changedDocuments": [
+    "data-model.md",
+    "contracts/openapi.yaml",
+    "research.md",
+    "quickstart.md",
+    "architecture.md",
+    "ui-design.md"
+  ],
+  "preservedScope": {
+    "roles": "R01-R09 are referenced only; no new role definitions or role-name changes are allowed.",
+    "laterPhases": ["T004-T030 are intentionally outside Phase 1 implementation scope."]
+  }
+}

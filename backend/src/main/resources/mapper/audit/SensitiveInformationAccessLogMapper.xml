@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.audit.SensitiveInformationAccessLogMapper">
+    <resultMap id="SensitiveInformationAccessLogRowMap" type="kr.ac.knue.commonfoundation.audit.SensitiveInformationAccessLogRow">
+        <constructor>
+            <arg column="accessLogId" javaType="java.lang.Long"/>
+            <arg column="informationType" javaType="string"/>
+            <arg column="viewerUserId" javaType="java.lang.Long"/>
+            <arg column="viewerLoginId" javaType="string"/>
+            <arg column="viewerName" javaType="string"/>
+            <arg column="targetScope" javaType="string"/>
+            <arg column="accessPurpose" javaType="string"/>
+            <arg column="purposeSource" javaType="string"/>
+            <arg column="accessResult" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="accessedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="sensitiveInformationAccessLogSelect">
+        select l.access_log_id as "accessLogId",
+               l.information_type as "informationType",
+               l.viewer_user_id as "viewerUserId",
+               u.login_id as "viewerLoginId",
+               coalesce(kps.name, u.login_id) as "viewerName",
+               l.target_scope as "targetScope",
+               l.access_purpose as "accessPurpose",
+               l.purpose_source as "purposeSource",
+               l.access_result as "accessResult",
+               l.request_id as "requestId",
+               l.accessed_at as "accessedAt"
+        from sensitive_information_access_logs l
+        join users u on u.user_id = l.viewer_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+    </sql>
+
+    <sql id="sensitiveInformationAccessLogWhere">
+        <where>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (l.information_type ilike concat('%', #{criteria.filter}, '%')
+                     or l.target_scope ilike concat('%', #{criteria.filter}, '%')
+                     or l.access_purpose ilike concat('%', #{criteria.filter}, '%')
+                     or l.purpose_source ilike concat('%', #{criteria.filter}, '%')
+                     or l.request_id ilike concat('%', #{criteria.filter}, '%')
+                     or u.login_id ilike concat('%', #{criteria.filter}, '%')
+                     or kps.name ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+            <if test="criteria.informationType != null and criteria.informationType != ''">
+                and l.information_type = #{criteria.informationType}
+            </if>
+            <if test="criteria.viewerUserId != null">
+                and l.viewer_user_id = #{criteria.viewerUserId}
+            </if>
+            <if test="criteria.accessResult != null and criteria.accessResult != ''">
+                and l.access_result = #{criteria.accessResult}
+            </if>
+            <if test="criteria.fromDate != null">
+                and l.accessed_at &gt;= #{criteria.fromDate}
+            </if>
+            <if test="criteria.toDate != null">
+                and l.accessed_at &lt; (#{criteria.toDate}::date + INTERVAL '1 day')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listSensitiveInformationAccessLogs" resultMap="SensitiveInformationAccessLogRowMap">
+        <include refid="sensitiveInformationAccessLogSelect"/>
+        <include refid="sensitiveInformationAccessLogWhere"/>
+        order by l.accessed_at desc, l.access_log_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countSensitiveInformationAccessLogs" resultType="long">
+        select count(*)
+        from sensitive_information_access_logs l
+        join users u on u.user_id = l.viewer_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="sensitiveInformationAccessLogWhere"/>
+    </select>
+</mapper>

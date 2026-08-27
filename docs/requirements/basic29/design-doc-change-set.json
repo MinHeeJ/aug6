@@ -1,0 +1,40 @@
+{
+  "documents": [
+    {
+      "path": "data-model.md",
+      "status": "changed",
+      "reason": "세션 종료·업무처리·중요정보·권한변경 로그 저장 계약과 seed/reference가 추가되어 데이터 계약이 변경된다.",
+      "patch_ref": "design-doc-patches/data-model.diff"
+    },
+    {
+      "path": "contracts/openapi.yaml",
+      "status": "changed",
+      "reason": "신규 접속·감사 조회/강제종료 API path와 x-uncovered accounting이 추가되어 API 계약이 변경된다.",
+      "patch_ref": "design-doc-patches/contracts-openapi.diff"
+    },
+    {
+      "path": "research.md",
+      "status": "changed",
+      "reason": "세션 강제종료, 권한변경 이력 재사용, 장기 보존 정책 결정이 추가되어 연구 결정이 변경된다.",
+      "patch_ref": "design-doc-patches/research.diff"
+    },
+    {
+      "path": "quickstart.md",
+      "status": "changed",
+      "reason": "신규 접속·감사 운영기능 API/UI smoke 절차가 추가되어 검증 계약이 변경된다.",
+      "patch_ref": "design-doc-patches/quickstart.diff"
+    },
+    {
+      "path": "architecture.md",
+      "status": "changed",
+      "reason": "신규 session/audit module과 전역 hook 흐름이 추가되어 runtime 경계가 변경된다.",
+      "patch_ref": "design-doc-patches/architecture.diff"
+    },
+    {
+      "path": "ui-design.md",
+      "status": "changed",
+      "reason": "신규 R09 관리자 route 5개, action mapping, wireframe, trace가 추가되어 UI 계약이 변경된다.",
+      "patch_ref": "design-doc-patches/ui-design.diff"
+    }
+  ]
+}

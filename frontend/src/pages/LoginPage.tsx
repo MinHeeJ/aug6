@@ -226,6 +226,36 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-DATA-SCOPE-RULE-MGMT",
     menuPath: "시스템 관리 > 역할·권한 관리 > 데이터 범위 권한",
   },
+  {
+    path: "/admin/security/active-sessions",
+    label: "접속현황 조회",
+    screenId: "SCR-ACTIVE-SESSION-STATUS",
+    menuPath: "보안·감사 관리 > 접속기록 관리 > 접속현황 조회",
+  },
+  {
+    path: "/admin/security/session-termination-histories",
+    label: "로그아웃·만료 이력",
+    screenId: "SCR-SESSION-TERMINATION-HISTORY",
+    menuPath: "보안·감사 관리 > 접속기록 관리 > 로그아웃·만료 이력",
+  },
+  {
+    path: "/admin/audit/business-process-logs",
+    label: "업무처리 로그",
+    screenId: "SCR-BUSINESS-PROCESS-LOG",
+    menuPath: "보안·감사 관리 > 감사로그 관리 > 업무처리 로그",
+  },
+  {
+    path: "/admin/audit/sensitive-information-access-logs",
+    label: "중요정보 조회 로그",
+    screenId: "SCR-SENSITIVE-INFO-ACCESS-LOG",
+    menuPath: "보안·감사 관리 > 감사로그 관리 > 중요정보 조회 로그",
+  },
+  {
+    path: "/admin/audit/permission-change-logs",
+    label: "권한변경 로그",
+    screenId: "SCR-PERMISSION-CHANGE-LOG",
+    menuPath: "보안·감사 관리 > 감사로그 관리 > 권한변경 로그",
+  },
 ];
 
 export type LoginValidationErrors = Partial<

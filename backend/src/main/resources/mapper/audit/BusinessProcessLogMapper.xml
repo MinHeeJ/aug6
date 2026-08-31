@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.audit.BusinessProcessLogMapper">
+    <resultMap id="BusinessProcessLogRowMap" type="kr.ac.knue.commonfoundation.audit.BusinessProcessLogRow">
+        <constructor>
+            <arg column="auditLogId" javaType="java.lang.Long"/>
+            <arg column="actionType" javaType="string"/>
+            <arg column="targetKey" javaType="string"/>
+            <arg column="beforeState" javaType="string"/>
+            <arg column="afterState" javaType="string"/>
+            <arg column="actorUserId" javaType="java.lang.Long"/>
+            <arg column="actorLoginId" javaType="string"/>
+            <arg column="actorName" javaType="string"/>
+            <arg column="resultStatus" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="businessProcessLogSelect">
+        select l.audit_log_id as "auditLogId",
+               l.action_type as "actionType",
+               l.target_key as "targetKey",
+               l.before_state::text as "beforeState",
+               l.after_state::text as "afterState",
+               l.actor_user_id as "actorUserId",
+               u.login_id as "actorLoginId",
+               coalesce(kps.name, u.login_id) as "actorName",
+               l.result_status as "resultStatus",
+               l.request_id as "requestId",
+               l.created_at as "createdAt"
+        from business_process_audit_logs l
+        join users u on u.user_id = l.actor_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+    </sql>
+
+    <sql id="businessProcessLogWhere">
+        <where>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (l.action_type ilike concat('%', #{criteria.filter}, '%')
+                     or l.target_key ilike concat('%', #{criteria.filter}, '%')
+                     or u.login_id ilike concat('%', #{criteria.filter}, '%')
+                     or kps.name ilike concat('%', #{criteria.filter}, '%')
+                     or l.request_id ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+            <if test="criteria.actionType != null and criteria.actionType != ''">
+                and l.action_type = #{criteria.actionType}
+            </if>
+            <if test="criteria.targetKey != null and criteria.targetKey != ''">
+                and l.target_key ilike concat('%', #{criteria.targetKey}, '%')
+            </if>
+            <if test="criteria.actorUserId != null">
+                and l.actor_user_id = #{criteria.actorUserId}
+            </if>
+            <if test="criteria.resultStatus != null and criteria.resultStatus != ''">
+                and l.result_status = #{criteria.resultStatus}
+            </if>
+            <if test="criteria.fromDate != null">
+                and l.created_at &gt;= #{criteria.fromDate}
+            </if>
+            <if test="criteria.toDate != null">
+                and l.created_at &lt; (#{criteria.toDate}::date + INTERVAL '1 day')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listBusinessProcessLogs" resultMap="BusinessProcessLogRowMap">
+        <include refid="businessProcessLogSelect"/>
+        <include refid="businessProcessLogWhere"/>
+        order by l.created_at desc, l.audit_log_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countBusinessProcessLogs" resultType="long">
+        select count(*)
+        from business_process_audit_logs l
+        join users u on u.user_id = l.actor_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="businessProcessLogWhere"/>
+    </select>
+</mapper>

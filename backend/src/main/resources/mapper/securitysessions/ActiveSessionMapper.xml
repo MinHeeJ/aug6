@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.securitysessions.ActiveSessionMapper">
+    <resultMap id="ActiveSessionRowMap" type="kr.ac.knue.commonfoundation.securitysessions.ActiveSessionRow">
+        <constructor>
+            <arg column="sessionId" javaType="string"/>
+            <arg column="userId" javaType="java.lang.Long"/>
+            <arg column="loginId" javaType="string"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="userName" javaType="string"/>
+            <arg column="loginAt" javaType="java.time.LocalDateTime"/>
+            <arg column="lastAccessedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="ipAddress" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="terminatedBy" javaType="java.lang.Long"/>
+            <arg column="terminatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="terminationReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="SessionTerminationHistoryRowMap" type="kr.ac.knue.commonfoundation.securitysessions.SessionTerminationHistoryRow">
+        <constructor>
+            <arg column="historyId" javaType="java.lang.Long"/>
+            <arg column="sessionId" javaType="string"/>
+            <arg column="userId" javaType="java.lang.Long"/>
+            <arg column="loginId" javaType="string"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="userName" javaType="string"/>
+            <arg column="terminationType" javaType="string"/>
+            <arg column="terminationReason" javaType="string"/>
+            <arg column="terminatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="activeSessionSelect">
+        select s.session_id as "sessionId",
+               u.user_id as "userId",
+               u.login_id as "loginId",
+               u.employee_no as "employeeNo",
+               coalesce(kps.name, u.login_id) as "userName",
+               coalesce(s.login_at, s.created_at) as "loginAt",
+               s.last_accessed_at as "lastAccessedAt",
+               s.ip_address as "ipAddress",
+               s.status as "status",
+               s.terminated_by as "terminatedBy",
+               s.terminated_at as "terminatedAt",
+               s.termination_reason as "terminationReason"
+        from sessions s
+        join users u on u.user_id = s.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+    </sql>
+
+    <sql id="activeSessionWhere">
+        <where>
+            s.status = 'ACTIVE'
+            and s.expires_at &gt; CURRENT_TIMESTAMP
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (u.login_id ilike concat('%', #{criteria.filter}, '%')
+                     or kps.name ilike concat('%', #{criteria.filter}, '%')
+                     or s.ip_address ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <sql id="sessionTerminationHistorySelect">
+        select h.history_id as "historyId",
+               h.session_id as "sessionId",
+               u.user_id as "userId",
+               u.login_id as "loginId",
+               u.employee_no as "employeeNo",
+               coalesce(kps.name, u.login_id) as "userName",
+               h.termination_type as "terminationType",
+               h.termination_reason as "terminationReason",
+               h.terminated_at as "terminatedAt"
+        from session_termination_history h
+        join sessions s on s.session_id = h.session_id
+        join users u on u.user_id = s.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+    </sql>
+
+    <sql id="sessionTerminationHistoryWhere">
+        <where>
+            <if test="criteria.filter != null and criteria.filter != ''">
+                and (u.login_id ilike concat('%', #{criteria.filter}, '%')
+                     or kps.name ilike concat('%', #{criteria.filter}, '%')
+                     or u.employee_no ilike concat('%', #{criteria.filter}, '%')
+                     or h.session_id ilike concat('%', #{criteria.filter}, '%'))
+            </if>
+            <if test="criteria.terminationType != null and criteria.terminationType != ''">
+                and h.termination_type = #{criteria.terminationType}
+            </if>
+            <if test="criteria.fromDate != null">
+                and h.terminated_at &gt;= #{criteria.fromDate}
+            </if>
+            <if test="criteria.toDate != null">
+                and h.terminated_at &lt; (#{criteria.toDate}::date + INTERVAL '1 day')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listActiveSessions" resultMap="ActiveSessionRowMap">
+        <include refid="activeSessionSelect"/>
+        <include refid="activeSessionWhere"/>
+        order by s.last_accessed_at desc, s.login_at desc, s.session_id
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countActiveSessions" resultType="long">
+        select count(*)
+        from sessions s
+        join users u on u.user_id = s.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="activeSessionWhere"/>
+    </select>
+
+    <select id="findSessionForUpdate" resultMap="ActiveSessionRowMap">
+        <include refid="activeSessionSelect"/>
+        where s.session_id = #{sessionId}
+        for update of s
+    </select>
+
+    <select id="listSessionTerminationHistories" resultMap="SessionTerminationHistoryRowMap">
+        <include refid="sessionTerminationHistorySelect"/>
+        <include refid="sessionTerminationHistoryWhere"/>
+        order by h.terminated_at desc, h.history_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countSessionTerminationHistories" resultType="long">
+        select count(*)
+        from session_termination_history h
+        join sessions s on s.session_id = h.session_id
+        join users u on u.user_id = s.user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="sessionTerminationHistoryWhere"/>
+    </select>
+
+    <update id="markTerminated">
+        update sessions
+        set status = 'TERMINATED',
+            terminated_by = #{operatorUserId},
+            terminated_at = CURRENT_TIMESTAMP,
+            termination_reason = #{reason},
+            last_accessed_at = CURRENT_TIMESTAMP
+        where session_id = #{sessionId}
+          and status = 'ACTIVE'
+    </update>
+
+    <insert id="insertTerminationHistory">
+        insert into session_termination_history (session_id, termination_type, termination_reason, terminated_at)
+        values (#{sessionId}, 'ADMIN_TERMINATED', #{reason}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <insert id="insertSessionTerminateAudit">
+        insert into business_process_audit_logs (action_type, target_key, before_state, after_state, actor_user_id, result_status, request_id)
+        values ('SESSION_TERMINATE', #{sessionId}, '{"status":"ACTIVE"}'::jsonb,
+                jsonb_build_object('status', 'TERMINATED', 'reason', #{reason}), #{operatorUserId}, 'SUCCESS', #{requestId})
+    </insert>
+</mapper>

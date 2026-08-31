@@ -53,6 +53,12 @@ describe("LoginPage", () => {
     expect(routePath("/admin/privacy/access-logs")).toBe(
       "시스템 관리 > 개인정보 관리 > 개인정보 처리이력",
     );
+    expect(routePath("/admin/audit/sensitive-information-access-logs")).toBe(
+      "보안·감사 관리 > 감사로그 관리 > 중요정보 조회 로그",
+    );
+    expect(routePath("/admin/audit/permission-change-logs")).toBe(
+      "보안·감사 관리 > 감사로그 관리 > 권한변경 로그",
+    );
   });
 
   it("allows seed R09 administrator to access all configured admin routes after login", () => {
@@ -74,7 +80,7 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(27);
+    expect(ADMIN_ROUTES).toHaveLength(41);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);

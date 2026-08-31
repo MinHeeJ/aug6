@@ -111,6 +111,17 @@ class ExcelOperationsApiTest {
         mockMvc.perform(multipart("/api/admin/excel-uploads").file(file).cookie(adminCookie()).param("businessType", "PROFESSOR_ACHIEVEMENT"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        mockMvc.perform(post("/api/admin/excel-uploads")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("businessType", "PROFESSOR_ACHIEVEMENT"))
+                .andExpect(status().isUnsupportedMediaType());
+        mockMvc.perform(multipart("/api/admin/excel-uploads")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .param("businessType", "PROFESSOR_ACHIEVEMENT"))
+                .andExpect(status().isBadRequest());
         verify(service, never()).createExcelUpload(any(), any(), any(), any());
     }
 

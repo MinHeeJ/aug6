@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.audit.PermissionChangeLogMapper">
+    <resultMap id="PermissionChangeLogRowMap" type="kr.ac.knue.commonfoundation.audit.PermissionChangeLogRow">
+        <constructor>
+            <arg column="permissionHistoryId" javaType="java.lang.Long"/>
+            <arg column="targetType" javaType="string"/>
+            <arg column="targetId" javaType="string"/>
+            <arg column="beforeValue" javaType="string"/>
+            <arg column="afterValue" javaType="string"/>
+            <arg column="approverUserId" javaType="java.lang.Long"/>
+            <arg column="approverLoginId" javaType="string"/>
+            <arg column="approverName" javaType="string"/>
+            <arg column="changedBy" javaType="java.lang.Long"/>
+            <arg column="changerLoginId" javaType="string"/>
+            <arg column="changerName" javaType="string"/>
+            <arg column="reason" javaType="string"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="permissionChangeLogSelect">
+        select h.permission_history_id as "permissionHistoryId",
+               h.target_type as "targetType",
+               h.target_id as "targetId",
+               h.before_value::text as "beforeValue",
+               h.after_value::text as "afterValue",
+               h.approver_user_id as "approverUserId",
+               au.login_id as "approverLoginId",
+               coalesce(akps.name, au.login_id) as "approverName",
+               h.changed_by as "changedBy",
+               cu.login_id as "changerLoginId",
+               coalesce(ckps.name, cu.login_id) as "changerName",
+               h.reason as "reason",
+               h.changed_at as "changedAt"
+        from permission_change_history h
+        join users cu on cu.user_id = h.changed_by
+        left join korus_personnel_snapshots ckps on ckps.employee_no = cu.employee_no
+        left join users au on au.user_id = h.approver_user_id
+        left join korus_personnel_snapshots akps on akps.employee_no = au.employee_no
+    </sql>
+
+    <sql id="permissionChangeLogWhere">
+        <where>
+            <if test="criteria.targetType != null and criteria.targetType != ''">
+                and h.target_type = #{criteria.targetType}
+            </if>
+            <if test="criteria.targetId != null and criteria.targetId != ''">
+                and h.target_id ilike concat('%', #{criteria.targetId}, '%')
+            </if>
+            <if test="criteria.approverUserId != null">
+                and h.approver_user_id = #{criteria.approverUserId}
+            </if>
+            <if test="criteria.changedBy != null">
+                and h.changed_by = #{criteria.changedBy}
+            </if>
+            <if test="criteria.fromDate != null">
+                and h.changed_at &gt;= #{criteria.fromDate}
+            </if>
+            <if test="criteria.toDate != null">
+                and h.changed_at &lt; (#{criteria.toDate}::date + INTERVAL '1 day')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listPermissionChangeLogs" resultMap="PermissionChangeLogRowMap">
+        <include refid="permissionChangeLogSelect"/>
+        <include refid="permissionChangeLogWhere"/>
+        order by h.changed_at desc, h.permission_history_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <select id="countPermissionChangeLogs" resultType="long">
+        select count(*)
+        from permission_change_history h
+        join users cu on cu.user_id = h.changed_by
+        left join users au on au.user_id = h.approver_user_id
+        <include refid="permissionChangeLogWhere"/>
+    </select>
+</mapper>

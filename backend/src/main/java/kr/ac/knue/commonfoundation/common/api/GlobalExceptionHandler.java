@@ -7,10 +7,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -35,6 +37,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessValidationException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessValidation(BusinessValidationException exception) {
         return ResponseEntity.badRequest().body(ApiResponse.fail(new ApiError("VALIDATION_ERROR", exception.getMessage(), exception.fields())));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException exception) {
+        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
     }
 
     @ExceptionHandler(UnauthenticatedException.class)
@@ -71,6 +78,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.fail(ApiError.of("METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다.")));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException exception) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponse.fail(ApiError.of("UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다.")));
     }
 
     @ExceptionHandler(Exception.class)

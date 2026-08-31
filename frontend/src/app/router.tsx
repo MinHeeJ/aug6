@@ -38,6 +38,11 @@ import { BatchDefinitionManagementPage } from "../pages/admin/SCR-BATCH-DEFINITI
 import { BatchExecutionManagementPage } from "../pages/admin/SCR-BATCH-EXECUTION-MGMT";
 import { BatchResultManagementPage } from "../pages/admin/SCR-BATCH-RESULT-MGMT";
 import { BatchRetryManagementPage } from "../pages/admin/SCR-BATCH-RETRY-MGMT";
+import { ActiveSessionStatusPage } from "../pages/admin/SCR-ACTIVE-SESSION-STATUS";
+import { SessionTerminationHistoryPage } from "../pages/admin/SCR-SESSION-TERMINATION-HISTORY";
+import { BusinessProcessLogPage } from "../pages/admin/SCR-BUSINESS-PROCESS-LOG";
+import { SensitiveInformationAccessLogPage } from "../pages/admin/SCR-SENSITIVE-INFO-ACCESS-LOG";
+import { PermissionChangeLogPage } from "../pages/admin/SCR-PERMISSION-CHANGE-LOG";
 import {
   ExcelDownloadManagementPage,
   ExcelUploadErrorManagementPage,
@@ -208,6 +213,16 @@ function renderAdminPage(path: string | undefined) {
       return <BatchResultManagementPage />;
     case "/admin/batch-retries":
       return <BatchRetryManagementPage />;
+    case "/admin/security/active-sessions":
+      return <ActiveSessionStatusPage />;
+    case "/admin/security/session-termination-histories":
+      return <SessionTerminationHistoryPage />;
+    case "/admin/audit/business-process-logs":
+      return <BusinessProcessLogPage />;
+    case "/admin/audit/sensitive-information-access-logs":
+      return <SensitiveInformationAccessLogPage />;
+    case "/admin/audit/permission-change-logs":
+      return <PermissionChangeLogPage />;
     case "/admin/excel-upload-templates":
       return <UploadTemplateManagementPage />;
     case "/admin/excel-uploads":

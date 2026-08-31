@@ -29,8 +29,8 @@ public interface AuthMapper {
     List<String> findActiveRoleCodes(@Param("userId") Long userId);
 
     @Insert("""
-            insert into sessions (session_id, user_id, expires_at, status)
-            values (#{sessionId}, #{userId}, #{expiresAt}, 'ACTIVE')
+            insert into sessions (session_id, user_id, expires_at, status, login_at)
+            values (#{sessionId}, #{userId}, #{expiresAt}, 'ACTIVE', CURRENT_TIMESTAMP)
             """)
     void insertSession(@Param("sessionId") String sessionId, @Param("userId") Long userId, @Param("expiresAt") LocalDateTime expiresAt);
 

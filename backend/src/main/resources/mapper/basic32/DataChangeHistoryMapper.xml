@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic32.DataChangeHistoryMapper">
+    <resultMap id="DataChangeHistoryRowMap" type="kr.ac.knue.commonfoundation.basic32.DataChangeHistoryRow">
+        <constructor>
+            <arg column="historyId" javaType="long"/>
+            <arg column="targetBusiness" javaType="string"/>
+            <arg column="targetKey" javaType="string"/>
+            <arg column="changeType" javaType="string"/>
+            <arg column="fieldName" javaType="string"/>
+            <arg column="beforeValue" javaType="string"/>
+            <arg column="afterValue" javaType="string"/>
+            <arg column="changedBy" javaType="long"/>
+            <arg column="changedByLoginId" javaType="string"/>
+            <arg column="changedByName" javaType="string"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="historyColumns">
+        dch.history_id as "historyId",
+        dch.target_business as "targetBusiness",
+        dch.target_key as "targetKey",
+        dch.change_type as "changeType",
+        dch.field_name as "fieldName",
+        dch.before_value as "beforeValue",
+        dch.after_value as "afterValue",
+        dch.changed_by as "changedBy",
+        u.login_id as "changedByLoginId",
+        coalesce(kps.name, u.login_id) as "changedByName",
+        dch.changed_at as "changedAt",
+        dch.change_reason as "changeReason"
+    </sql>
+
+    <sql id="historyFilters">
+        <where>
+            <if test="criteria.targetBusiness != null and criteria.targetBusiness != ''">
+                dch.target_business ilike concat('%', #{criteria.targetBusiness}, '%')
+            </if>
+            <if test="criteria.targetKey != null and criteria.targetKey != ''">
+                and dch.target_key ilike concat('%', #{criteria.targetKey}, '%')
+            </if>
+            <if test="criteria.changedBy != null">
+                and dch.changed_by = #{criteria.changedBy}
+            </if>
+            <if test="criteria.changedAtFrom != null and criteria.changedAtFrom != ''">
+                and dch.changed_at &gt;= cast(#{criteria.changedAtFrom} as timestamp)
+            </if>
+            <if test="criteria.changedAtTo != null and criteria.changedAtTo != ''">
+                and dch.changed_at &lt;= cast(#{criteria.changedAtTo} as timestamp)
+            </if>
+            <if test="criteria.changeType != null and criteria.changeType != ''">
+                and dch.change_type = #{criteria.changeType}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listHistories" resultMap="DataChangeHistoryRowMap">
+        select <include refid="historyColumns"/>
+        from data_change_histories dch
+        join users u on u.user_id = dch.changed_by
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="historyFilters"/>
+        order by dch.changed_at desc, dch.history_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countHistories" resultType="long">
+        select count(*)
+        from data_change_histories dch
+        <include refid="historyFilters"/>
+    </select>
+</mapper>

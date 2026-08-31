@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic32.DeletedBusinessDataMapper">
+    <resultMap id="DeletedBusinessDataRowMap" type="kr.ac.knue.commonfoundation.basic32.DeletedBusinessDataRow">
+        <constructor>
+            <arg column="deletedDataId" javaType="long"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="originalKey" javaType="string"/>
+            <arg column="deletedBy" javaType="long"/>
+            <arg column="deletedByLoginId" javaType="string"/>
+            <arg column="deletedByName" javaType="string"/>
+            <arg column="deletedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="deleteReason" javaType="string"/>
+            <arg column="recoverableYn" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="deletedDataColumns">
+        dbd.deleted_data_id as "deletedDataId",
+        dbd.business_type as "businessType",
+        dbd.original_key as "originalKey",
+        dbd.deleted_by as "deletedBy",
+        u.login_id as "deletedByLoginId",
+        coalesce(kps.name, u.login_id) as "deletedByName",
+        dbd.deleted_at as "deletedAt",
+        dbd.delete_reason as "deleteReason",
+        dbd.recoverable_yn as "recoverableYn"
+    </sql>
+
+    <sql id="deletedDataFilters">
+        <where>
+            <if test="criteria.businessType != null and criteria.businessType != ''">
+                dbd.business_type = #{criteria.businessType}
+            </if>
+            <if test="criteria.originalKey != null and criteria.originalKey != ''">
+                and dbd.original_key ilike concat('%', #{criteria.originalKey}, '%')
+            </if>
+            <if test="criteria.deletedBy != null">
+                and dbd.deleted_by = #{criteria.deletedBy}
+            </if>
+            <if test="criteria.deletedAtFrom != null and criteria.deletedAtFrom != ''">
+                and dbd.deleted_at &gt;= cast(#{criteria.deletedAtFrom} as timestamp)
+            </if>
+            <if test="criteria.deletedAtTo != null and criteria.deletedAtTo != ''">
+                and dbd.deleted_at &lt;= cast(#{criteria.deletedAtTo} as timestamp)
+            </if>
+        </where>
+    </sql>
+
+    <select id="listDeletedData" resultMap="DeletedBusinessDataRowMap">
+        select <include refid="deletedDataColumns"/>
+        from deleted_business_data dbd
+        join users u on u.user_id = dbd.deleted_by
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="deletedDataFilters"/>
+        order by dbd.deleted_at desc, dbd.deleted_data_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDeletedData" resultType="long">
+        select count(*)
+        from deleted_business_data dbd
+        <include refid="deletedDataFilters"/>
+    </select>
+</mapper>

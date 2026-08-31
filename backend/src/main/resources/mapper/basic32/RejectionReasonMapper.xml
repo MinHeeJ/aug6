@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic32.RejectionReasonMapper">
+    <resultMap id="RejectionReasonRowMap" type="kr.ac.knue.commonfoundation.basic32.RejectionReasonRow">
+        <constructor>
+            <arg column="rejectionReasonId" javaType="long"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="reasonCode" javaType="string"/>
+            <arg column="standardMessage" javaType="string"/>
+            <arg column="additionalOpinionAllowedYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="reasonColumns">
+        rr.rejection_reason_id as "rejectionReasonId",
+        rr.business_type as "businessType",
+        rr.reason_code as "reasonCode",
+        rr.standard_message as "standardMessage",
+        rr.additional_opinion_allowed_yn as "additionalOpinionAllowedYn",
+        rr.change_reason as "changeReason",
+        rr.updated_by as "updatedBy",
+        rr.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="reasonFilters">
+        <where>
+            <if test="criteria.businessType != null and criteria.businessType != ''">
+                rr.business_type = #{criteria.businessType}
+            </if>
+            <if test="criteria.reasonCode != null and criteria.reasonCode != ''">
+                and rr.reason_code ilike concat('%', #{criteria.reasonCode}, '%')
+            </if>
+            <if test="criteria.additionalOpinionAllowedYn != null and criteria.additionalOpinionAllowedYn != ''">
+                and rr.additional_opinion_allowed_yn = #{criteria.additionalOpinionAllowedYn}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listReasons" resultMap="RejectionReasonRowMap">
+        select <include refid="reasonColumns"/>
+        from rejection_reasons rr
+        <include refid="reasonFilters"/>
+        order by rr.business_type, rr.reason_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countReasons" resultType="long">
+        select count(*)
+        from rejection_reasons rr
+        <include refid="reasonFilters"/>
+    </select>
+
+    <select id="findByKey" resultMap="RejectionReasonRowMap">
+        select <include refid="reasonColumns"/>
+        from rejection_reasons rr
+        where rr.business_type = #{businessType}
+          and rr.reason_code = #{reasonCode}
+    </select>
+
+    <insert id="upsertRejectionReason">
+        insert into rejection_reasons (business_type, reason_code, standard_message, additional_opinion_allowed_yn, change_reason, created_by, updated_by)
+        values (#{businessType}, #{reasonCode}, #{standardMessage}, #{additionalOpinionAllowedYn}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (business_type, reason_code)
+        do update set standard_message = EXCLUDED.standard_message,
+                      additional_opinion_allowed_yn = EXCLUDED.additional_opinion_allowed_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
+</mapper>

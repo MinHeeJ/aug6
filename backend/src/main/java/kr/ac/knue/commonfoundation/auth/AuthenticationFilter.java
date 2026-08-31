@@ -40,7 +40,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         try {
             CurrentUser user = authService.currentUser(sessionId);
             request.setAttribute("currentUser", user);
-            if (path.startsWith("/api/admin/") && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
                 return;
             }
@@ -50,7 +50,29 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
+    private boolean requiresMenuPermission(String path) {
+        return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
+    }
+
     private String pathToUiRoute(String apiPath) {
+        if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
+            return "/admin/evaluation-organization-mappings";
+        }
+        if (apiPath.equals("/api/admin/business-status-codes")) {
+            return "/admin/business-status-codes";
+        }
+        if (apiPath.equals("/api/admin/business-status-transitions")) {
+            return "/admin/business-status-transitions";
+        }
+        if (apiPath.equals("/api/admin/rejection-reasons")) {
+            return "/admin/rejection-reasons";
+        }
+        if (apiPath.equals("/api/admin/data-change-histories")) {
+            return "/admin/data-change-histories";
+        }
+        if (apiPath.equals("/api/admin/deleted-business-data")) {
+            return "/admin/deleted-business-data";
+        }
         if (apiPath.equals("/api/admin/users") || apiPath.matches("/api/admin/users/[^/]+/(account|roles)")) {
             return "/admin/users";
         }

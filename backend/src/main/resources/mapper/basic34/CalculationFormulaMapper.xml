@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic34.CalculationFormulaMapper">
+    <resultMap id="CalculationFormulaRowMap" type="kr.ac.knue.commonfoundation.basic34.CalculationFormulaRow">
+        <constructor>
+            <arg column="formulaVersionId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="formulaCode" javaType="string"/>
+            <arg column="calculationType" javaType="string"/>
+            <arg column="calculationTypeName" javaType="string"/>
+            <arg column="variableDefinition" javaType="string"/>
+            <arg column="roundingRule" javaType="string"/>
+            <arg column="lowerBoundScore" javaType="java.math.BigDecimal"/>
+            <arg column="upperBoundScore" javaType="java.math.BigDecimal"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="calculationFormulaColumns">
+        cfv.formula_version_id as "formulaVersionId",
+        cfv.rule_version_id as "ruleVersionId",
+        erv.version_code as "versionCode",
+        erv.version_status as "versionStatus",
+        cfv.formula_code as "formulaCode",
+        cfv.calculation_type as "calculationType",
+        case cfv.calculation_type
+            when 'FIXED_SCORE' then '정액배점'
+            when 'DISTRIBUTION_RATE' then '배분율적용'
+            when 'CAP' then '상한적용'
+            when 'LADDER' then '구간별배점'
+            else cfv.calculation_type
+        end as "calculationTypeName",
+        cfv.variable_definition::text as "variableDefinition",
+        cfv.rounding_rule as "roundingRule",
+        cfv.lower_bound_score as "lowerBoundScore",
+        cfv.upper_bound_score as "upperBoundScore",
+        cfv.evaluation_year as "evaluationYear",
+        cfv.effective_start_date as "effectiveStartDate",
+        cfv.effective_end_date as "effectiveEndDate",
+        cfv.active_yn as "activeYn",
+        cfv.change_reason as "changeReason",
+        cfv.updated_by as "updatedBy",
+        cfv.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="calculationFormulaJoins">
+        from calculation_formula_versions cfv
+        inner join evaluation_rule_versions erv on erv.rule_version_id = cfv.rule_version_id
+    </sql>
+
+    <sql id="calculationFormulaFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">
+                cfv.rule_version_id = #{criteria.ruleVersionId}
+            </if>
+            <if test="criteria.normalizedFormulaCode != null">
+                and cfv.formula_code = #{criteria.normalizedFormulaCode}
+            </if>
+            <if test="criteria.normalizedCalculationType != null">
+                and cfv.calculation_type = #{criteria.normalizedCalculationType}
+            </if>
+            <if test="criteria.evaluationYear != null and criteria.evaluationYear != ''">
+                and cfv.evaluation_year = #{criteria.evaluationYear}
+            </if>
+            <if test="criteria.normalizedRoundingRule != null">
+                and cfv.rounding_rule = #{criteria.normalizedRoundingRule}
+            </if>
+            <if test="criteria.activeYn != null and criteria.activeYn != ''">
+                and cfv.active_yn = #{criteria.activeYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (cfv.formula_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or cfv.calculation_type ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or cfv.rounding_rule ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or cfv.variable_definition::text ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listCalculationFormulas" resultMap="CalculationFormulaRowMap">
+        select <include refid="calculationFormulaColumns"/>
+        <include refid="calculationFormulaJoins"/>
+        <include refid="calculationFormulaFilters"/>
+        order by cfv.evaluation_year desc, cfv.formula_code, cfv.effective_start_date desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countCalculationFormulas" resultType="long">
+        select count(*)
+        <include refid="calculationFormulaJoins"/>
+        <include refid="calculationFormulaFilters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status
+        from evaluation_rule_versions
+        where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findByKey" resultMap="CalculationFormulaRowMap">
+        select <include refid="calculationFormulaColumns"/>
+        <include refid="calculationFormulaJoins"/>
+        where cfv.rule_version_id = #{request.ruleVersionId}
+          and cfv.formula_code = #{request.formulaCode}
+          and cfv.evaluation_year = #{request.evaluationYear}
+          and cfv.effective_start_date = #{request.effectiveStartDate}
+          and cfv.effective_end_date = #{request.effectiveEndDate}
+    </select>
+
+    <insert id="upsertCalculationFormula">
+        insert into calculation_formula_versions (rule_version_id, formula_code, calculation_type, variable_definition, rounding_rule, lower_bound_score, upper_bound_score, evaluation_year, effective_start_date, effective_end_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, #{request.formulaCode}, #{request.calculationType}, CAST(#{request.variableDefinition} AS jsonb), #{request.roundingRule}, #{request.lowerBoundScore}, #{request.upperBoundScore}, #{request.evaluationYear}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.activeYn}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, formula_code, evaluation_year, effective_start_date, effective_end_date)
+        do update set calculation_type = EXCLUDED.calculation_type,
+                      variable_definition = EXCLUDED.variable_definition,
+                      rounding_rule = EXCLUDED.rounding_rule,
+                      lower_bound_score = EXCLUDED.lower_bound_score,
+                      upper_bound_score = EXCLUDED.upper_bound_score,
+                      active_yn = EXCLUDED.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

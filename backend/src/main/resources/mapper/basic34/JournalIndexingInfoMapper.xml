@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic34.JournalIndexingInfoMapper">
+    <resultMap id="JournalIndexingInfoRowMap" type="kr.ac.knue.commonfoundation.basic34.JournalIndexingInfoRow">
+        <constructor>
+            <arg column="journalIndexingInfoId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="issn" javaType="string"/>
+            <arg column="journalName" javaType="string"/>
+            <arg column="indexingType" javaType="string"/>
+            <arg column="indexingTypeName" javaType="string"/>
+            <arg column="publicationCountry" javaType="string"/>
+            <arg column="validStartDate" javaType="java.time.LocalDate"/>
+            <arg column="validEndDate" javaType="java.time.LocalDate"/>
+            <arg column="sourceName" javaType="string"/>
+            <arg column="sourceUpdatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="journalIndexingInfoColumns">
+        jii.journal_indexing_info_id as "journalIndexingInfoId",
+        jii.rule_version_id as "ruleVersionId",
+        erv.version_code as "versionCode",
+        erv.version_status as "versionStatus",
+        jii.issn as "issn",
+        jii.journal_name as "journalName",
+        jii.indexing_type as "indexingType",
+        case jii.indexing_type
+            when 'KCI' then '등재지'
+            when 'CANDIDATE' then '후보지'
+            when 'INTERNATIONAL' then '국제등재'
+            else '기타'
+        end as "indexingTypeName",
+        jii.publication_country as "publicationCountry",
+        jii.valid_start_date as "validStartDate",
+        jii.valid_end_date as "validEndDate",
+        jii.source_name as "sourceName",
+        jii.source_updated_at as "sourceUpdatedAt",
+        jii.active_yn as "activeYn",
+        jii.change_reason as "changeReason",
+        jii.updated_by as "updatedBy",
+        jii.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="journalIndexingInfoJoins">
+        from journal_indexing_infos jii
+        inner join evaluation_rule_versions erv on erv.rule_version_id = jii.rule_version_id
+    </sql>
+
+    <sql id="journalIndexingInfoFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">
+                jii.rule_version_id = #{criteria.ruleVersionId}
+            </if>
+            <if test="criteria.normalizedIssn != null">
+                and jii.issn ilike concat('%', #{criteria.normalizedIssn}, '%')
+            </if>
+            <if test="criteria.normalizedJournalName != null">
+                and jii.journal_name ilike concat('%', #{criteria.normalizedJournalName}, '%')
+            </if>
+            <if test="criteria.normalizedIndexingType != null">
+                and jii.indexing_type = #{criteria.normalizedIndexingType}
+            </if>
+            <if test="criteria.normalizedPublicationCountry != null">
+                and jii.publication_country = #{criteria.normalizedPublicationCountry}
+            </if>
+            <if test="criteria.normalizedActiveYn != null">
+                and jii.active_yn = #{criteria.normalizedActiveYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (jii.issn ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or jii.journal_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or jii.indexing_type ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or jii.publication_country ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or jii.source_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listJournalIndexingInfos" resultMap="JournalIndexingInfoRowMap">
+        select <include refid="journalIndexingInfoColumns"/>
+        <include refid="journalIndexingInfoJoins"/>
+        <include refid="journalIndexingInfoFilters"/>
+        order by jii.valid_start_date desc, jii.journal_name, jii.issn
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countJournalIndexingInfos" resultType="long">
+        select count(*)
+        <include refid="journalIndexingInfoJoins"/>
+        <include refid="journalIndexingInfoFilters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status
+        from evaluation_rule_versions
+        where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findByKey" resultMap="JournalIndexingInfoRowMap">
+        select <include refid="journalIndexingInfoColumns"/>
+        <include refid="journalIndexingInfoJoins"/>
+        where jii.rule_version_id = #{request.ruleVersionId}
+          and jii.issn = #{request.issn}
+          and jii.valid_start_date = #{request.validStartDate}
+          and jii.valid_end_date = #{request.validEndDate}
+    </select>
+
+    <select id="countOverlappingIssnPeriods" resultType="long">
+        select count(*)
+        from journal_indexing_infos jii
+        where jii.issn = #{request.issn}
+          and jii.active_yn = 'Y'
+          and daterange(jii.valid_start_date, jii.valid_end_date, '[]') &amp;&amp; daterange(#{request.validStartDate}, #{request.validEndDate}, '[]')
+          and not (jii.rule_version_id = #{request.ruleVersionId}
+                   and jii.valid_start_date = #{request.validStartDate}
+                   and jii.valid_end_date = #{request.validEndDate})
+    </select>
+
+    <insert id="upsertJournalIndexingInfo">
+        insert into journal_indexing_infos (rule_version_id, issn, journal_name, indexing_type, publication_country, valid_start_date, valid_end_date, source_name, source_updated_at, active_yn, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, #{request.issn}, #{request.journalName}, #{request.indexingType}, #{request.publicationCountry}, #{request.validStartDate}, #{request.validEndDate}, #{request.sourceName}, #{request.sourceUpdatedAt}, #{request.activeYn}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, issn, valid_start_date, valid_end_date)
+        do update set journal_name = EXCLUDED.journal_name,
+                      indexing_type = EXCLUDED.indexing_type,
+                      publication_country = EXCLUDED.publication_country,
+                      source_name = EXCLUDED.source_name,
+                      source_updated_at = EXCLUDED.source_updated_at,
+                      active_yn = EXCLUDED.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

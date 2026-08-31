@@ -1200,6 +1200,447 @@ export const evaluationManagementItemApi = {
   },
 };
 
+export type EvaluationScore = {
+  scoreRuleId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  managementItemId: number;
+  areaCode: string;
+  areaName: string;
+  itemCode: string;
+  itemName: string;
+  evaluationYear: string;
+  elementCode: string;
+  elementName: string;
+  managementItemCode: string;
+  managementItemName: string;
+  organizationCode: string;
+  organizationName?: string | null;
+  baseScore: number;
+  maxScore?: number | null;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationScoreSearchResponse = {
+  evaluationScores: EvaluationScore[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type EvaluationScorePayload = {
+  ruleVersionId: number;
+  managementItemId: number;
+  organizationCode: string;
+  evaluationYear: string;
+  baseScore: number;
+  maxScore?: number | null;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const evaluationScoreApi = {
+  listEvaluationScores(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      ruleVersionId?: number;
+      managementItemId?: number;
+      areaCode?: string;
+      itemCode?: string;
+      evaluationYear?: string;
+      elementCode?: string;
+      managementItemCode?: string;
+      organizationCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.managementItemId)
+      query.set("managementItemId", String(params.managementItemId));
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.itemCode?.trim()) query.set("itemCode", params.itemCode.trim());
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.elementCode?.trim())
+      query.set("elementCode", params.elementCode.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationScoreSearchResponse>(
+      `/api/admin/evaluation-scores?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationScore(payload: EvaluationScorePayload) {
+    return apiRequest<EvaluationScore>("/api/admin/evaluation-scores/save", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type ParticipationRate = Omit<
+  EvaluationScore,
+  | "scoreRuleId"
+  | "organizationCode"
+  | "organizationName"
+  | "baseScore"
+  | "maxScore"
+> & {
+  participationRateRuleId: number;
+  researcherCount: number;
+  participationType: string;
+  participationTypeName?: string | null;
+  distributionRate: number;
+};
+
+export type ParticipationRateSearchResponse = {
+  participationRates: ParticipationRate[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type ParticipationRatePayload = {
+  ruleVersionId: number;
+  managementItemId: number;
+  researcherCount: number;
+  participationType: string;
+  distributionRate: number;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const participationRateApi = {
+  listParticipationRates(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      ruleVersionId?: number;
+      managementItemId?: number;
+      areaCode?: string;
+      itemCode?: string;
+      evaluationYear?: string;
+      elementCode?: string;
+      managementItemCode?: string;
+      researcherCount?: number;
+      participationType?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.managementItemId)
+      query.set("managementItemId", String(params.managementItemId));
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.itemCode?.trim()) query.set("itemCode", params.itemCode.trim());
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.elementCode?.trim())
+      query.set("elementCode", params.elementCode.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    if (params.researcherCount)
+      query.set("researcherCount", String(params.researcherCount));
+    if (params.participationType?.trim())
+      query.set("participationType", params.participationType.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<ParticipationRateSearchResponse>(
+      `/api/admin/participation-rates?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveParticipationRate(payload: ParticipationRatePayload) {
+    return apiRequest<ParticipationRate>(
+      "/api/admin/participation-rates/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type CalculationType =
+  | "FIXED_SCORE"
+  | "DISTRIBUTION_RATE"
+  | "CAP"
+  | "LADDER";
+
+export type CalculationFormula = {
+  formulaVersionId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  formulaCode: string;
+  calculationType: CalculationType;
+  calculationTypeName?: string | null;
+  variableDefinition: string;
+  roundingRule: string;
+  lowerBoundScore?: number | null;
+  upperBoundScore?: number | null;
+  evaluationYear: string;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type CalculationFormulaSearchResponse = {
+  calculationFormulas: CalculationFormula[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type CalculationFormulaPayload = {
+  ruleVersionId: number;
+  formulaCode: string;
+  calculationType: CalculationType;
+  variableDefinition: string;
+  roundingRule: string;
+  lowerBoundScore?: number | null;
+  upperBoundScore?: number | null;
+  evaluationYear: string;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const calculationFormulaApi = {
+  listCalculationFormulas(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      ruleVersionId?: number;
+      formulaCode?: string;
+      calculationType?: CalculationType | "";
+      evaluationYear?: string;
+      roundingRule?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.formulaCode?.trim())
+      query.set("formulaCode", params.formulaCode.trim());
+    if (params.calculationType)
+      query.set("calculationType", params.calculationType);
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.roundingRule?.trim())
+      query.set("roundingRule", params.roundingRule.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<CalculationFormulaSearchResponse>(
+      `/api/admin/calculation-formulas?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveCalculationFormula(payload: CalculationFormulaPayload) {
+    return apiRequest<CalculationFormula>(
+      "/api/admin/calculation-formulas/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type EvaluationRuleSetStatus = "DRAFT" | "CONFIRMED" | "DISCARDED";
+
+export type EvaluationRuleSet = {
+  ruleSetId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  targetScope: string;
+  ruleSetName: string;
+  ruleSetStatus: EvaluationRuleSetStatus;
+  activeYn: ActiveYn;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationRuleSetSearchResponse = {
+  evaluationRuleSets: EvaluationRuleSet[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type EvaluationRuleSetPayload = {
+  ruleVersionId: number;
+  targetScope: string;
+  ruleSetName: string;
+  ruleSetStatus: EvaluationRuleSetStatus;
+  activeYn: ActiveYn;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  changeReason: string;
+};
+
+export const evaluationRuleSetApi = {
+  listEvaluationRuleSets(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      ruleVersionId?: number;
+      targetScope?: string;
+      ruleSetName?: string;
+      ruleSetStatus?: EvaluationRuleSetStatus | "";
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.targetScope?.trim())
+      query.set("targetScope", params.targetScope.trim());
+    if (params.ruleSetName?.trim())
+      query.set("ruleSetName", params.ruleSetName.trim());
+    if (params.ruleSetStatus) query.set("ruleSetStatus", params.ruleSetStatus);
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationRuleSetSearchResponse>(
+      `/api/admin/evaluation-rule-sets?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationRuleSet(payload: EvaluationRuleSetPayload) {
+    return apiRequest<EvaluationRuleSet>(
+      "/api/admin/evaluation-rule-sets/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type JournalIndexingType =
+  | "KCI"
+  | "CANDIDATE"
+  | "INTERNATIONAL"
+  | "OTHER";
+
+export type JournalIndexingInfo = {
+  journalIndexingInfoId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  issn: string;
+  journalName: string;
+  indexingType: JournalIndexingType;
+  indexingTypeName?: string | null;
+  publicationCountry: string;
+  validStartDate: string;
+  validEndDate: string;
+  sourceName: string;
+  sourceUpdatedAt: string;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type JournalIndexingInfoSearchResponse = {
+  journalIndexingInfos: JournalIndexingInfo[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type JournalIndexingInfoPayload = {
+  ruleVersionId: number;
+  issn: string;
+  journalName: string;
+  indexingType: JournalIndexingType;
+  publicationCountry: string;
+  validStartDate: string;
+  validEndDate: string;
+  sourceName: string;
+  sourceUpdatedAt: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const journalIndexingInfoApi = {
+  listJournalIndexingInfos(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      ruleVersionId?: number;
+      issn?: string;
+      journalName?: string;
+      indexingType?: JournalIndexingType | "";
+      publicationCountry?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.issn?.trim()) query.set("issn", params.issn.trim());
+    if (params.journalName?.trim())
+      query.set("journalName", params.journalName.trim());
+    if (params.indexingType) query.set("indexingType", params.indexingType);
+    if (params.publicationCountry?.trim())
+      query.set("publicationCountry", params.publicationCountry.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<JournalIndexingInfoSearchResponse>(
+      `/api/admin/journal-indexing-infos?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveJournalIndexingInfo(payload: JournalIndexingInfoPayload) {
+    return apiRequest<JournalIndexingInfo>(
+      "/api/admin/journal-indexing-infos/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type AreaElementSystem = EvaluationElement & {
   systemSettingId: number;
   targetScope: string;

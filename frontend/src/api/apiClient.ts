@@ -240,6 +240,74 @@ export const menuPermissionApi = {
   },
 };
 
+export type DataScope = "SELF" | "DEPARTMENT" | "COLLEGE" | "BUSINESS" | "ALL";
+
+export type EvaluationOrganizationMapping = {
+  mappingId: number;
+  userId: number;
+  loginId?: string;
+  userName?: string;
+  organizationCode: string;
+  organizationName?: string;
+  businessType: BusinessType;
+  dataScope: DataScope;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationOrganizationMappingSearchResponse = {
+  mappings: EvaluationOrganizationMapping[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationOrganizationMappingPayload = {
+  userId: number;
+  organizationCode: string;
+  businessType: BusinessType;
+  dataScope: DataScope;
+  changeReason: string;
+};
+
+export const evaluationOrganizationMappingApi = {
+  listEvaluationOrganizationMappings(
+    params: {
+      businessType?: BusinessType | "";
+      organizationCode?: string;
+      userId?: number;
+      page?: number;
+      size?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.businessType) query.set("businessType", params.businessType);
+    if (params.organizationCode?.trim()) {
+      query.set("organizationCode", params.organizationCode.trim());
+    }
+    if (params.userId !== undefined && Number.isFinite(params.userId)) {
+      query.set("userId", String(params.userId));
+    }
+    return apiRequest<EvaluationOrganizationMappingSearchResponse>(
+      `/api/business/evaluation-organization-mappings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationOrganizationMapping(
+    payload: EvaluationOrganizationMappingPayload,
+  ) {
+    return apiRequest<EvaluationOrganizationMapping>(
+      "/api/business/evaluation-organization-mappings",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type FunctionType = "READ" | "CREATE" | "UPDATE" | "DELETE" | "EXECUTE";
 export type PermissionAllowed = "ALLOW" | "DENY";
 
@@ -785,6 +853,315 @@ export const menuExecutionApi = {
 };
 
 export type PageSize = 20 | 50 | 100;
+
+export type BusinessType =
+  | "FACULTY_ACHIEVEMENT"
+  | "ACADEMIC_GRANT"
+  | "OBJECTION";
+export type DefinitionVersion = "DRAFT" | "CONFIRMED" | "DISCARDED";
+export type SystemUseYn = "Y" | "N";
+
+export type BusinessStatusCode = {
+  statusCodeId: number;
+  definitionVersion: DefinitionVersion;
+  businessType: BusinessType;
+  statusCode: string;
+  displayName: string;
+  systemUseYn: SystemUseYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type BusinessStatusCodeSearchResponse = {
+  statusCodes: BusinessStatusCode[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type BusinessStatusCodePayload = {
+  definitionVersion: DefinitionVersion;
+  businessType: BusinessType;
+  statusCode: string;
+  displayName: string;
+  systemUseYn: SystemUseYn;
+  changeReason: string;
+};
+
+export const businessStatusCodeApi = {
+  listBusinessStatusCodes(
+    params: {
+      page?: number;
+      size?: PageSize;
+      businessType?: BusinessType;
+      definitionVersion?: DefinitionVersion;
+      statusCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.businessType) query.set("businessType", params.businessType);
+    if (params.definitionVersion)
+      query.set("definitionVersion", params.definitionVersion);
+    if (params.statusCode?.trim())
+      query.set("statusCode", params.statusCode.trim());
+    return apiRequest<BusinessStatusCodeSearchResponse>(
+      `/api/admin/business-status-codes?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveBusinessStatusCode(payload: BusinessStatusCodePayload) {
+    return apiRequest<BusinessStatusCode>("/api/admin/business-status-codes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type BusinessStatusTransition = {
+  transitionId: number;
+  definitionVersion: DefinitionVersion;
+  businessType: BusinessType;
+  fromStatusCode: string;
+  toStatusCode: string;
+  executorRoleCode: ExecutorRoleCode;
+  opinionRequiredYn: SystemUseYn;
+  attachmentRequiredYn: SystemUseYn;
+  cancellableYn: SystemUseYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type ExecutorRoleCode =
+  | "R01"
+  | "R02"
+  | "R03"
+  | "R04"
+  | "R05"
+  | "R06"
+  | "R07"
+  | "R08"
+  | "R09";
+
+export type BusinessStatusTransitionSearchResponse = {
+  transitions: BusinessStatusTransition[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type BusinessStatusTransitionPayload = {
+  definitionVersion: DefinitionVersion;
+  businessType: BusinessType;
+  fromStatusCode: string;
+  toStatusCode: string;
+  executorRoleCode: ExecutorRoleCode;
+  opinionRequiredYn: SystemUseYn;
+  attachmentRequiredYn: SystemUseYn;
+  cancellableYn: SystemUseYn;
+  changeReason: string;
+};
+
+export const businessStatusTransitionApi = {
+  listBusinessStatusTransitions(
+    params: {
+      page?: number;
+      size?: PageSize;
+      businessType?: BusinessType;
+      fromStatusCode?: string;
+      executorRoleCode?: ExecutorRoleCode;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.businessType) query.set("businessType", params.businessType);
+    if (params.fromStatusCode?.trim())
+      query.set("fromStatusCode", params.fromStatusCode.trim());
+    if (params.executorRoleCode)
+      query.set("executorRoleCode", params.executorRoleCode);
+    return apiRequest<BusinessStatusTransitionSearchResponse>(
+      `/api/admin/business-status-transitions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveBusinessStatusTransition(payload: BusinessStatusTransitionPayload) {
+    return apiRequest<BusinessStatusTransition>(
+      "/api/admin/business-status-transitions",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type RejectionReason = {
+  rejectionReasonId: number;
+  businessType: BusinessType;
+  reasonCode: string;
+  standardMessage: string;
+  additionalOpinionAllowedYn: SystemUseYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type RejectionReasonSearchResponse = {
+  reasons: RejectionReason[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type RejectionReasonPayload = {
+  businessType: BusinessType;
+  reasonCode: string;
+  standardMessage: string;
+  additionalOpinionAllowedYn: SystemUseYn;
+  changeReason: string;
+};
+
+export const rejectionReasonApi = {
+  listRejectionReasons(
+    params: {
+      page?: number;
+      size?: PageSize;
+      businessType?: BusinessType;
+      reasonCode?: string;
+      additionalOpinionAllowedYn?: SystemUseYn | "";
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.businessType) query.set("businessType", params.businessType);
+    if (params.reasonCode?.trim())
+      query.set("reasonCode", params.reasonCode.trim());
+    if (params.additionalOpinionAllowedYn) {
+      query.set(
+        "additionalOpinionAllowedYn",
+        params.additionalOpinionAllowedYn,
+      );
+    }
+    return apiRequest<RejectionReasonSearchResponse>(
+      `/api/admin/rejection-reasons?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveRejectionReason(payload: RejectionReasonPayload) {
+    return apiRequest<RejectionReason>("/api/admin/rejection-reasons", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type ChangeType = "CREATE" | "UPDATE" | "DELETE";
+
+export type DataChangeHistory = {
+  historyId: number;
+  targetBusiness: string;
+  targetKey: string;
+  changeType: ChangeType;
+  fieldName: string;
+  beforeValue?: string | null;
+  afterValue?: string | null;
+  changedBy: number;
+  changedByLoginId?: string;
+  changedByName?: string;
+  changedAt: string;
+  changeReason: string;
+};
+
+export type DataChangeHistorySearchResponse = {
+  histories: DataChangeHistory[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export const dataChangeHistoryApi = {
+  listDataChangeHistories(
+    params: {
+      page?: number;
+      size?: PageSize;
+      targetBusiness?: string;
+      targetKey?: string;
+      changedBy?: string;
+      changedAtFrom?: string;
+      changedAtTo?: string;
+      changeType?: ChangeType | "";
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.targetBusiness?.trim())
+      query.set("targetBusiness", params.targetBusiness.trim());
+    if (params.targetKey?.trim())
+      query.set("targetKey", params.targetKey.trim());
+    if (params.changedBy?.trim())
+      query.set("changedBy", params.changedBy.trim());
+    if (params.changedAtFrom?.trim())
+      query.set("changedAtFrom", params.changedAtFrom.trim());
+    if (params.changedAtTo?.trim())
+      query.set("changedAtTo", params.changedAtTo.trim());
+    if (params.changeType) query.set("changeType", params.changeType);
+    return apiRequest<DataChangeHistorySearchResponse>(
+      `/api/admin/data-change-histories?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
+export type DeletedBusinessData = {
+  deletedDataId: number;
+  businessType: BusinessType;
+  originalKey: string;
+  deletedBy: number;
+  deletedByLoginId?: string;
+  deletedByName?: string;
+  deletedAt: string;
+  deleteReason: string;
+  recoverableYn: SystemUseYn;
+};
+
+export type DeletedBusinessDataSearchResponse = {
+  deletedData: DeletedBusinessData[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export const deletedBusinessDataApi = {
+  listDeletedBusinessData(
+    params: {
+      page?: number;
+      size?: PageSize;
+      businessType?: BusinessType | "";
+      originalKey?: string;
+      deletedBy?: string;
+      deletedAtFrom?: string;
+      deletedAtTo?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.businessType) query.set("businessType", params.businessType);
+    if (params.originalKey?.trim())
+      query.set("originalKey", params.originalKey.trim());
+    if (params.deletedBy?.trim())
+      query.set("deletedBy", params.deletedBy.trim());
+    if (params.deletedAtFrom?.trim())
+      query.set("deletedAtFrom", params.deletedAtFrom.trim());
+    if (params.deletedAtTo?.trim())
+      query.set("deletedAtTo", params.deletedAtTo.trim());
+    return apiRequest<DeletedBusinessDataSearchResponse>(
+      `/api/admin/deleted-business-data?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
 
 export type PositionAssignment = {
   positionAssignmentId: number;

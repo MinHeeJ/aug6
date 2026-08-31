@@ -227,6 +227,42 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 역할·권한 관리 > 데이터 범위 권한",
   },
   {
+    path: "/admin/evaluation-organization-mappings",
+    label: "평가조직 매핑",
+    screenId: "SCR-EVALUATION-ORG-MAPPING",
+    menuPath: "업무 운영 관리 > 업무권한 관리 > 평가조직 매핑",
+  },
+  {
+    path: "/admin/business-status-codes",
+    label: "상태코드 관리",
+    screenId: "SCR-BUSINESS-STATUS-CODE",
+    menuPath: "업무 운영 관리 > 업무상태 관리 > 상태코드 관리",
+  },
+  {
+    path: "/admin/business-status-transitions",
+    label: "상태 전이 관리",
+    screenId: "SCR-BUSINESS-STATUS-TRANSITION",
+    menuPath: "업무 운영 관리 > 업무상태 관리 > 상태 전이 관리",
+  },
+  {
+    path: "/admin/rejection-reasons",
+    label: "반려사유 관리",
+    screenId: "SCR-REJECTION-REASON",
+    menuPath: "업무 운영 관리 > 의견·반려 관리 > 반려사유 관리",
+  },
+  {
+    path: "/admin/data-change-histories",
+    label: "데이터 변경 이력",
+    screenId: "SCR-DATA-CHANGE-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 데이터 변경 이력",
+  },
+  {
+    path: "/admin/deleted-business-data",
+    label: "삭제자료 관리",
+    screenId: "SCR-DELETED-BUSINESS-DATA",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 삭제자료 관리",
+  },
+  {
     path: "/admin/security/active-sessions",
     label: "접속현황 조회",
     screenId: "SCR-ACTIVE-SESSION-STATUS",

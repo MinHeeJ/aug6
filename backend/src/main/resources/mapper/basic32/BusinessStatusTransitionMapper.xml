@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic32.BusinessStatusTransitionMapper">
+    <resultMap id="BusinessStatusTransitionRowMap" type="kr.ac.knue.commonfoundation.basic32.BusinessStatusTransitionRow">
+        <constructor>
+            <arg column="transitionId" javaType="long"/>
+            <arg column="definitionVersion" javaType="string"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="fromStatusCode" javaType="string"/>
+            <arg column="toStatusCode" javaType="string"/>
+            <arg column="executorRoleCode" javaType="string"/>
+            <arg column="opinionRequiredYn" javaType="string"/>
+            <arg column="attachmentRequiredYn" javaType="string"/>
+            <arg column="cancellableYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="transitionColumns">
+        bst.transition_id as "transitionId",
+        bst.definition_version as "definitionVersion",
+        bst.business_type as "businessType",
+        bst.from_status_code as "fromStatusCode",
+        bst.to_status_code as "toStatusCode",
+        bst.executor_role_code as "executorRoleCode",
+        bst.opinion_required_yn as "opinionRequiredYn",
+        bst.attachment_required_yn as "attachmentRequiredYn",
+        bst.cancellable_yn as "cancellableYn",
+        bst.change_reason as "changeReason",
+        bst.updated_by as "updatedBy",
+        bst.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="transitionFilters">
+        <where>
+            <if test="criteria.businessType != null and criteria.businessType != ''">
+                bst.business_type = #{criteria.businessType}
+            </if>
+            <if test="criteria.fromStatusCode != null and criteria.fromStatusCode != ''">
+                and bst.from_status_code = #{criteria.fromStatusCode}
+            </if>
+            <if test="criteria.executorRoleCode != null and criteria.executorRoleCode != ''">
+                and bst.executor_role_code = #{criteria.executorRoleCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listTransitions" resultMap="BusinessStatusTransitionRowMap">
+        select <include refid="transitionColumns"/>
+        from business_status_transitions bst
+        <include refid="transitionFilters"/>
+        order by bst.business_type, bst.definition_version, bst.from_status_code, bst.to_status_code, bst.executor_role_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countTransitions" resultType="long">
+        select count(*)
+        from business_status_transitions bst
+        <include refid="transitionFilters"/>
+    </select>
+
+    <select id="findByKey" resultMap="BusinessStatusTransitionRowMap">
+        select <include refid="transitionColumns"/>
+        from business_status_transitions bst
+        where bst.business_type = #{businessType}
+          and bst.definition_version = #{definitionVersion}
+          and bst.from_status_code = #{fromStatusCode}
+          and bst.to_status_code = #{toStatusCode}
+          and bst.executor_role_code = #{executorRoleCode}
+    </select>
+
+    <select id="statusCodeExists" resultType="int">
+        select count(*)
+        from business_status_codes
+        where business_type = #{businessType}
+          and definition_version = #{definitionVersion}
+          and status_code = #{statusCode}
+    </select>
+
+    <select id="roleExists" resultType="int">
+        select count(*)
+        from roles
+        where role_code = #{roleCode}
+    </select>
+
+    <insert id="upsertDraftTransition">
+        insert into business_status_transitions (definition_version, business_type, from_status_code, to_status_code, executor_role_code, opinion_required_yn, attachment_required_yn, cancellable_yn, change_reason, created_by, updated_by)
+        values (#{definitionVersion}, #{businessType}, #{fromStatusCode}, #{toStatusCode}, #{executorRoleCode}, #{opinionRequiredYn}, #{attachmentRequiredYn}, #{cancellableYn}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (business_type, definition_version, from_status_code, to_status_code, executor_role_code)
+        do update set opinion_required_yn = EXCLUDED.opinion_required_yn,
+                      attachment_required_yn = EXCLUDED.attachment_required_yn,
+                      cancellable_yn = EXCLUDED.cancellable_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
+</mapper>

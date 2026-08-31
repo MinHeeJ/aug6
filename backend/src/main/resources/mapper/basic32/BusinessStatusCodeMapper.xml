@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic32.BusinessStatusCodeMapper">
+    <resultMap id="BusinessStatusCodeRowMap" type="kr.ac.knue.commonfoundation.basic32.BusinessStatusCodeRow">
+        <constructor>
+            <arg column="statusCodeId" javaType="long"/>
+            <arg column="definitionVersion" javaType="string"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="statusCode" javaType="string"/>
+            <arg column="displayName" javaType="string"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="statusCodeColumns">
+        bsc.status_code_id as "statusCodeId",
+        bsc.definition_version as "definitionVersion",
+        bsc.business_type as "businessType",
+        bsc.status_code as "statusCode",
+        bsc.display_name as "displayName",
+        bsc.system_use_yn as "systemUseYn",
+        bsc.change_reason as "changeReason",
+        bsc.updated_by as "updatedBy",
+        bsc.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="statusCodeFilters">
+        <where>
+            <if test="criteria.businessType != null and criteria.businessType != ''">
+                bsc.business_type = #{criteria.businessType}
+            </if>
+            <if test="criteria.definitionVersion != null and criteria.definitionVersion != ''">
+                and bsc.definition_version = #{criteria.definitionVersion}
+            </if>
+            <if test="criteria.statusCode != null and criteria.statusCode != ''">
+                and bsc.status_code = #{criteria.statusCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listStatusCodes" resultMap="BusinessStatusCodeRowMap">
+        select <include refid="statusCodeColumns"/>
+        from business_status_codes bsc
+        <include refid="statusCodeFilters"/>
+        order by bsc.business_type, bsc.definition_version, bsc.status_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countStatusCodes" resultType="long">
+        select count(*)
+        from business_status_codes bsc
+        <include refid="statusCodeFilters"/>
+    </select>
+
+    <select id="findByKey" resultMap="BusinessStatusCodeRowMap">
+        select <include refid="statusCodeColumns"/>
+        from business_status_codes bsc
+        where bsc.business_type = #{businessType}
+          and bsc.definition_version = #{definitionVersion}
+          and bsc.status_code = #{statusCode}
+    </select>
+
+    <select id="confirmedCodeExists" resultType="int">
+        select count(*)
+        from business_status_codes
+        where business_type = #{businessType}
+          and status_code = #{statusCode}
+          and definition_version = 'CONFIRMED'
+    </select>
+
+    <insert id="upsertDraftStatusCode">
+        insert into business_status_codes (definition_version, business_type, status_code, display_name, system_use_yn, change_reason, created_by, updated_by)
+        values (#{definitionVersion}, #{businessType}, #{statusCode}, #{displayName}, #{systemUseYn}, #{changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (business_type, definition_version, status_code)
+        do update set display_name = EXCLUDED.display_name,
+                      system_use_yn = EXCLUDED.system_use_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
+</mapper>

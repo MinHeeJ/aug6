@@ -43,6 +43,12 @@ import { SessionTerminationHistoryPage } from "../pages/admin/SCR-SESSION-TERMIN
 import { BusinessProcessLogPage } from "../pages/admin/SCR-BUSINESS-PROCESS-LOG";
 import { SensitiveInformationAccessLogPage } from "../pages/admin/SCR-SENSITIVE-INFO-ACCESS-LOG";
 import { PermissionChangeLogPage } from "../pages/admin/SCR-PERMISSION-CHANGE-LOG";
+import { EvaluationOrganizationMappingPage } from "../pages/admin/SCR-EVALUATION-ORG-MAPPING";
+import { BusinessStatusCodePage } from "../pages/admin/SCR-BUSINESS-STATUS-CODE";
+import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
+import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
+import { DataChangeHistoryPage } from "../pages/admin/SCR-DATA-CHANGE-HISTORY";
+import { DeletedBusinessDataPage } from "../pages/admin/SCR-DELETED-BUSINESS-DATA";
 import {
   ExcelDownloadManagementPage,
   ExcelUploadErrorManagementPage,
@@ -223,6 +229,18 @@ function renderAdminPage(path: string | undefined) {
       return <SensitiveInformationAccessLogPage />;
     case "/admin/audit/permission-change-logs":
       return <PermissionChangeLogPage />;
+    case "/admin/evaluation-organization-mappings":
+      return <EvaluationOrganizationMappingPage />;
+    case "/admin/business-status-codes":
+      return <BusinessStatusCodePage />;
+    case "/admin/business-status-transitions":
+      return <BusinessStatusTransitionPage />;
+    case "/admin/rejection-reasons":
+      return <RejectionReasonPage />;
+    case "/admin/data-change-histories":
+      return <DataChangeHistoryPage />;
+    case "/admin/deleted-business-data":
+      return <DeletedBusinessDataPage />;
     case "/admin/excel-upload-templates":
       return <UploadTemplateManagementPage />;
     case "/admin/excel-uploads":

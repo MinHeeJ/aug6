@@ -45,6 +45,11 @@ import { SensitiveInformationAccessLogPage } from "../pages/admin/SCR-SENSITIVE-
 import { PermissionChangeLogPage } from "../pages/admin/SCR-PERMISSION-CHANGE-LOG";
 import { EvaluationOrganizationMappingPage } from "../pages/admin/SCR-EVALUATION-ORG-MAPPING";
 import { BusinessStatusCodePage } from "../pages/admin/SCR-BUSINESS-STATUS-CODE";
+import { EvaluationAreaManagementPage } from "../pages/admin/SCR-EVALUATION-AREA-MGMT";
+import { EvaluationItemManagementPage } from "../pages/admin/SCR-EVALUATION-ITEM-MGMT";
+import { EvaluationElementManagementPage } from "../pages/admin/SCR-EVALUATION-ELEMENT-MGMT";
+import { EvaluationManagementItemManagementPage } from "../pages/admin/SCR-EVALUATION-MANAGEMENT-ITEM-MGMT";
+import { AreaElementSystemManagementPage } from "../pages/admin/SCR-AREA-ELEMENT-SYSTEM-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
 import { DataChangeHistoryPage } from "../pages/admin/SCR-DATA-CHANGE-HISTORY";
@@ -233,6 +238,16 @@ function renderAdminPage(path: string | undefined) {
       return <EvaluationOrganizationMappingPage />;
     case "/admin/business-status-codes":
       return <BusinessStatusCodePage />;
+    case "/admin/evaluation-areas":
+      return <EvaluationAreaManagementPage />;
+    case "/admin/evaluation-items":
+      return <EvaluationItemManagementPage />;
+    case "/admin/evaluation-elements":
+      return <EvaluationElementManagementPage />;
+    case "/admin/evaluation-management-items":
+      return <EvaluationManagementItemManagementPage />;
+    case "/admin/area-element-systems":
+      return <AreaElementSystemManagementPage />;
     case "/admin/business-status-transitions":
       return <BusinessStatusTransitionPage />;
     case "/admin/rejection-reasons":

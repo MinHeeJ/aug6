@@ -72,6 +72,8 @@ class BusinessStatusTransitionApiTest {
                 .andExpect(jsonPath("$.data.definitionVersion").value("DRAFT"))
                 .andExpect(jsonPath("$.data.toStatusCode").value("DEPARTMENT_CONFIRMED"))
                 .andExpect(jsonPath("$.data.cancellableYn").value("Y"));
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:business_status_transitions,data_change_histories")
+                .contains("business_status_transitions", "data_change_histories");
     }
 
     @Test
@@ -156,6 +158,8 @@ class BusinessStatusTransitionApiTest {
         transitionService.save(new BusinessStatusTransitionSaveRequest("DRAFT", "FACULTY_ACHIEVEMENT", "SUBMITTED", "DEPARTMENT_CONFIRMED", "R02", "Y", "N", "Y", "필수의견 적용"), 1L);
 
         verify(mapper).insertChangeHistory("business_status_transitions", "FACULTY_ACHIEVEMENT:SUBMITTED->DEPARTMENT_CONFIRMED:R02", "UPDATE", "opinion_required_yn", "N", "Y", 1L, "필수의견 적용");
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:business_status_transitions,data_change_histories")
+                .contains("business_status_transitions", "data_change_histories");
     }
 
     private BusinessStatusTransitionRow row() {

@@ -81,6 +81,8 @@ class ActiveSessionManagementApiTest {
                 .andExpect(jsonPath("$.data.terminatedBy").value(1))
                 .andExpect(jsonPath("$.data.terminationReason").value("비정상 접속 종료"))
                 .andExpect(jsonPath("$.meta.requestId").value("REQ-TERM-001"));
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:terminated_at,terminated_by,termination_reason")
+                .contains("terminated_at", "terminated_by", "termination_reason");
     }
 
     @Test
@@ -120,6 +122,8 @@ class ActiveSessionManagementApiTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("ACTIVE");
         verify(mapper, never()).markTerminated(any(), any(), any(), any());
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:terminated_at,terminated_by,termination_reason")
+                .contains("terminated_at", "terminated_by", "termination_reason");
     }
 
     @Test

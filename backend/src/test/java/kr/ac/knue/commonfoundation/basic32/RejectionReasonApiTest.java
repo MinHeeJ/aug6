@@ -71,6 +71,8 @@ class RejectionReasonApiTest {
                 .andExpect(jsonPath("$.data.businessType").value("FACULTY_ACHIEVEMENT"))
                 .andExpect(jsonPath("$.data.reasonCode").value("DEPT_REVIEW_REQUIRED"))
                 .andExpect(jsonPath("$.data.additionalOpinionAllowedYn").value("Y"));
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:data_change_histories,rejection_reasons")
+                .contains("data_change_histories", "rejection_reasons");
     }
 
     @Test
@@ -137,6 +139,8 @@ class RejectionReasonApiTest {
 
         verify(mapper).insertChangeHistory("rejection_reasons", "FACULTY_ACHIEVEMENT:DEPT_REVIEW_REQUIRED", "UPDATE", "standard_message", "기존 문구", "학과장 검토 의견이 필요합니다.", 1L, "반려사유 정비");
         verify(mapper).insertChangeHistory("rejection_reasons", "FACULTY_ACHIEVEMENT:DEPT_REVIEW_REQUIRED", "UPDATE", "additional_opinion_allowed_yn", "N", "Y", 1L, "반려사유 정비");
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:data_change_histories,rejection_reasons")
+                .contains("data_change_histories", "rejection_reasons");
     }
 
     private RejectionReasonRow row() {

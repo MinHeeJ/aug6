@@ -72,6 +72,8 @@ class EvaluationOrganizationMappingApiTest {
                 .andExpect(jsonPath("$.data.organizationCode").value("COLL-EDU"))
                 .andExpect(jsonPath("$.data.businessType").value("FACULTY_ACHIEVEMENT"))
                 .andExpect(jsonPath("$.data.dataScope").value("COLLEGE"));
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:data_change_histories,evaluation_organization_mappings")
+                .contains("data_change_histories", "evaluation_organization_mappings");
     }
 
     @Test
@@ -127,6 +129,24 @@ class EvaluationOrganizationMappingApiTest {
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessageContaining("평가조직 매핑");
         verify(mapper, never()).upsertMapping(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void serviceRecordsEvaluationOrganizationMappingChangeHistoryForReq769() {
+        EvaluationOrganizationMappingMapper mapper = org.mockito.Mockito.mock(EvaluationOrganizationMappingMapper.class);
+        EvaluationOrganizationMappingService mappingService = new EvaluationOrganizationMappingService(mapper);
+        EvaluationOrganizationMappingRow before = new EvaluationOrganizationMappingRow(101L, 2L, "teacher", "홍길동", "COLL-EDU", "교육대학", "FACULTY_ACHIEVEMENT", "DEPARTMENT", "기존", 1L, LocalDateTime.parse("2026-08-31T09:00:00"));
+        EvaluationOrganizationMappingRow after = new EvaluationOrganizationMappingRow(101L, 2L, "teacher", "홍길동", "COLL-EDU", "교육대학", "FACULTY_ACHIEVEMENT", "COLLEGE", "평가조직 업무권한 연결", 1L, LocalDateTime.parse("2026-08-31T09:05:00"));
+        when(mapper.existsUser(2L)).thenReturn(1);
+        when(mapper.existsOrganization("COLL-EDU")).thenReturn(1);
+        when(mapper.findByKey(2L, "COLL-EDU", "FACULTY_ACHIEVEMENT")).thenReturn(before, after);
+
+        mappingService.save(new EvaluationOrganizationMappingSaveRequest(2L, "COLL-EDU", "FACULTY_ACHIEVEMENT", "COLLEGE", "평가조직 업무권한 연결"), 1L);
+
+        verify(mapper).upsertMapping(2L, "COLL-EDU", "FACULTY_ACHIEVEMENT", "COLLEGE", "평가조직 업무권한 연결", 1L);
+        verify(mapper).insertChangeHistory("evaluation_organization_mappings", "2:COLL-EDU:FACULTY_ACHIEVEMENT", "UPDATE", "data_scope", "DEPARTMENT", "COLLEGE", 1L, "평가조직 업무권한 연결");
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:data_change_histories,evaluation_organization_mappings")
+                .contains("data_change_histories", "evaluation_organization_mappings");
     }
 
     private EvaluationOrganizationMappingRow row() {

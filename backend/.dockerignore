@@ -2,6 +2,8 @@ node_modules
 .next
 dist
 build
-target
 coverage
 .git
+target
+*.log
+*.local

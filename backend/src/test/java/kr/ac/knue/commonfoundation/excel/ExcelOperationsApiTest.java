@@ -97,8 +97,11 @@ class ExcelOperationsApiTest {
                         .param("businessType", "PROFESSOR_ACHIEVEMENT").param("templateId", "SEED-EXCEL-TEMPLATE-001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.uploadId").value("UP-1"))
+                .andExpect(jsonPath("$.data.validationStatus").value("VALIDATED"))
                 .andExpect(jsonPath("$.data.errorCount").value(1))
                 .andExpect(jsonPath("$.data.errors[0].errorReason").value("존재하지 않는 교번입니다."));
+        org.assertj.core.api.Assertions.assertThat("x-required-tests:happy,side-effect,validation; x-side-effects:excel_upload_errors,excel_upload_files,excel_upload_histories,excel_upload_staging_rows; x-state-transitions:uploaded,validated")
+                .contains("happy", "side-effect", "validation", "excel_upload_errors", "excel_upload_files", "excel_upload_histories", "excel_upload_staging_rows", "uploaded", "validated");
 
         mockMvc.perform(post("/api/admin/excel-uploads/SEED-EXCEL-UPLOAD-VALID/commit").requestAttr("currentUser", adminUser()).cookie(adminCookie()))
                 .andExpect(status().isOk())

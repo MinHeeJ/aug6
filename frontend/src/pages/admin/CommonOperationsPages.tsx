@@ -760,7 +760,7 @@ function ScreenHeader({
           <p className="mt-2 text-sm text-muted">{subtitle}</p>
         </div>
         <button
-          data-testid={`${title.replaceAll(" ", "-")}-reload-button`}
+          data-testid={`${title.split(" ").join("-")}-reload-button`}
           type="button"
           className="inline-flex items-center gap-2 rounded-md border border-ld bg-white px-4 py-2 text-sm text-link"
           onClick={() => void onReload()}

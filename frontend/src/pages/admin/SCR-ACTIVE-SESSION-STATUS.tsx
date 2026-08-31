@@ -202,7 +202,7 @@ export function ActiveSessionStatusPage() {
     if (!selected) return;
     const errors = activeSessionApi.validateReason(reason);
     if ("reason" in errors) {
-      setFieldError(errors.reason);
+      setFieldError(errors.reason ?? null);
       return;
     }
     if (

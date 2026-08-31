@@ -233,6 +233,36 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "업무 운영 관리 > 업무권한 관리 > 평가조직 매핑",
   },
   {
+    path: "/admin/evaluation-areas",
+    label: "평가영역 관리",
+    screenId: "SCR-EVALUATION-AREA-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가영역 관리",
+  },
+  {
+    path: "/admin/evaluation-items",
+    label: "평가항목 관리",
+    screenId: "SCR-EVALUATION-ITEM-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가항목 관리",
+  },
+  {
+    path: "/admin/evaluation-elements",
+    label: "평가요소 관리",
+    screenId: "SCR-EVALUATION-ELEMENT-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가요소 관리",
+  },
+  {
+    path: "/admin/evaluation-management-items",
+    label: "관리항목 관리",
+    screenId: "SCR-EVALUATION-MANAGEMENT-ITEM-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 관리항목 관리",
+  },
+  {
+    path: "/admin/area-element-systems",
+    label: "영역별 평가요소 체계 관리",
+    screenId: "SCR-AREA-ELEMENT-SYSTEM-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 영역별 평가요소 체계 관리",
+  },
+  {
     path: "/admin/business-status-codes",
     label: "상태코드 관리",
     screenId: "SCR-BUSINESS-STATUS-CODE",

@@ -2,6 +2,7 @@ package kr.ac.knue.commonfoundation.basic32;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import kr.ac.knue.commonfoundation.common.api.BusinessValidationException;
 import kr.ac.knue.commonfoundation.common.api.ValidationError;
@@ -33,8 +34,11 @@ public class EvaluationOrganizationMappingService {
         if (!fields.isEmpty()) {
             throw new BusinessValidationException("평가조직 매핑 저장 요청이 올바르지 않습니다.", fields);
         }
+        EvaluationOrganizationMappingRow before = mapper.findByKey(request.userId(), request.organizationCode(), request.businessType());
         mapper.upsertMapping(request.userId(), request.organizationCode(), request.businessType(), request.dataScope(), request.changeReason(), adminUserId);
-        return mapper.findByKey(request.userId(), request.organizationCode(), request.businessType());
+        EvaluationOrganizationMappingRow after = mapper.findByKey(request.userId(), request.organizationCode(), request.businessType());
+        recordChangeHistory(before, after, request, adminUserId);
+        return after;
     }
 
     private List<ValidationError> validate(EvaluationOrganizationMappingSaveRequest request) {
@@ -63,5 +67,20 @@ public class EvaluationOrganizationMappingService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private void recordChangeHistory(
+            EvaluationOrganizationMappingRow before,
+            EvaluationOrganizationMappingRow after,
+            EvaluationOrganizationMappingSaveRequest request,
+            Long adminUserId) {
+        String beforeValue = before == null ? null : before.dataScope();
+        String afterValue = after == null ? request.dataScope() : after.dataScope();
+        if (!Objects.equals(beforeValue, afterValue)) {
+            String targetKey = request.userId() + ":" + request.organizationCode() + ":" + request.businessType();
+            mapper.insertChangeHistory("evaluation_organization_mappings", targetKey,
+                    before == null ? "CREATE" : "UPDATE", "data_scope", beforeValue, afterValue,
+                    adminUserId, request.changeReason());
+        }
     }
 }

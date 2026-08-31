@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import kr.ac.knue.commonfoundation.basic33.EvaluationRuleFoundationContract;
 import kr.ac.knue.commonfoundation.common.api.ApiError;
 import kr.ac.knue.commonfoundation.common.api.ApiResponse;
 import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
@@ -55,6 +56,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String pathToUiRoute(String apiPath) {
+        String evaluationRuleRoute = EvaluationRuleFoundationContract.uiRouteForApiPath(apiPath);
+        if (evaluationRuleRoute != null) {
+            return evaluationRuleRoute;
+        }
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";
         }

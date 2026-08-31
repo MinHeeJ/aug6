@@ -919,6 +919,352 @@ export const businessStatusCodeApi = {
   },
 };
 
+export type EvaluationRuleVersionStatus = "DRAFT" | "CONFIRMED" | "DISCARDED";
+export type ActiveYn = "Y" | "N";
+
+export type EvaluationArea = {
+  areaId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  areaCode: string;
+  areaName: string;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  periodApplyMethod: string;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationAreaSearchResponse = {
+  evaluationAreas: EvaluationArea[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationAreaPayload = {
+  ruleVersionId: number;
+  areaCode: string;
+  areaName: string;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  periodApplyMethod: string;
+  changeReason: string;
+};
+
+export const evaluationAreaApi = {
+  listEvaluationAreas(
+    params: {
+      page?: number;
+      size?: PageSize;
+      ruleVersionId?: number;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationAreaSearchResponse>(
+      `/api/admin/evaluation-areas?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationArea(payload: EvaluationAreaPayload) {
+    return apiRequest<EvaluationArea>("/api/admin/evaluation-areas/save", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type EvaluationItem = {
+  itemId: number;
+  areaId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  areaCode: string;
+  areaName: string;
+  itemCode: string;
+  itemName: string;
+  parentItemCode?: string | null;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  scoreApplyMethod: string;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationItemSearchResponse = {
+  evaluationItems: EvaluationItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationItemPayload = {
+  ruleVersionId: number;
+  areaCode: string;
+  itemCode: string;
+  itemName: string;
+  parentItemCode?: string | null;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  scoreApplyMethod: string;
+  changeReason: string;
+};
+
+export const evaluationItemApi = {
+  listEvaluationItems(
+    params: {
+      page?: number;
+      size?: PageSize;
+      ruleVersionId?: number;
+      areaCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationItemSearchResponse>(
+      `/api/admin/evaluation-items?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationItem(payload: EvaluationItemPayload) {
+    return apiRequest<EvaluationItem>("/api/admin/evaluation-items/save", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type EvaluationElement = {
+  elementId: number;
+  itemId: number;
+  areaId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  areaCode: string;
+  areaName: string;
+  itemCode: string;
+  itemName: string;
+  evaluationYear: string;
+  elementCode: string;
+  elementName: string;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationElementSearchResponse = {
+  evaluationElements: EvaluationElement[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationElementPayload = {
+  ruleVersionId: number;
+  areaCode: string;
+  itemCode: string;
+  evaluationYear: string;
+  elementCode: string;
+  elementName: string;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const evaluationElementApi = {
+  listEvaluationElements(
+    params: {
+      page?: number;
+      size?: PageSize;
+      ruleVersionId?: number;
+      areaCode?: string;
+      itemCode?: string;
+      evaluationYear?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.itemCode?.trim()) query.set("itemCode", params.itemCode.trim());
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationElementSearchResponse>(
+      `/api/admin/evaluation-elements?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationElement(payload: EvaluationElementPayload) {
+    return apiRequest<EvaluationElement>(
+      "/api/admin/evaluation-elements/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type EvaluationManagementItem = EvaluationElement & {
+  managementItemId: number;
+  managementItemCode: string;
+  managementItemName: string;
+  teacherEditableYn: ActiveYn;
+  requiredYn: ActiveYn;
+  dataType: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "CODE" | "FILE";
+};
+
+export type EvaluationManagementItemSearchResponse = {
+  evaluationManagementItems: EvaluationManagementItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationManagementItemPayload = Omit<
+  EvaluationElementPayload,
+  "elementName"
+> & {
+  managementItemCode: string;
+  managementItemName: string;
+  teacherEditableYn: ActiveYn;
+  requiredYn: ActiveYn;
+  dataType: EvaluationManagementItem["dataType"];
+};
+
+export const evaluationManagementItemApi = {
+  listEvaluationManagementItems(
+    params: {
+      page?: number;
+      size?: PageSize;
+      ruleVersionId?: number;
+      areaCode?: string;
+      itemCode?: string;
+      evaluationYear?: string;
+      elementCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.itemCode?.trim()) query.set("itemCode", params.itemCode.trim());
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.elementCode?.trim())
+      query.set("elementCode", params.elementCode.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationManagementItemSearchResponse>(
+      `/api/admin/evaluation-management-items?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationManagementItem(payload: EvaluationManagementItemPayload) {
+    return apiRequest<EvaluationManagementItem>(
+      "/api/admin/evaluation-management-items/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type AreaElementSystem = EvaluationElement & {
+  systemSettingId: number;
+  targetScope: string;
+};
+
+export type AreaElementSystemSearchResponse = {
+  areaElementSystems: AreaElementSystem[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type AreaElementSystemPayload = {
+  ruleVersionId: number;
+  areaCode: string;
+  itemCode: string;
+  evaluationYear: string;
+  elementCode: string;
+  targetScope: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const areaElementSystemApi = {
+  listAreaElementSystems(
+    params: {
+      page?: number;
+      size?: PageSize;
+      ruleVersionId?: number;
+      areaCode?: string;
+      itemCode?: string;
+      evaluationYear?: string;
+      elementCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.ruleVersionId)
+      query.set("ruleVersionId", String(params.ruleVersionId));
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.itemCode?.trim()) query.set("itemCode", params.itemCode.trim());
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.elementCode?.trim())
+      query.set("elementCode", params.elementCode.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<AreaElementSystemSearchResponse>(
+      `/api/admin/area-element-systems?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveAreaElementSystem(payload: AreaElementSystemPayload) {
+    return apiRequest<AreaElementSystem>(
+      "/api/admin/area-element-systems/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type BusinessStatusTransition = {
   transitionId: number;
   definitionVersion: DefinitionVersion;

@@ -90,4 +90,9 @@
                       updated_at = CURRENT_TIMESTAMP,
                       updated_by = EXCLUDED.updated_by
     </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
 </mapper>

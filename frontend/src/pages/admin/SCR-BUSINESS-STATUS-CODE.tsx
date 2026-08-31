@@ -8,6 +8,7 @@ import {
   type BusinessStatusCode,
   type BusinessType,
   type DefinitionVersion,
+  type PageSize,
   type SystemUseYn,
 } from "../../api/apiClient";
 import {
@@ -58,7 +59,7 @@ export function BusinessStatusCodePage() {
   const [selected, setSelected] = useState<BusinessStatusCode | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(20);
+  const [size, setSize] = useState<PageSize>(20);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -250,7 +251,7 @@ export function BusinessStatusCodePage() {
               value={size}
               onChange={(event) => {
                 setPage(0);
-                setSize(Number(event.target.value));
+                setSize(Number(event.target.value) as PageSize);
               }}
               data-testid="business-status-code-page-size-select"
             >

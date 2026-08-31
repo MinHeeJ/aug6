@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic33.EvaluationManagementItemMapper">
+    <resultMap id="EvaluationManagementItemRowMap" type="kr.ac.knue.commonfoundation.basic33.EvaluationManagementItemRow">
+        <constructor>
+            <arg column="managementItemId" javaType="long"/>
+            <arg column="elementId" javaType="long"/>
+            <arg column="itemId" javaType="long"/>
+            <arg column="areaId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="areaName" javaType="string"/>
+            <arg column="itemCode" javaType="string"/>
+            <arg column="itemName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="elementCode" javaType="string"/>
+            <arg column="elementName" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="managementItemName" javaType="string"/>
+            <arg column="sortOrder" javaType="int"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="teacherEditableYn" javaType="string"/>
+            <arg column="requiredYn" javaType="string"/>
+            <arg column="dataType" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="evaluationManagementItemColumns">
+        emi.management_item_id as "managementItemId",
+        ee.element_id as "elementId",
+        ei.item_id as "itemId",
+        ea.area_id as "areaId",
+        ea.rule_version_id as "ruleVersionId",
+        erv.version_code as "versionCode",
+        erv.version_status as "versionStatus",
+        ea.area_code as "areaCode",
+        ea.area_name as "areaName",
+        ei.item_code as "itemCode",
+        ei.item_name as "itemName",
+        ee.evaluation_year as "evaluationYear",
+        ee.element_code as "elementCode",
+        ee.element_name as "elementName",
+        emi.management_item_code as "managementItemCode",
+        emi.management_item_name as "managementItemName",
+        emi.sort_order as "sortOrder",
+        emi.active_yn as "activeYn",
+        emi.teacher_editable_yn as "teacherEditableYn",
+        emi.required_yn as "requiredYn",
+        emi.data_type as "dataType",
+        emi.change_reason as "changeReason",
+        emi.updated_by as "updatedBy",
+        emi.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="evaluationManagementItemJoins">
+        from evaluation_management_items emi
+        inner join evaluation_elements ee on ee.element_id = emi.element_id
+        inner join evaluation_items ei on ei.item_id = ee.item_id
+        inner join evaluation_areas ea on ea.area_id = ei.area_id
+        inner join evaluation_rule_versions erv on erv.rule_version_id = ea.rule_version_id
+    </sql>
+
+    <sql id="evaluationManagementItemFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">
+                ea.rule_version_id = #{criteria.ruleVersionId}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and ea.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedItemCode != null">
+                and ei.item_code = #{criteria.normalizedItemCode}
+            </if>
+            <if test="criteria.evaluationYear != null and criteria.evaluationYear != ''">
+                and ee.evaluation_year = #{criteria.evaluationYear}
+            </if>
+            <if test="criteria.normalizedElementCode != null">
+                and ee.element_code = #{criteria.normalizedElementCode}
+            </if>
+            <if test="criteria.activeYn != null and criteria.activeYn != ''">
+                and emi.active_yn = #{criteria.activeYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (emi.management_item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or emi.management_item_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or emi.data_type ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ee.element_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ee.element_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ei.item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ei.item_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listEvaluationManagementItems" resultMap="EvaluationManagementItemRowMap">
+        select <include refid="evaluationManagementItemColumns"/>
+        <include refid="evaluationManagementItemJoins"/>
+        <include refid="evaluationManagementItemFilters"/>
+        order by ea.sort_order, ea.area_code, ei.sort_order, ei.item_code, ee.evaluation_year desc, ee.sort_order, ee.element_code, emi.sort_order, emi.management_item_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countEvaluationManagementItems" resultType="long">
+        select count(*)
+        <include refid="evaluationManagementItemJoins"/>
+        <include refid="evaluationManagementItemFilters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status
+        from evaluation_rule_versions
+        where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findElementId" resultType="long">
+        select ee.element_id
+        from evaluation_elements ee
+        inner join evaluation_items ei on ei.item_id = ee.item_id
+        inner join evaluation_areas ea on ea.area_id = ei.area_id
+        where ea.rule_version_id = #{ruleVersionId}
+          and ea.area_code = #{areaCode}
+          and ei.item_code = #{itemCode}
+          and ee.evaluation_year = #{evaluationYear}
+          and ee.element_code = #{elementCode}
+    </select>
+
+    <select id="findByKey" resultMap="EvaluationManagementItemRowMap">
+        select <include refid="evaluationManagementItemColumns"/>
+        <include refid="evaluationManagementItemJoins"/>
+        where emi.element_id = #{elementId}
+          and emi.management_item_code = #{managementItemCode}
+    </select>
+
+    <insert id="upsertEvaluationManagementItem">
+        insert into evaluation_management_items (element_id, management_item_code, management_item_name, sort_order, active_yn, teacher_editable_yn, required_yn, data_type, change_reason, created_by, updated_by)
+        values (#{elementId}, #{request.managementItemCode}, #{request.managementItemName}, #{request.sortOrder}, #{request.activeYn}, #{request.teacherEditableYn}, #{request.requiredYn}, #{request.dataType}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (element_id, management_item_code)
+        do update set management_item_name = EXCLUDED.management_item_name,
+                      sort_order = EXCLUDED.sort_order,
+                      active_yn = EXCLUDED.active_yn,
+                      teacher_editable_yn = EXCLUDED.teacher_editable_yn,
+                      required_yn = EXCLUDED.required_yn,
+                      data_type = EXCLUDED.data_type,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

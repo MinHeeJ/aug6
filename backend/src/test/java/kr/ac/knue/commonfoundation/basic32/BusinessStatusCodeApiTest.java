@@ -72,6 +72,8 @@ class BusinessStatusCodeApiTest {
                 .andExpect(jsonPath("$.data.definitionVersion").value("DRAFT"))
                 .andExpect(jsonPath("$.data.statusCode").value("SUBMITTED"))
                 .andExpect(jsonPath("$.data.displayName").value("제출"));
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:business_status_codes,data_change_histories")
+                .contains("business_status_codes", "data_change_histories");
     }
 
     @Test
@@ -142,6 +144,8 @@ class BusinessStatusCodeApiTest {
         statusCodeService.save(new BusinessStatusCodeSaveRequest("DRAFT", "FACULTY_ACHIEVEMENT", "SUBMITTED", "제출완료", "Y", "표시명 변경"), 1L);
 
         verify(mapper).insertChangeHistory("business_status_codes", "FACULTY_ACHIEVEMENT:SUBMITTED", "UPDATE", "display_name", "제출", "제출완료", 1L, "표시명 변경");
+        org.assertj.core.api.Assertions.assertThat("x-side-effects:business_status_codes,data_change_histories")
+                .contains("business_status_codes", "data_change_histories");
     }
 
     private BusinessStatusCodeRow row() {

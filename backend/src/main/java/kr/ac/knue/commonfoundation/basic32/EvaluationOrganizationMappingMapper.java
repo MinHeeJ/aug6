@@ -24,4 +24,13 @@ public interface EvaluationOrganizationMappingMapper {
                        @Param("dataScope") String dataScope,
                        @Param("changeReason") String changeReason,
                        @Param("updatedBy") Long updatedBy);
+
+    void insertChangeHistory(@Param("targetBusiness") String targetBusiness,
+                             @Param("targetKey") String targetKey,
+                             @Param("changeType") String changeType,
+                             @Param("fieldName") String fieldName,
+                             @Param("beforeValue") String beforeValue,
+                             @Param("afterValue") String afterValue,
+                             @Param("changedBy") Long changedBy,
+                             @Param("changeReason") String changeReason);
 }

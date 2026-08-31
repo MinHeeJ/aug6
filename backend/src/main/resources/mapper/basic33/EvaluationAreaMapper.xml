@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic33.EvaluationAreaMapper">
+    <resultMap id="EvaluationAreaRowMap" type="kr.ac.knue.commonfoundation.basic33.EvaluationAreaRow">
+        <constructor>
+            <arg column="areaId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="areaName" javaType="string"/>
+            <arg column="sortOrder" javaType="int"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="periodApplyMethod" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="evaluationAreaColumns">
+        ea.area_id as "areaId",
+        ea.rule_version_id as "ruleVersionId",
+        erv.version_code as "versionCode",
+        erv.version_status as "versionStatus",
+        ea.area_code as "areaCode",
+        ea.area_name as "areaName",
+        ea.sort_order as "sortOrder",
+        ea.active_yn as "activeYn",
+        ea.period_apply_method as "periodApplyMethod",
+        ea.change_reason as "changeReason",
+        ea.updated_by as "updatedBy",
+        ea.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="evaluationAreaFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">
+                ea.rule_version_id = #{criteria.ruleVersionId}
+            </if>
+            <if test="criteria.activeYn != null and criteria.activeYn != ''">
+                and ea.active_yn = #{criteria.activeYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (ea.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listEvaluationAreas" resultMap="EvaluationAreaRowMap">
+        select <include refid="evaluationAreaColumns"/>
+        from evaluation_areas ea
+        inner join evaluation_rule_versions erv on erv.rule_version_id = ea.rule_version_id
+        <include refid="evaluationAreaFilters"/>
+        order by ea.sort_order, ea.area_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countEvaluationAreas" resultType="long">
+        select count(*)
+        from evaluation_areas ea
+        inner join evaluation_rule_versions erv on erv.rule_version_id = ea.rule_version_id
+        <include refid="evaluationAreaFilters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status
+        from evaluation_rule_versions
+        where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findByKey" resultMap="EvaluationAreaRowMap">
+        select <include refid="evaluationAreaColumns"/>
+        from evaluation_areas ea
+        inner join evaluation_rule_versions erv on erv.rule_version_id = ea.rule_version_id
+        where ea.rule_version_id = #{ruleVersionId}
+          and ea.area_code = #{areaCode}
+    </select>
+
+    <insert id="upsertEvaluationArea">
+        insert into evaluation_areas (rule_version_id, area_code, area_name, sort_order, active_yn, period_apply_method, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, #{request.areaCode}, #{request.areaName}, #{request.sortOrder}, #{request.activeYn}, #{request.periodApplyMethod}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, area_code)
+        do update set area_name = EXCLUDED.area_name,
+                      sort_order = EXCLUDED.sort_order,
+                      active_yn = EXCLUDED.active_yn,
+                      period_apply_method = EXCLUDED.period_apply_method,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

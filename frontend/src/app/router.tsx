@@ -49,6 +49,11 @@ import { EvaluationAreaManagementPage } from "../pages/admin/SCR-EVALUATION-AREA
 import { EvaluationItemManagementPage } from "../pages/admin/SCR-EVALUATION-ITEM-MGMT";
 import { EvaluationElementManagementPage } from "../pages/admin/SCR-EVALUATION-ELEMENT-MGMT";
 import { EvaluationManagementItemManagementPage } from "../pages/admin/SCR-EVALUATION-MANAGEMENT-ITEM-MGMT";
+import { EvaluationScoreManagementPage } from "../pages/admin/SCR-EVAL-SCORE-MGMT";
+import { ParticipationRateManagementPage } from "../pages/admin/SCR-PARTICIPATION-RATE-MGMT";
+import { CalculationFormulaManagementPage } from "../pages/admin/SCR-CALC-FORMULA-MGMT";
+import { EvaluationRuleSetManagementPage } from "../pages/admin/SCR-EVAL-RULE-SET-MGMT";
+import { JournalIndexingInfoManagementPage } from "../pages/admin/SCR-JOURNAL-INDEXING-MGMT";
 import { AreaElementSystemManagementPage } from "../pages/admin/SCR-AREA-ELEMENT-SYSTEM-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
@@ -246,6 +251,16 @@ function renderAdminPage(path: string | undefined) {
       return <EvaluationElementManagementPage />;
     case "/admin/evaluation-management-items":
       return <EvaluationManagementItemManagementPage />;
+    case "/admin/evaluation-scores":
+      return <EvaluationScoreManagementPage />;
+    case "/admin/participation-rates":
+      return <ParticipationRateManagementPage />;
+    case "/admin/calculation-formulas":
+      return <CalculationFormulaManagementPage />;
+    case "/admin/evaluation-rule-sets":
+      return <EvaluationRuleSetManagementPage />;
+    case "/admin/journal-indexing-infos":
+      return <JournalIndexingInfoManagementPage />;
     case "/admin/area-element-systems":
       return <AreaElementSystemManagementPage />;
     case "/admin/business-status-transitions":

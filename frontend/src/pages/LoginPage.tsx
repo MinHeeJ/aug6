@@ -86,13 +86,13 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     path: "/admin/menu-structure",
     label: "메뉴 구조 관리",
     screenId: "SCR-MENU-STRUCTURE-MGMT",
-    menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 구조 관리",
+    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 구조 관리",
   },
   {
     path: "/admin/menu-info",
     label: "메뉴 정보 관리",
     screenId: "SCR-MENU-INFO-MGMT",
-    menuPath: "시스템 관리 > 역할·권한 관리 > 메뉴 정보 관리",
+    menuPath: "시스템 관리 > 메뉴 관리 > 메뉴 정보 관리",
   },
   {
     path: "/admin/code-groups",
@@ -291,6 +291,38 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     label: "삭제자료 관리",
     screenId: "SCR-DELETED-BUSINESS-DATA",
     menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 삭제자료 관리",
+  },
+  {
+    path: "/admin/evaluation-scores",
+    label: "평가점수 관리",
+    screenId: "SCR-EVAL-SCORE-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가점수 관리",
+  },
+  {
+    path: "/admin/participation-rates",
+    label: "참여구분·배분율 관리",
+    screenId: "SCR-PARTICIPATION-RATE-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 참여구분·배분율 관리",
+  },
+  {
+    path: "/admin/calculation-formulas",
+    label: "계산식 관리",
+    screenId: "SCR-CALC-FORMULA-MGMT",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 계산식 관리",
+  },
+  {
+    path: "/admin/evaluation-rule-sets",
+    label: "업적평가 기준·점수규칙 관리",
+    screenId: "SCR-EVAL-RULE-SET-MGMT",
+    menuPath:
+      "평가 기준 관리 > 평가 기준정보 관리 > 업적평가 기준·점수규칙 관리",
+  },
+  {
+    path: "/admin/journal-indexing-infos",
+    label: "학술지·후보지 등재정보 관리",
+    screenId: "SCR-JOURNAL-INDEXING-MGMT",
+    menuPath:
+      "평가 기준 관리 > 평가 기준정보 관리 > 학술지·후보지 등재정보 관리",
   },
   {
     path: "/admin/security/active-sessions",

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic34.EvaluationScoreMapper">
+    <resultMap id="EvaluationScoreRowMap" type="kr.ac.knue.commonfoundation.basic34.EvaluationScoreRow">
+        <constructor>
+            <arg column="scoreRuleId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="managementItemId" javaType="long"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="areaName" javaType="string"/>
+            <arg column="itemCode" javaType="string"/>
+            <arg column="itemName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="elementCode" javaType="string"/>
+            <arg column="elementName" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="managementItemName" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="organizationName" javaType="string"/>
+            <arg column="baseScore" javaType="java.math.BigDecimal"/>
+            <arg column="maxScore" javaType="java.math.BigDecimal"/>
+            <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="evaluationScoreColumns">
+        esr.score_rule_id as "scoreRuleId",
+        esr.rule_version_id as "ruleVersionId",
+        erv.version_code as "versionCode",
+        erv.version_status as "versionStatus",
+        emi.management_item_id as "managementItemId",
+        ea.area_code as "areaCode",
+        ea.area_name as "areaName",
+        ei.item_code as "itemCode",
+        ei.item_name as "itemName",
+        ee.evaluation_year as "evaluationYear",
+        ee.element_code as "elementCode",
+        ee.element_name as "elementName",
+        emi.management_item_code as "managementItemCode",
+        emi.management_item_name as "managementItemName",
+        esr.organization_code as "organizationCode",
+        org.organization_name as "organizationName",
+        esr.base_score as "baseScore",
+        esr.max_score as "maxScore",
+        esr.effective_start_date as "effectiveStartDate",
+        esr.effective_end_date as "effectiveEndDate",
+        esr.active_yn as "activeYn",
+        esr.change_reason as "changeReason",
+        esr.updated_by as "updatedBy",
+        esr.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="evaluationScoreJoins">
+        from evaluation_score_rules esr
+        inner join evaluation_rule_versions erv on erv.rule_version_id = esr.rule_version_id
+        inner join evaluation_management_items emi on emi.management_item_id = esr.management_item_id
+        inner join evaluation_elements ee on ee.element_id = emi.element_id
+        inner join evaluation_items ei on ei.item_id = ee.item_id
+        inner join evaluation_areas ea on ea.area_id = ei.area_id
+        left join organizations org on org.organization_code = esr.organization_code
+    </sql>
+
+    <sql id="evaluationScoreFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">
+                esr.rule_version_id = #{criteria.ruleVersionId}
+            </if>
+            <if test="criteria.managementItemId != null">
+                and esr.management_item_id = #{criteria.managementItemId}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and ea.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedItemCode != null">
+                and ei.item_code = #{criteria.normalizedItemCode}
+            </if>
+            <if test="criteria.evaluationYear != null and criteria.evaluationYear != ''">
+                and esr.evaluation_year = #{criteria.evaluationYear}
+            </if>
+            <if test="criteria.normalizedElementCode != null">
+                and ee.element_code = #{criteria.normalizedElementCode}
+            </if>
+            <if test="criteria.normalizedManagementItemCode != null">
+                and emi.management_item_code = #{criteria.normalizedManagementItemCode}
+            </if>
+            <if test="criteria.normalizedOrganizationCode != null">
+                and esr.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+            <if test="criteria.activeYn != null and criteria.activeYn != ''">
+                and esr.active_yn = #{criteria.activeYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (emi.management_item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or emi.management_item_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ee.element_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ee.element_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ei.item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ei.item_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or esr.organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or org.organization_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listEvaluationScores" resultMap="EvaluationScoreRowMap">
+        select <include refid="evaluationScoreColumns"/>
+        <include refid="evaluationScoreJoins"/>
+        <include refid="evaluationScoreFilters"/>
+        order by esr.evaluation_year desc, ea.area_code, ei.item_code, ee.element_code, emi.management_item_code, esr.organization_code, esr.effective_start_date desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countEvaluationScores" resultType="long">
+        select count(*)
+        <include refid="evaluationScoreJoins"/>
+        <include refid="evaluationScoreFilters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status
+        from evaluation_rule_versions
+        where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="managementItemBelongsToRuleVersion" resultType="boolean">
+        select exists(
+            select 1
+            from evaluation_management_items emi
+            inner join evaluation_elements ee on ee.element_id = emi.element_id
+            inner join evaluation_items ei on ei.item_id = ee.item_id
+            inner join evaluation_areas ea on ea.area_id = ei.area_id
+            where emi.management_item_id = #{managementItemId}
+              and ea.rule_version_id = #{ruleVersionId}
+        )
+    </select>
+
+    <select id="findByKey" resultMap="EvaluationScoreRowMap">
+        select <include refid="evaluationScoreColumns"/>
+        <include refid="evaluationScoreJoins"/>
+        where esr.rule_version_id = #{request.ruleVersionId}
+          and esr.management_item_id = #{request.managementItemId}
+          and esr.organization_code = #{request.organizationCode}
+          and esr.evaluation_year = #{request.evaluationYear}
+          and esr.effective_start_date = #{request.effectiveStartDate}
+          and esr.effective_end_date = #{request.effectiveEndDate}
+    </select>
+
+    <insert id="upsertEvaluationScore">
+        insert into evaluation_score_rules (rule_version_id, management_item_id, organization_code, evaluation_year, base_score, max_score, effective_start_date, effective_end_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, #{request.managementItemId}, #{request.organizationCode}, #{request.evaluationYear}, #{request.baseScore}, #{request.maxScore}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.activeYn}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, management_item_id, organization_code, evaluation_year, effective_start_date, effective_end_date)
+        do update set base_score = EXCLUDED.base_score,
+                      max_score = EXCLUDED.max_score,
+                      active_yn = EXCLUDED.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

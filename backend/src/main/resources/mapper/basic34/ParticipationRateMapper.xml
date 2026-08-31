@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic34.ParticipationRateMapper">
+    <resultMap id="ParticipationRateRowMap" type="kr.ac.knue.commonfoundation.basic34.ParticipationRateRow">
+        <constructor>
+            <arg column="participationRateRuleId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="managementItemId" javaType="long"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="areaName" javaType="string"/>
+            <arg column="itemCode" javaType="string"/>
+            <arg column="itemName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="elementCode" javaType="string"/>
+            <arg column="elementName" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="managementItemName" javaType="string"/>
+            <arg column="researcherCount" javaType="int"/>
+            <arg column="participationType" javaType="string"/>
+            <arg column="participationTypeName" javaType="string"/>
+            <arg column="distributionRate" javaType="java.math.BigDecimal"/>
+            <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="participationRateColumns">
+        prr.participation_rate_rule_id as "participationRateRuleId",
+        prr.rule_version_id as "ruleVersionId",
+        erv.version_code as "versionCode",
+        erv.version_status as "versionStatus",
+        emi.management_item_id as "managementItemId",
+        ea.area_code as "areaCode",
+        ea.area_name as "areaName",
+        ei.item_code as "itemCode",
+        ei.item_name as "itemName",
+        ee.evaluation_year as "evaluationYear",
+        ee.element_code as "elementCode",
+        ee.element_name as "elementName",
+        emi.management_item_code as "managementItemCode",
+        emi.management_item_name as "managementItemName",
+        prr.researcher_count as "researcherCount",
+        prr.participation_type as "participationType",
+        (select max(dc.code_name)
+         from detail_codes dc
+         where dc.code_value = prr.participation_type
+           and dc.status = 'ACTIVE'
+           and dc.system_use_yn = 'Y'
+           and (dc.group_id = 'PARTICIPATION_TYPE' or dc.group_id = 'RESEARCH_PARTICIPATION_TYPE')) as "participationTypeName",
+        prr.distribution_rate as "distributionRate",
+        prr.effective_start_date as "effectiveStartDate",
+        prr.effective_end_date as "effectiveEndDate",
+        prr.active_yn as "activeYn",
+        prr.change_reason as "changeReason",
+        prr.updated_by as "updatedBy",
+        prr.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="participationRateJoins">
+        from participation_rate_rules prr
+        inner join evaluation_rule_versions erv on erv.rule_version_id = prr.rule_version_id
+        inner join evaluation_management_items emi on emi.management_item_id = prr.management_item_id
+        inner join evaluation_elements ee on ee.element_id = emi.element_id
+        inner join evaluation_items ei on ei.item_id = ee.item_id
+        inner join evaluation_areas ea on ea.area_id = ei.area_id
+
+    </sql>
+
+    <sql id="participationRateFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">
+                prr.rule_version_id = #{criteria.ruleVersionId}
+            </if>
+            <if test="criteria.managementItemId != null">
+                and prr.management_item_id = #{criteria.managementItemId}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and ea.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedItemCode != null">
+                and ei.item_code = #{criteria.normalizedItemCode}
+            </if>
+            <if test="criteria.evaluationYear != null and criteria.evaluationYear != ''">
+                and ee.evaluation_year = #{criteria.evaluationYear}
+            </if>
+            <if test="criteria.normalizedElementCode != null">
+                and ee.element_code = #{criteria.normalizedElementCode}
+            </if>
+            <if test="criteria.normalizedManagementItemCode != null">
+                and emi.management_item_code = #{criteria.normalizedManagementItemCode}
+            </if>
+            <if test="criteria.researcherCount != null">
+                and prr.researcher_count = #{criteria.researcherCount}
+            </if>
+            <if test="criteria.normalizedParticipationType != null">
+                and prr.participation_type = #{criteria.normalizedParticipationType}
+            </if>
+            <if test="criteria.activeYn != null and criteria.activeYn != ''">
+                and prr.active_yn = #{criteria.activeYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (prr.participation_type ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or exists (
+                        select 1
+                        from detail_codes dc
+                        where dc.code_value = prr.participation_type
+                          and dc.status = 'ACTIVE'
+                          and dc.system_use_yn = 'Y'
+                          and (dc.group_id = 'PARTICIPATION_TYPE' or dc.group_id = 'RESEARCH_PARTICIPATION_TYPE')
+                          and dc.code_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    )
+                    or emi.management_item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or emi.management_item_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ee.element_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ee.element_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ei.item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ei.item_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ea.area_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listParticipationRates" resultMap="ParticipationRateRowMap">
+        select <include refid="participationRateColumns"/>
+        <include refid="participationRateJoins"/>
+        <include refid="participationRateFilters"/>
+        order by ea.area_code, ei.item_code, ee.element_code, emi.management_item_code, prr.researcher_count, prr.participation_type, prr.effective_start_date desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countParticipationRates" resultType="long">
+        select count(*)
+        <include refid="participationRateJoins"/>
+        <include refid="participationRateFilters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status
+        from evaluation_rule_versions
+        where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="managementItemBelongsToRuleVersion" resultType="boolean">
+        select exists(
+            select 1
+            from evaluation_management_items emi
+            inner join evaluation_elements ee on ee.element_id = emi.element_id
+            inner join evaluation_items ei on ei.item_id = ee.item_id
+            inner join evaluation_areas ea on ea.area_id = ei.area_id
+            where emi.management_item_id = #{managementItemId}
+              and ea.rule_version_id = #{ruleVersionId}
+        )
+    </select>
+
+    <select id="findByKey" resultMap="ParticipationRateRowMap">
+        select <include refid="participationRateColumns"/>
+        <include refid="participationRateJoins"/>
+        where prr.rule_version_id = #{request.ruleVersionId}
+          and prr.management_item_id = #{request.managementItemId}
+          and prr.researcher_count = #{request.researcherCount}
+          and prr.participation_type = #{request.participationType}
+          and prr.effective_start_date = #{request.effectiveStartDate}
+          and prr.effective_end_date = #{request.effectiveEndDate}
+    </select>
+
+    <insert id="upsertParticipationRate">
+        insert into participation_rate_rules (rule_version_id, management_item_id, researcher_count, participation_type, distribution_rate, effective_start_date, effective_end_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, #{request.managementItemId}, #{request.researcherCount}, #{request.participationType}, #{request.distributionRate}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.activeYn}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, management_item_id, researcher_count, participation_type, effective_start_date, effective_end_date)
+        do update set distribution_rate = EXCLUDED.distribution_rate,
+                      active_yn = EXCLUDED.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

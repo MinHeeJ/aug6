@@ -2196,6 +2196,104 @@ export const dataChangeHistoryApi = {
   },
 };
 
+export type AchievementDataHistory = {
+  historyId: number;
+  achievementType: string;
+  achievementKey: string;
+  changeType: ChangeType;
+  fieldName: string;
+  beforeValue?: string | null;
+  afterValue?: string | null;
+  changedBy: number;
+  changedByLoginId?: string;
+  changedByName?: string;
+  changedAt: string;
+  changeReason: string;
+};
+
+export type AchievementDataAsOf = {
+  snapshotId: number;
+  achievementType: string;
+  achievementKey: string;
+  employeeNo?: string | null;
+  achievementTitle: string;
+  achievementStatus: string;
+  snapshotValue: string;
+  baseAt: string;
+  capturedAt: string;
+};
+
+export type AchievementDataHistorySearchResponse = {
+  histories: AchievementDataHistory[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type AchievementDataAsOfSearchResponse = {
+  snapshots: AchievementDataAsOf[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export const achievementDataHistoryApi = {
+  listHistories(
+    params: {
+      page?: number;
+      size?: PageSize;
+      achievementType?: string;
+      achievementKey?: string;
+      employeeNo?: string;
+      changedAtFrom?: string;
+      changedAtTo?: string;
+      changeType?: ChangeType | "";
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.achievementType?.trim())
+      query.set("achievementType", params.achievementType.trim());
+    if (params.achievementKey?.trim())
+      query.set("achievementKey", params.achievementKey.trim());
+    if (params.employeeNo?.trim())
+      query.set("employeeNo", params.employeeNo.trim());
+    if (params.changedAtFrom?.trim())
+      query.set("changedAtFrom", params.changedAtFrom.trim());
+    if (params.changedAtTo?.trim())
+      query.set("changedAtTo", params.changedAtTo.trim());
+    if (params.changeType) query.set("changeType", params.changeType);
+    return apiRequest<AchievementDataHistorySearchResponse>(
+      `/api/admin/achievement-data-histories?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  listAsOf(
+    params: {
+      page?: number;
+      size?: PageSize;
+      achievementType?: string;
+      achievementKey?: string;
+      employeeNo?: string;
+      asOfAt?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.achievementType?.trim())
+      query.set("achievementType", params.achievementType.trim());
+    if (params.achievementKey?.trim())
+      query.set("achievementKey", params.achievementKey.trim());
+    if (params.employeeNo?.trim())
+      query.set("employeeNo", params.employeeNo.trim());
+    if (params.asOfAt?.trim()) query.set("asOfAt", params.asOfAt.trim());
+    return apiRequest<AchievementDataAsOfSearchResponse>(
+      `/api/admin/achievement-data-as-of?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
 export type DeletedBusinessData = {
   deletedDataId: number;
   businessType: BusinessType;
@@ -2427,5 +2525,315 @@ export const operationsApi = {
       method: "PUT",
       body: JSON.stringify(payload),
     });
+  },
+};
+
+export type FullTimeFacultyStatus = {
+  employeeNo: string;
+  name: string;
+  collegeCode?: string | null;
+  collegeName?: string | null;
+  departmentCode?: string | null;
+  departmentName?: string | null;
+  rankName?: string | null;
+  retirementDate?: string | null;
+};
+
+export type FullTimeFacultyStatusSearchResponse = {
+  statuses: FullTimeFacultyStatus[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+  baseYear: number;
+};
+
+export const fullTimeFacultyStatusApi = {
+  listStatuses(params: {
+    page?: number;
+    size?: PageSize;
+    baseYear: number | string;
+    organizationCode?: string;
+    employeeNo?: string;
+    name?: string;
+  }) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    query.set("baseYear", String(params.baseYear));
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    if (params.employeeNo?.trim())
+      query.set("employeeNo", params.employeeNo.trim());
+    if (params.name?.trim()) query.set("name", params.name.trim());
+    return apiRequest<FullTimeFacultyStatusSearchResponse>(
+      `/api/admin/full-time-faculty-statuses?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
+export type KorusFacultySyncStatus = "SUCCESS" | "FAILED";
+
+export type KorusFacultySyncResult = {
+  resultId: number;
+  runId: number;
+  requestId: string;
+  employeeNo: string;
+  name: string;
+  organizationCode: string;
+  rankName?: string | null;
+  appointmentId: string;
+  syncStatus: KorusFacultySyncStatus;
+  errorMessage?: string | null;
+  retryOfResultId?: number | null;
+  createdAt: string;
+};
+
+export type KorusFacultySyncRun = {
+  runId: number;
+  requestId: string;
+  runType: "MANUAL" | "RETRY" | "SCHEDULED";
+  targetStartDate: string;
+  targetEndDate: string;
+  runStatus: "RUNNING" | "SUCCESS" | "FAILED" | "PARTIAL";
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  createdBy?: number;
+  startedAt?: string;
+  finishedAt?: string;
+  failureReason?: string | null;
+};
+
+export type KorusFacultySyncSearchResponse = {
+  results: KorusFacultySyncResult[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export const korusFacultySyncApi = {
+  listResults(
+    params: {
+      page?: number;
+      size?: PageSize;
+      targetStartDate?: string;
+      targetEndDate?: string;
+      syncStatus?: KorusFacultySyncStatus | "";
+      requestId?: string;
+      employeeNo?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.targetStartDate)
+      query.set("targetStartDate", params.targetStartDate);
+    if (params.targetEndDate) query.set("targetEndDate", params.targetEndDate);
+    if (params.syncStatus) query.set("syncStatus", params.syncStatus);
+    if (params.requestId?.trim())
+      query.set("requestId", params.requestId.trim());
+    if (params.employeeNo?.trim())
+      query.set("employeeNo", params.employeeNo.trim());
+    return apiRequest<KorusFacultySyncSearchResponse>(
+      `/api/admin/korus-faculty-sync-results?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  createRun(payload: { targetStartDate: string; targetEndDate: string }) {
+    return apiRequest<KorusFacultySyncRun>(
+      "/api/admin/korus-faculty-sync-runs",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  retryResult(resultId: number) {
+    return apiRequest<KorusFacultySyncRun>(
+      `/api/admin/korus-faculty-sync-results/${encodeURIComponent(String(resultId))}/retry` as `/api/${string}`,
+      { method: "POST" },
+    );
+  },
+};
+
+export type ResearcherProfileSummary = {
+  employeeNo: string;
+  name: string;
+  organizationCode: string;
+  organizationName?: string | null;
+  rankName?: string | null;
+  appointmentId?: string | null;
+  contact?: string | null;
+  researcherRegistrationNo?: string | null;
+  externalProvisionYn?: YesNo;
+  informationPublicYn?: YesNo;
+  finalDegreeType?: "BACHELOR" | "MASTER" | "DOCTOR" | null;
+  degreePrerequisiteMissing: boolean;
+  updatedAt?: string | null;
+};
+
+export type ResearcherResearchField = {
+  researchFieldId?: number;
+  employeeNo?: string;
+  majorName: string;
+  detailMajorName?: string | null;
+  majorSeries?: string | null;
+  changedBy?: number;
+  changedAt?: string | null;
+};
+
+export type ResearcherCareer = {
+  careerId?: number;
+  employeeNo?: string;
+  workStartYm: string;
+  workEndYm?: string | null;
+  workplace: string;
+  positionName?: string | null;
+  duty?: string | null;
+  changedBy?: number;
+  changedAt?: string | null;
+};
+
+export type ResearcherDegree = {
+  degreeId?: number;
+  employeeNo?: string;
+  degreeType: "BACHELOR" | "MASTER" | "DOCTOR" | "";
+  universityName: string;
+  startYm?: string | null;
+  acquiredYm?: string | null;
+  countryName?: string | null;
+  collegeName?: string | null;
+  advisorName?: string | null;
+  changedBy?: number;
+  changedAt?: string | null;
+};
+
+export type ResearcherCertification = {
+  certificationId?: number;
+  employeeNo?: string;
+  acquiredYm?: string | null;
+  certificationName: string;
+  issuingOrganizationName?: string | null;
+  changedBy?: number;
+  changedAt?: string | null;
+};
+
+export type ResearcherProfileDetail = ResearcherProfileSummary & {
+  researchFields: ResearcherResearchField[];
+  careers: ResearcherCareer[];
+  degrees: ResearcherDegree[];
+  certifications: ResearcherCertification[];
+};
+
+export type ResearcherProfileSearchResponse = {
+  profiles: ResearcherProfileSummary[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type ResearcherProfileSaveResponse = {
+  profile: ResearcherProfileDetail;
+  warnings: string[];
+};
+
+export const researcherProfileApi = {
+  listProfiles(
+    params: {
+      page?: number;
+      size?: PageSize;
+      employeeNo?: string;
+      name?: string;
+      organizationCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.employeeNo?.trim())
+      query.set("employeeNo", params.employeeNo.trim());
+    if (params.name?.trim()) query.set("name", params.name.trim());
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    return apiRequest<ResearcherProfileSearchResponse>(
+      `/api/researcher-profiles?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getProfile(employeeNo: string) {
+    return apiRequest<ResearcherProfileDetail>(
+      `/api/researcher-profiles/${encodeURIComponent(employeeNo)}` as `/api/${string}`,
+    );
+  },
+  saveResearchFields(
+    employeeNo: string,
+    items: ResearcherResearchField[],
+    changeReason: string,
+  ) {
+    return apiRequest<ResearcherProfileSaveResponse>(
+      `/api/researcher-profiles/${encodeURIComponent(employeeNo)}/research-fields` as `/api/${string}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ items, changeReason }),
+      },
+    );
+  },
+  saveCareers(
+    employeeNo: string,
+    items: ResearcherCareer[],
+    changeReason: string,
+  ) {
+    return apiRequest<ResearcherProfileSaveResponse>(
+      `/api/researcher-profiles/${encodeURIComponent(employeeNo)}/careers` as `/api/${string}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ items, changeReason }),
+      },
+    );
+  },
+  saveDegrees(
+    employeeNo: string,
+    items: ResearcherDegree[],
+    changeReason: string,
+  ) {
+    return apiRequest<ResearcherProfileSaveResponse>(
+      `/api/researcher-profiles/${encodeURIComponent(employeeNo)}/degrees` as `/api/${string}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ items, changeReason }),
+      },
+    );
+  },
+  saveCertifications(
+    employeeNo: string,
+    items: ResearcherCertification[],
+    changeReason: string,
+  ) {
+    return apiRequest<ResearcherProfileSaveResponse>(
+      `/api/researcher-profiles/${encodeURIComponent(employeeNo)}/certifications` as `/api/${string}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ items, changeReason }),
+      },
+    );
+  },
+  listDegreePrerequisiteMissing(
+    params: {
+      page?: number;
+      size?: PageSize;
+      employeeNo?: string;
+      name?: string;
+      organizationCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.employeeNo?.trim())
+      query.set("employeeNo", params.employeeNo.trim());
+    if (params.name?.trim()) query.set("name", params.name.trim());
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    return apiRequest<ResearcherProfileSearchResponse>(
+      `/api/admin/researcher-profiles/degree-prerequisite-missing?${query.toString()}` as `/api/${string}`,
+    );
   },
 };

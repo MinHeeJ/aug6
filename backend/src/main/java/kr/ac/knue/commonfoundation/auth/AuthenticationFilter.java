@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import kr.ac.knue.commonfoundation.basic33.EvaluationRuleFoundationContract;
 import kr.ac.knue.commonfoundation.basic34.EvaluationRuleBusinessFoundationContract;
+import kr.ac.knue.commonfoundation.basic36.Basic36FoundationContract;
 import kr.ac.knue.commonfoundation.businessperiod.BusinessPeriodFoundationContract;
 import kr.ac.knue.commonfoundation.common.api.ApiError;
 import kr.ac.knue.commonfoundation.common.api.ApiResponse;
@@ -69,6 +70,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         String businessPeriodRoute = BusinessPeriodFoundationContract.uiRouteForApiPath(apiPath);
         if (businessPeriodRoute != null) {
             return businessPeriodRoute;
+        }
+        String basic36Route = Basic36FoundationContract.uiRouteForApiPath(apiPath);
+        if (basic36Route != null) {
+            return basic36Route;
         }
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";

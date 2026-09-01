@@ -80,10 +80,34 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(62);
+    expect(ADMIN_ROUTES).toHaveLength(69);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);
+  });
+
+  it("registers BASIC-36 business route placeholders without replacing the existing shell", () => {
+    expect(routePath("/admin/korus-faculty-sync")).toBe(
+      "교수업적평가 파일럿 > KORUS 연계 > KORUS 교원 동기화",
+    );
+    expect(routePath("/admin/full-time-faculty-statuses")).toBe(
+      "교수업적평가 파일럿 > 교원 현황 > 전임교원 현황",
+    );
+    expect(routePath("/researcher-profiles")).toBe(
+      "교수업적평가 파일럿 > 연구자 프로필 > 프로필 목록",
+    );
+    expect(routePath("/researcher-profiles/{employeeNo}")).toBe(
+      "교수업적평가 파일럿 > 연구자 프로필 > 프로필 상세",
+    );
+    expect(
+      routePath("/admin/researcher-profiles/degree-prerequisite-missing"),
+    ).toBe("교수업적평가 파일럿 > 연구자 프로필 > 선행학위 미충족");
+    expect(routePath("/admin/achievement-data-histories")).toBe(
+      "교수업적평가 파일럿 > 업적 데이터 이력 > 변경이력 조회",
+    );
+    expect(routePath("/admin/achievement-data-as-of")).toBe(
+      "교수업적평가 파일럿 > 업적 데이터 이력 > 기준시점 조회",
+    );
   });
 
   it("uses menu URLs rather than role codes alone as the frontend route guard", () => {
@@ -117,6 +141,33 @@ describe("LoginPage", () => {
       true,
     );
     expect(canAccessAdminRoute(r09WithoutTargetMenu, "/admin/roles")).toBe(
+      false,
+    );
+  });
+
+  it("allows domain-data researcher profile detail URLs through the placeholder pattern", () => {
+    const researcherUser: CurrentUser = {
+      userId: 2,
+      loginId: "teacher",
+      employeeNo: "E10001",
+      name: "교원",
+      roles: ["R01"],
+      menus: [
+        {
+          menuId: 701,
+          menuName: "연구자 프로필 상세",
+          screenId: "SCR-RESEARCHER-PROFILE-DETAIL",
+          url: "/researcher-profiles/{employeeNo}",
+          displayOrder: 1,
+          children: [],
+        },
+      ],
+    };
+
+    expect(
+      canAccessAdminRoute(researcherUser, "/researcher-profiles/E10001"),
+    ).toBe(true);
+    expect(canAccessAdminRoute(researcherUser, "/researcher-profiles")).toBe(
       false,
     );
   });

@@ -64,6 +64,17 @@ import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
 import { DataChangeHistoryPage } from "../pages/admin/SCR-DATA-CHANGE-HISTORY";
 import { DeletedBusinessDataPage } from "../pages/admin/SCR-DELETED-BUSINESS-DATA";
+import { KorusFacultySyncPage } from "../pages/admin/SCR-KORUS-FACULTY-SYNC";
+import { FullTimeFacultyStatusPage } from "../pages/admin/SCR-FULL-TIME-FACULTY-STATUS";
+import {
+  DegreePrerequisiteMissingPage,
+  ResearcherProfileDetailPage,
+  ResearcherProfileListPage,
+} from "../pages/admin/SCR-RESEARCHER-PROFILES";
+import {
+  AchievementDataAsOfPage,
+  AchievementDataHistoryPage,
+} from "../pages/admin/SCR-ACHIEVEMENT-DATA-HISTORY";
 import {
   ExcelDownloadManagementPage,
   ExcelUploadErrorManagementPage,
@@ -86,7 +97,9 @@ import {
 export function AppRouter() {
   const auth = useAuth();
   const path = usePathname();
-  const adminRoute = ADMIN_ROUTES.find((route) => route.path === path);
+  const adminRoute = ADMIN_ROUTES.find((route) =>
+    routeMatchesPath(route.path, path),
+  );
 
   if (auth.status === "loading") {
     return (
@@ -286,6 +299,20 @@ function renderAdminPage(path: string | undefined) {
       return <DataChangeHistoryPage />;
     case "/admin/deleted-business-data":
       return <DeletedBusinessDataPage />;
+    case "/admin/korus-faculty-sync":
+      return <KorusFacultySyncPage />;
+    case "/admin/full-time-faculty-statuses":
+      return <FullTimeFacultyStatusPage />;
+    case "/researcher-profiles":
+      return <ResearcherProfileListPage />;
+    case "/researcher-profiles/{employeeNo}":
+      return <ResearcherProfileDetailPage />;
+    case "/admin/researcher-profiles/degree-prerequisite-missing":
+      return <DegreePrerequisiteMissingPage />;
+    case "/admin/achievement-data-histories":
+      return <AchievementDataHistoryPage />;
+    case "/admin/achievement-data-as-of":
+      return <AchievementDataAsOfPage />;
     case "/admin/excel-upload-templates":
       return <UploadTemplateManagementPage />;
     case "/admin/excel-uploads":
@@ -346,11 +373,11 @@ function AdminRoutePage({
         <section className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-8">
           <p className="text-sm font-semibold text-primary">{route.screenId}</p>
           <h2 className="mt-2 text-lg font-semibold text-dark">
-            US-01 관리자 접근 검증
+            보호 route placeholder
           </h2>
           <p className="mt-3 text-sm text-muted">
-            이 route는 시드 R09 관리자가 로그인 후 1차 목표 관리 화면에 접근할
-            수 있음을 독립 검증하기 위한 보호 화면입니다.
+            이 route는 로그인한 사용자가 메뉴 권한 확인 후 업무 화면에 접근할 수
+            있음을 검증하기 위한 shell placeholder입니다.
           </p>
           <div
             className="mt-5 rounded-md bg-lightsuccess p-4 text-sm text-success"
@@ -387,4 +414,17 @@ function countMenus(items: Array<{ children: unknown[] }>): number {
       sum + 1 + countMenus(item.children as Array<{ children: unknown[] }>),
     0,
   );
+}
+
+function routeMatchesPath(routePath: string, actualPath: string): boolean {
+  if (routePath === actualPath) {
+    return true;
+  }
+  if (!routePath.includes("{")) {
+    return false;
+  }
+  const pattern = new RegExp(
+    `^${routePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\{[^/]+\\\}/g, "[^/]+")}$`,
+  );
+  return pattern.test(actualPath);
 }

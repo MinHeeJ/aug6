@@ -1002,6 +1002,254 @@ export const evaluationDateApi = {
   },
 };
 
+export type AppealPeriodSetting = {
+  settingId: number;
+  evaluationYear: string;
+  collegeOrganizationCode: string;
+  departmentOrganizationCode?: string | null;
+  appealStartAt: string;
+  appealEndAt: string;
+  handlerUserId: number;
+  activeYn: ActiveYn;
+  createdBy?: number | null;
+  updatedBy?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+  changeReason?: string;
+};
+
+export type AppealPeriodSearchResponse = {
+  appealPeriods: AppealPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type AppealPeriodPayload = {
+  settingId?: number | null;
+  evaluationYear: string;
+  collegeOrganizationCode: string;
+  departmentOrganizationCode?: string | null;
+  appealStartAt: string;
+  appealEndAt: string;
+  handlerUserId: number;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const appealPeriodApi = {
+  listAppealPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      collegeOrganizationCode?: string;
+      departmentOrganizationCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.collegeOrganizationCode?.trim())
+      query.set(
+        "collegeOrganizationCode",
+        params.collegeOrganizationCode.trim(),
+      );
+    if (params.departmentOrganizationCode?.trim())
+      query.set(
+        "departmentOrganizationCode",
+        params.departmentOrganizationCode.trim(),
+      );
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<AppealPeriodSearchResponse>(
+      `/api/admin/appeal-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveAppealPeriod(payload: AppealPeriodPayload) {
+    return apiRequest<AppealPeriodSetting>("/api/admin/appeal-periods/save", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type VisibilityScope =
+  | "SELF"
+  | "DEPARTMENT"
+  | "COLLEGE"
+  | "BUSINESS"
+  | "ALL";
+
+export type ResultViewPeriodSetting = {
+  settingId: number;
+  evaluationYear: string;
+  collegeOrganizationCode: string;
+  departmentOrganizationCode?: string | null;
+  viewStartAt: string;
+  viewEndAt: string;
+  visibilityScope: VisibilityScope;
+  activeYn: ActiveYn;
+  createdBy?: number | null;
+  updatedBy?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+  changeReason?: string;
+};
+
+export type ResultViewPeriodSearchResponse = {
+  resultViewPeriods: ResultViewPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ResultViewPeriodPayload = {
+  settingId?: number | null;
+  evaluationYear: string;
+  collegeOrganizationCode: string;
+  departmentOrganizationCode?: string | null;
+  viewStartAt: string;
+  viewEndAt: string;
+  visibilityScope: VisibilityScope;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const resultViewPeriodApi = {
+  listResultViewPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      collegeOrganizationCode?: string;
+      departmentOrganizationCode?: string;
+      visibilityScope?: VisibilityScope | "";
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.collegeOrganizationCode?.trim())
+      query.set(
+        "collegeOrganizationCode",
+        params.collegeOrganizationCode.trim(),
+      );
+    if (params.departmentOrganizationCode?.trim())
+      query.set(
+        "departmentOrganizationCode",
+        params.departmentOrganizationCode.trim(),
+      );
+    if (params.visibilityScope)
+      query.set("visibilityScope", params.visibilityScope);
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<ResultViewPeriodSearchResponse>(
+      `/api/admin/result-view-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveResultViewPeriod(payload: ResultViewPeriodPayload) {
+    return apiRequest<ResultViewPeriodSetting>(
+      "/api/admin/result-view-periods/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type TargetFunctionCode = "MODIFY_ACHIEVEMENT" | "DELETE_ACHIEVEMENT";
+
+export type ExceptionPeriodSetting = {
+  settingId: number;
+  evaluationYear: string;
+  teacherUserId: number;
+  teacherName?: string | null;
+  areaCode: string;
+  targetFunctionCode: TargetFunctionCode;
+  exceptionStartAt: string;
+  exceptionEndAt: string;
+  approvalReason: string;
+  activeYn: ActiveYn;
+  createdBy?: number | null;
+  updatedBy?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+  changeReason?: string;
+};
+
+export type ExceptionPeriodSearchResponse = {
+  exceptionPeriods: ExceptionPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ExceptionPeriodPayload = {
+  settingId?: number | null;
+  evaluationYear: string;
+  teacherUserId: number;
+  areaCode: string;
+  targetFunctionCode: TargetFunctionCode;
+  exceptionStartAt: string;
+  exceptionEndAt: string;
+  approvalReason: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const exceptionPeriodApi = {
+  listExceptionPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      teacherUserId?: string | number;
+      areaCode?: string;
+      targetFunctionCode?: TargetFunctionCode | "";
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (
+      params.teacherUserId !== undefined &&
+      String(params.teacherUserId).trim()
+    )
+      query.set("teacherUserId", String(params.teacherUserId).trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.targetFunctionCode)
+      query.set("targetFunctionCode", params.targetFunctionCode);
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<ExceptionPeriodSearchResponse>(
+      `/api/admin/exception-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveExceptionPeriod(payload: ExceptionPeriodPayload) {
+    return apiRequest<ExceptionPeriodSetting>(
+      "/api/admin/exception-periods/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type InputPeriodSetting = EvaluationDateSetting;
 
 export type InputPeriodSearchResponse = {

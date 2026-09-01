@@ -281,6 +281,24 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "평가 기준 관리 > 업무기간 관리 > 수정기간 관리",
   },
   {
+    path: "/admin/appeal-periods",
+    label: "이의신청기간 관리",
+    screenId: "SCR-APPEAL-PERIOD-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 이의신청기간 관리",
+  },
+  {
+    path: "/admin/result-view-periods",
+    label: "결과조회기간 관리",
+    screenId: "SCR-RESULT-VIEW-PERIOD-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 결과조회기간 관리",
+  },
+  {
+    path: "/admin/exception-periods",
+    label: "예외기간 관리",
+    screenId: "SCR-EXCEPTION-PERIOD-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 예외기간 관리",
+  },
+  {
     path: "/admin/business-status-codes",
     label: "상태코드 관리",
     screenId: "SCR-BUSINESS-STATUS-CODE",

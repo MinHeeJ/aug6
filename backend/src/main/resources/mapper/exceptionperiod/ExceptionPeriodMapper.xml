@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.exceptionperiod.ExceptionPeriodMapper">
+    <resultMap id="ExceptionPeriodRowMap" type="kr.ac.knue.commonfoundation.exceptionperiod.ExceptionPeriodRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="teacherUserId" javaType="long"/>
+            <arg column="teacherName" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="targetFunctionCode" javaType="string"/>
+            <arg column="exceptionStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="exceptionEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="approvalReason" javaType="string"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="exceptionPeriodColumns">
+        ep.setting_id as "settingId",
+        ep.evaluation_year as "evaluationYear",
+        ep.teacher_user_id as "teacherUserId",
+        u.name as "teacherName",
+        ep.area_code as "areaCode",
+        ep.target_function_code as "targetFunctionCode",
+        ep.exception_start_at as "exceptionStartAt",
+        ep.exception_end_at as "exceptionEndAt",
+        ep.approval_reason as "approvalReason",
+        ep.active_yn as "activeYn",
+        ep.created_by as "createdBy",
+        ep.updated_by as "updatedBy",
+        ep.created_at as "createdAt",
+        ep.updated_at as "updatedAt",
+        ep.change_reason as "changeReason"
+    </sql>
+
+    <sql id="exceptionPeriodFrom">
+        from exception_period_settings ep
+        left join users u on u.user_id = ep.teacher_user_id
+    </sql>
+
+    <sql id="exceptionPeriodFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                ep.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.teacherUserId != null">
+                and ep.teacher_user_id = #{criteria.teacherUserId}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and ep.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedTargetFunctionCode != null">
+                and ep.target_function_code = #{criteria.normalizedTargetFunctionCode}
+            </if>
+            <if test="criteria.normalizedActiveYn != null">
+                and ep.active_yn = #{criteria.normalizedActiveYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (ep.evaluation_year ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ep.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ep.target_function_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ep.approval_reason ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or u.name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listExceptionPeriods" resultMap="ExceptionPeriodRowMap">
+        select <include refid="exceptionPeriodColumns"/>
+        <include refid="exceptionPeriodFrom"/>
+        <include refid="exceptionPeriodFilters"/>
+        order by ep.evaluation_year desc, ep.teacher_user_id, ep.area_code, ep.target_function_code, ep.exception_start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countExceptionPeriods" resultType="long">
+        select count(*)
+        <include refid="exceptionPeriodFrom"/>
+        <include refid="exceptionPeriodFilters"/>
+    </select>
+
+    <select id="findExceptionPeriodById" resultMap="ExceptionPeriodRowMap">
+        select <include refid="exceptionPeriodColumns"/>
+        <include refid="exceptionPeriodFrom"/>
+        where ep.setting_id = #{settingId}
+    </select>
+
+    <select id="insertExceptionPeriod" resultMap="ExceptionPeriodRowMap">
+        insert into exception_period_settings (evaluation_year, teacher_user_id, area_code, target_function_code,
+                                               exception_start_at, exception_end_at, approval_reason, active_yn,
+                                               change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.teacherUserId}, #{request.areaCode}, #{request.targetFunctionCode},
+                #{request.exceptionStartAt}, #{request.exceptionEndAt}, #{request.approvalReason}, #{request.activeYn},
+                #{request.changeReason}, #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  teacher_user_id as "teacherUserId",
+                  (select name from users where user_id = exception_period_settings.teacher_user_id) as "teacherName",
+                  area_code as "areaCode",
+                  target_function_code as "targetFunctionCode",
+                  exception_start_at as "exceptionStartAt",
+                  exception_end_at as "exceptionEndAt",
+                  approval_reason as "approvalReason",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateExceptionPeriod" resultMap="ExceptionPeriodRowMap">
+        update exception_period_settings
+        set evaluation_year = #{request.evaluationYear},
+            teacher_user_id = #{request.teacherUserId},
+            area_code = #{request.areaCode},
+            target_function_code = #{request.targetFunctionCode},
+            exception_start_at = #{request.exceptionStartAt},
+            exception_end_at = #{request.exceptionEndAt},
+            approval_reason = #{request.approvalReason},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  teacher_user_id as "teacherUserId",
+                  (select name from users where user_id = exception_period_settings.teacher_user_id) as "teacherName",
+                  area_code as "areaCode",
+                  target_function_code as "targetFunctionCode",
+                  exception_start_at as "exceptionStartAt",
+                  exception_end_at as "exceptionEndAt",
+                  approval_reason as "approvalReason",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingExceptionPeriods" resultType="int">
+        select count(*)
+        from exception_period_settings ep
+        where ep.active_yn = 'Y'
+          and ep.evaluation_year = #{evaluationYear}
+          and ep.teacher_user_id = #{teacherUserId}
+          and ep.area_code = #{areaCode}
+          and ep.target_function_code = #{targetFunctionCode}
+          and tsrange(ep.exception_start_at, ep.exception_end_at, '[]') &amp;&amp; tsrange(#{exceptionStartAt}, #{exceptionEndAt}, '[]')
+          <if test="settingId != null">
+              and ep.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="existsTeacherUser" resultType="int">
+        select count(*)
+        from users u
+        where u.user_id = #{teacherUserId}
+          and u.status = 'ACTIVE'
+          and u.system_use_yn = 'Y'
+    </select>
+
+    <select id="existsEvaluationArea" resultType="int">
+        select count(*)
+        from (
+            select ea.area_code
+            from evaluation_areas ea
+            where ea.area_code = #{areaCode}
+              and ea.active_yn = 'Y'
+            union
+            select mp.area_code
+            from modification_period_settings mp
+            where mp.area_code = #{areaCode}
+              and mp.active_yn = 'Y'
+        ) areas
+    </select>
+
+    <select id="findActiveExceptionPeriodForModification" resultMap="ExceptionPeriodRowMap">
+        select <include refid="exceptionPeriodColumns"/>
+        <include refid="exceptionPeriodFrom"/>
+        where ep.active_yn = 'Y'
+          and ep.teacher_user_id = #{teacherUserId}
+          and ep.area_code = #{areaCode}
+          and ep.target_function_code = #{targetFunctionCode}
+          and ep.exception_start_at &lt;= #{requestAt}
+          and ep.exception_end_at &gt;= #{requestAt}
+        order by ep.exception_start_at desc
+        limit 1
+    </select>
+
+    <select id="countActiveModificationPeriods" resultType="int">
+        select count(*)
+        from modification_period_settings mp
+        where mp.active_yn = 'Y'
+          and mp.evaluation_year = #{evaluationYear}
+          and mp.start_at &lt;= #{requestAt}
+          and mp.end_at &gt;= #{requestAt}
+          <if test="areaCode != null">
+              and mp.area_code = #{areaCode}
+          </if>
+          <if test="organizationCode != null">
+              and mp.organization_code = #{organizationCode}
+          </if>
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

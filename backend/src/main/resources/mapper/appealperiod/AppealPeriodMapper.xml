@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.appealperiod.AppealPeriodMapper">
+    <resultMap id="AppealPeriodRowMap" type="kr.ac.knue.commonfoundation.appealperiod.AppealPeriodRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="collegeOrganizationCode" javaType="string"/>
+            <arg column="departmentOrganizationCode" javaType="string"/>
+            <arg column="appealStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="appealEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="handlerUserId" javaType="long"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="appealPeriodColumns">
+        ap.setting_id as "settingId",
+        ap.evaluation_year as "evaluationYear",
+        ap.college_organization_code as "collegeOrganizationCode",
+        ap.department_organization_code as "departmentOrganizationCode",
+        ap.appeal_start_at as "appealStartAt",
+        ap.appeal_end_at as "appealEndAt",
+        ap.handler_user_id as "handlerUserId",
+        ap.active_yn as "activeYn",
+        ap.created_by as "createdBy",
+        ap.updated_by as "updatedBy",
+        ap.created_at as "createdAt",
+        ap.updated_at as "updatedAt",
+        ap.change_reason as "changeReason"
+    </sql>
+
+    <sql id="appealPeriodFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                ap.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedCollegeOrganizationCode != null">
+                and ap.college_organization_code = #{criteria.normalizedCollegeOrganizationCode}
+            </if>
+            <if test="criteria.normalizedDepartmentOrganizationCode != null">
+                and ap.department_organization_code = #{criteria.normalizedDepartmentOrganizationCode}
+            </if>
+            <if test="criteria.normalizedActiveYn != null">
+                and ap.active_yn = #{criteria.normalizedActiveYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (ap.evaluation_year ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ap.college_organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or ap.department_organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+            <if test="criteria.restrictOrganizationScope">
+                and exists (
+                    select 1
+                    from evaluation_organization_mappings eom
+                    where eom.user_id = #{criteria.requesterUserId}
+                      and eom.organization_code in (ap.college_organization_code, ap.department_organization_code)
+                      and eom.business_type = 'FACULTY_ACHIEVEMENT'
+                      and eom.data_scope in ('DEPARTMENT','COLLEGE','BUSINESS','ALL')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listAppealPeriods" resultMap="AppealPeriodRowMap">
+        select <include refid="appealPeriodColumns"/>
+        from appeal_period_settings ap
+        <include refid="appealPeriodFilters"/>
+        order by ap.evaluation_year desc, ap.college_organization_code, ap.department_organization_code, ap.appeal_start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countAppealPeriods" resultType="long">
+        select count(*)
+        from appeal_period_settings ap
+        <include refid="appealPeriodFilters"/>
+    </select>
+
+    <select id="findAppealPeriodById" resultMap="AppealPeriodRowMap">
+        select <include refid="appealPeriodColumns"/>
+        from appeal_period_settings ap
+        where ap.setting_id = #{settingId}
+    </select>
+
+    <select id="insertAppealPeriod" resultMap="AppealPeriodRowMap">
+        insert into appeal_period_settings (evaluation_year, college_organization_code, department_organization_code,
+                                            appeal_start_at, appeal_end_at, handler_user_id, active_yn,
+                                            change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.collegeOrganizationCode}, #{request.departmentOrganizationCode},
+                #{request.appealStartAt}, #{request.appealEndAt}, #{request.handlerUserId}, #{request.activeYn},
+                #{request.changeReason}, #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  college_organization_code as "collegeOrganizationCode",
+                  department_organization_code as "departmentOrganizationCode",
+                  appeal_start_at as "appealStartAt",
+                  appeal_end_at as "appealEndAt",
+                  handler_user_id as "handlerUserId",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateAppealPeriod" resultMap="AppealPeriodRowMap">
+        update appeal_period_settings
+        set evaluation_year = #{request.evaluationYear},
+            college_organization_code = #{request.collegeOrganizationCode},
+            department_organization_code = #{request.departmentOrganizationCode},
+            appeal_start_at = #{request.appealStartAt},
+            appeal_end_at = #{request.appealEndAt},
+            handler_user_id = #{request.handlerUserId},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  college_organization_code as "collegeOrganizationCode",
+                  department_organization_code as "departmentOrganizationCode",
+                  appeal_start_at as "appealStartAt",
+                  appeal_end_at as "appealEndAt",
+                  handler_user_id as "handlerUserId",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingAppealPeriods" resultType="int">
+        select count(*)
+        from appeal_period_settings ap
+        where ap.active_yn = 'Y'
+          and ap.evaluation_year = #{evaluationYear}
+          and ap.college_organization_code = #{collegeOrganizationCode}
+          and ap.department_organization_code is not distinct from #{departmentOrganizationCode}
+          and tsrange(ap.appeal_start_at, ap.appeal_end_at, '[]') &amp;&amp; tsrange(#{appealStartAt}, #{appealEndAt}, '[]')
+          <if test="settingId != null">
+              and ap.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="existsAuthorizedEvaluationOrganization" resultType="int">
+        select count(*)
+        from evaluation_organization_mappings eom
+        where eom.user_id = #{userId}
+          and eom.organization_code = #{organizationCode}
+          and eom.business_type = 'FACULTY_ACHIEVEMENT'
+          and eom.data_scope in ('DEPARTMENT','COLLEGE','BUSINESS','ALL')
+    </select>
+
+    <select id="existsHandlerUserForAppealPeriod" resultType="int">
+        select count(*)
+        from users u
+        join user_roles ur on ur.user_id = u.user_id
+        left join organization_user_mappings oum on oum.user_id = u.user_id
+             and oum.status = 'ACTIVE'
+             and oum.mapping_type in ('ORGANIZATION','POSITION')
+        where u.user_id = #{handlerUserId}
+          and u.status = 'ACTIVE'
+          and u.system_use_yn = 'Y'
+          and ur.status = 'ACTIVE'
+          and ur.role_code in ('R04','R09')
+          and (oum.organization_code in (#{collegeOrganizationCode}, #{departmentOrganizationCode}) or ur.role_code = 'R09')
+    </select>
+
+    <select id="findActiveAppealPeriodForSubmission" resultMap="AppealPeriodRowMap">
+        select <include refid="appealPeriodColumns"/>
+        from appeal_period_settings ap
+        where ap.active_yn = 'Y'
+          and (ap.department_organization_code = #{applicantOrganizationCode}
+               or (ap.department_organization_code is null and ap.college_organization_code = #{applicantOrganizationCode}))
+          and ap.appeal_start_at &lt;= #{requestAt}
+          and ap.appeal_end_at &gt;= #{requestAt}
+        order by ap.appeal_start_at desc
+        limit 1
+    </select>
+
+    <select id="countAppealContentRowsForSetting" resultType="int">
+        select 0
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

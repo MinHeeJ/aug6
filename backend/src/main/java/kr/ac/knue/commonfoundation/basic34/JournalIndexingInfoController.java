@@ -46,6 +46,14 @@ public class JournalIndexingInfoController {
                 issn, journalName, indexingType, publicationCountry, activeYn, keyword)), effectiveRequestId(requestId));
     }
 
+    @PostMapping("/api/admin/journal-indexing-infos")
+    public ApiResponse<JournalIndexingInfoRow> saveJournalIndexingInfoContractOperation(
+            @Valid @RequestBody SaveJournalIndexingInfoRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest servletRequest) {
+        return saveJournalIndexingInfo(request, requestId, servletRequest);
+    }
+
     @PostMapping("/api/admin/journal-indexing-infos/save")
     public ApiResponse<JournalIndexingInfoRow> saveJournalIndexingInfo(
             @Valid @RequestBody SaveJournalIndexingInfoRequest request,

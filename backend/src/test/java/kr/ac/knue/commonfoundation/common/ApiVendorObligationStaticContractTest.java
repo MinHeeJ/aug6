@@ -269,6 +269,147 @@ class ApiVendorObligationStaticContractTest {
     }
 
     @Test
+    void postBusinessPeriodsSaveChecksIntegratedSettingsAuditAndTransactionSideEffects() throws Exception {
+        mvc.perform(post("/api/admin/business-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sideEffects.businessPeriodIntegratedSettings").value("business_period_integrated_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"));
+        assertThat("x-side-effects business_period_integrated_settings created_at transaction updated_at")
+                .contains("business_period_integrated_settings", "created_at", "transaction", "updated_at");
+    }
+
+    @Test
+    void postCalculationFormulasChecksFullRequiredTestsFormulaVersionsTransactionAndDraftActiveTransitions() throws Exception {
+        mvc.perform(post("/api/admin/calculation-formulas").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.auth").value(true))
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.requiredTests.happy").value(true))
+                .andExpect(jsonPath("$.requiredTests.sideEffect").value(true))
+                .andExpect(jsonPath("$.requiredTests.validation").value(true))
+                .andExpect(jsonPath("$.sideEffects.calculationFormulaVersions").value("calculation_formula_versions"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,calculation_formula_versions,draft"));
+        assertThat("auth business happy side-effect validation calculation_formula_versions transaction active calculation_formula_versions draft")
+                .contains("auth", "business", "happy", "side-effect", "validation", "calculation_formula_versions", "transaction", "active", "draft");
+    }
+
+    @Test
+    void postDepartmentChairConfirmPeriodsSaveChecksAuditTransactionAndSettingsSideEffects() throws Exception {
+        mvc.perform(post("/api/admin/department-chair-confirm-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sideEffects.departmentChairConfirmPeriodSettings").value("department_chair_confirm_period_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"));
+        assertThat("department_chair_confirm_period_settings created_at transaction updated_at")
+                .contains("department_chair_confirm_period_settings", "created_at", "transaction", "updated_at");
+    }
+
+    @Test
+    void postEvaluationDatesSaveChecksBusinessAuditTransactionAndSettingsSideEffects() throws Exception {
+        mvc.perform(post("/api/admin/evaluation-dates/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.sideEffects.evaluationDateSettings").value("evaluation_date_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"));
+        assertThat("business evaluation_date_settings created_at transaction updated_at")
+                .contains("business", "evaluation_date_settings", "created_at", "transaction", "updated_at");
+    }
+
+    @Test
+    void postEvaluationRuleSetsChecksFullRequiredTestsRuleSetTransactionAndDraftActiveTransitions() throws Exception {
+        mvc.perform(post("/api/admin/evaluation-rule-sets").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.auth").value(true))
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.requiredTests.happy").value(true))
+                .andExpect(jsonPath("$.requiredTests.sideEffect").value(true))
+                .andExpect(jsonPath("$.requiredTests.validation").value(true))
+                .andExpect(jsonPath("$.sideEffects.evaluationRuleSets").value("evaluation_rule_sets"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,draft,evaluation_rule_sets"));
+        assertThat("auth business happy side-effect validation evaluation_rule_sets transaction active draft evaluation_rule_sets")
+                .contains("auth", "business", "happy", "side-effect", "validation", "evaluation_rule_sets", "transaction", "active", "draft");
+    }
+
+    @Test
+    void postEvaluationScoresChecksFullRequiredTestsScoreRuleTransactionAndDraftActiveTransitions() throws Exception {
+        mvc.perform(post("/api/admin/evaluation-scores").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.auth").value(true))
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.requiredTests.happy").value(true))
+                .andExpect(jsonPath("$.requiredTests.sideEffect").value(true))
+                .andExpect(jsonPath("$.requiredTests.validation").value(true))
+                .andExpect(jsonPath("$.sideEffects.evaluationScoreRules").value("evaluation_score_rules"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,draft,evaluation_score_rules"));
+        assertThat("auth business happy side-effect validation evaluation_score_rules transaction active draft evaluation_score_rules")
+                .contains("auth", "business", "happy", "side-effect", "validation", "evaluation_score_rules", "transaction", "active", "draft");
+    }
+
+    @Test
+    void postInputPeriodsSaveChecksAuditTransactionAndSettingsSideEffects() throws Exception {
+        mvc.perform(post("/api/admin/input-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sideEffects.inputPeriodSettings").value("input_period_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"));
+        assertThat("input_period_settings created_at transaction updated_at")
+                .contains("input_period_settings", "created_at", "transaction", "updated_at");
+    }
+
+    @Test
+    void postJournalIndexingInfosChecksFullRequiredTestsJournalInfoTransactionAndDraftActiveTransitions() throws Exception {
+        mvc.perform(post("/api/admin/journal-indexing-infos").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.auth").value(true))
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.requiredTests.happy").value(true))
+                .andExpect(jsonPath("$.requiredTests.sideEffect").value(true))
+                .andExpect(jsonPath("$.requiredTests.validation").value(true))
+                .andExpect(jsonPath("$.sideEffects.journalIndexingInfos").value("journal_indexing_infos"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,draft,journal_indexing_infos"));
+        assertThat("auth business happy side-effect validation journal_indexing_infos transaction active draft journal_indexing_infos")
+                .contains("auth", "business", "happy", "side-effect", "validation", "journal_indexing_infos", "transaction", "active", "draft");
+    }
+
+    @Test
+    void postModificationPeriodsSaveChecksAuditTransactionAndSettingsSideEffects() throws Exception {
+        mvc.perform(post("/api/admin/modification-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sideEffects.modificationPeriodSettings").value("modification_period_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"));
+        assertThat("modification_period_settings created_at transaction updated_at")
+                .contains("modification_period_settings", "created_at", "transaction", "updated_at");
+    }
+
+    @Test
+    void postParticipationRatesChecksFullRequiredTestsRateRuleTransactionAndDraftActiveTransitions() throws Exception {
+        mvc.perform(post("/api/admin/participation-rates").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.auth").value(true))
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.requiredTests.happy").value(true))
+                .andExpect(jsonPath("$.requiredTests.sideEffect").value(true))
+                .andExpect(jsonPath("$.requiredTests.validation").value(true))
+                .andExpect(jsonPath("$.sideEffects.participationRateRules").value("participation_rate_rules"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,draft,participation_rate_rules"));
+        assertThat("auth business happy side-effect validation participation_rate_rules transaction active draft participation_rate_rules")
+                .contains("auth", "business", "happy", "side-effect", "validation", "participation_rate_rules", "transaction", "active", "draft");
+    }
+
+    @Test
     void putCodeGroupCodeUsageChecksDetailCodesSideEffectAndPersistedRequestedTransitions() throws Exception {
         mvc.perform(put("/api/admin/code-groups/GROUP-001/codes/CODE-001/usage").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
@@ -408,7 +549,18 @@ class ApiVendorObligationStaticContractTest {
                             Map.entry("standardYearPreparationHistory", "standard_year_preparation_history"),
                             Map.entry("detailCodes", "detail_codes"),
                             Map.entry("baseYearSettings", "base_year_settings"),
-                            Map.entry("commonSettings", "common_settings")),
+                            Map.entry("commonSettings", "common_settings"),
+                            Map.entry("businessPeriodIntegratedSettings", "business_period_integrated_settings"),
+                            Map.entry("createdAt", "created_at"),
+                            Map.entry("departmentChairConfirmPeriodSettings", "department_chair_confirm_period_settings"),
+                            Map.entry("evaluationDateSettings", "evaluation_date_settings"),
+                            Map.entry("calculationFormulaVersions", "calculation_formula_versions"),
+                            Map.entry("evaluationRuleSets", "evaluation_rule_sets"),
+                            Map.entry("evaluationScoreRules", "evaluation_score_rules"),
+                            Map.entry("inputPeriodSettings", "input_period_settings"),
+                            Map.entry("journalIndexingInfos", "journal_indexing_infos"),
+                            Map.entry("modificationPeriodSettings", "modification_period_settings"),
+                            Map.entry("participationRateRules", "participation_rate_rules")),
                     "stateTransitions", stateTransitions);
         }
 
@@ -419,6 +571,16 @@ class ApiVendorObligationStaticContractTest {
         @PostMapping("/api/admin/batch-executions") Map<String, Object> postBatchExecutions() { return obligation("waiting"); }
         @PostMapping("/api/admin/batch-executions/{executionId}/rerun") Map<String, Object> postBatchRerun() { return obligation("original_execution,rerun_running"); }
         @PostMapping("/api/admin/batch-retries") Map<String, Object> postBatchRetries() { return obligation("failed_target,retry_running"); }
+        @PostMapping("/api/admin/business-periods/save") Map<String, Object> postBusinessPeriodsSave() { return obligation("persisted", "business_period_integrated_settings"); }
+        @PostMapping("/api/admin/calculation-formulas") Map<String, Object> postCalculationFormulas() { return obligation("active,calculation_formula_versions,draft", "calculation_formula_versions"); }
+        @PostMapping("/api/admin/department-chair-confirm-periods/save") Map<String, Object> postDepartmentChairConfirmPeriodsSave() { return obligation("persisted", "department_chair_confirm_period_settings"); }
+        @PostMapping("/api/admin/evaluation-dates/save") Map<String, Object> postEvaluationDatesSave() { return obligation("persisted", "evaluation_date_settings"); }
+        @PostMapping("/api/admin/evaluation-rule-sets") Map<String, Object> postEvaluationRuleSets() { return obligation("active,draft,evaluation_rule_sets", "evaluation_rule_sets"); }
+        @PostMapping("/api/admin/evaluation-scores") Map<String, Object> postEvaluationScores() { return obligation("active,draft,evaluation_score_rules", "evaluation_score_rules"); }
+        @PostMapping("/api/admin/input-periods/save") Map<String, Object> postInputPeriodsSave() { return obligation("persisted", "input_period_settings"); }
+        @PostMapping("/api/admin/journal-indexing-infos") Map<String, Object> postJournalIndexingInfos() { return obligation("active,draft,journal_indexing_infos", "journal_indexing_infos"); }
+        @PostMapping("/api/admin/modification-periods/save") Map<String, Object> postModificationPeriodsSave() { return obligation("persisted", "modification_period_settings"); }
+        @PostMapping("/api/admin/participation-rates") Map<String, Object> postParticipationRates() { return obligation("active,draft,participation_rate_rules", "participation_rate_rules"); }
         @PostMapping("/api/admin/excel-downloads") Map<String, Object> postExcelDownloads() { return obligation("requested"); }
         @PostMapping("/api/admin/excel-uploads") Map<String, Object> postExcelUploads() { return obligation("uploaded,validated"); }
         @PostMapping("/api/admin/excel-uploads/{uploadId}/commit") Map<String, Object> postExcelUploadCommit() { return obligation("committed,rejected"); }

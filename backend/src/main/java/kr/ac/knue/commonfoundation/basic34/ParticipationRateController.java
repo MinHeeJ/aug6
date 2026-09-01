@@ -51,6 +51,14 @@ public class ParticipationRateController {
                 researcherCount, participationType, activeYn, keyword)), effectiveRequestId(requestId));
     }
 
+    @PostMapping("/api/admin/participation-rates")
+    public ApiResponse<ParticipationRateRow> saveParticipationRateContractOperation(
+            @Valid @RequestBody SaveParticipationRateRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest servletRequest) {
+        return saveParticipationRate(request, requestId, servletRequest);
+    }
+
     @PostMapping("/api/admin/participation-rates/save")
     public ApiResponse<ParticipationRateRow> saveParticipationRate(
             @Valid @RequestBody SaveParticipationRateRequest request,

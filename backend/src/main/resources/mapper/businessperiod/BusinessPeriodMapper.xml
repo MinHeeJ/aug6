@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.businessperiod.BusinessPeriodMapper">
+    <resultMap id="BusinessPeriodSettingRowMap" type="kr.ac.knue.commonfoundation.businessperiod.BusinessPeriodSettingRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="userTypeCode" javaType="string"/>
+            <arg column="startAt" javaType="java.time.LocalDateTime"/>
+            <arg column="endAt" javaType="java.time.LocalDateTime"/>
+            <arg column="baseDate" javaType="java.time.LocalDate"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="businessPeriodColumns">
+        bp.setting_id as "settingId",
+        bp.evaluation_year as "evaluationYear",
+        bp.area_code as "areaCode",
+        bp.organization_code as "organizationCode",
+        bp.user_type_code as "userTypeCode",
+        bp.start_at as "startAt",
+        bp.end_at as "endAt",
+        bp.base_date as "baseDate",
+        bp.active_yn as "activeYn",
+        bp.created_by as "createdBy",
+        bp.updated_by as "updatedBy",
+        bp.created_at as "createdAt",
+        bp.updated_at as "updatedAt",
+        bp.change_reason as "changeReason"
+    </sql>
+
+    <sql id="businessPeriodFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                bp.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and bp.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedOrganizationCode != null">
+                and bp.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+            <if test="criteria.normalizedUserTypeCode != null">
+                and bp.user_type_code = #{criteria.normalizedUserTypeCode}
+            </if>
+            <if test="criteria.normalizedActiveYn != null">
+                and bp.active_yn = #{criteria.normalizedActiveYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (bp.evaluation_year ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or bp.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or bp.organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or bp.user_type_code ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+            <if test="criteria.restrictOrganizationScope">
+                and exists (
+                    select 1
+                    from evaluation_organization_mappings eom
+                    where eom.user_id = #{criteria.requesterUserId}
+                      and eom.organization_code = bp.organization_code
+                      and eom.business_type = 'FACULTY_ACHIEVEMENT'
+                      and eom.data_scope in ('DEPARTMENT','COLLEGE','BUSINESS','ALL')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listEvaluationDates" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from evaluation_date_settings bp
+        <include refid="businessPeriodFilters"/>
+        order by bp.evaluation_year desc, bp.area_code, bp.organization_code, bp.user_type_code, bp.start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countEvaluationDates" resultType="long">
+        select count(*)
+        from evaluation_date_settings bp
+        <include refid="businessPeriodFilters"/>
+    </select>
+
+    <select id="findEvaluationDateById" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from evaluation_date_settings bp
+        where bp.setting_id = #{settingId}
+    </select>
+
+    <select id="insertEvaluationDate" resultMap="BusinessPeriodSettingRowMap">
+        insert into evaluation_date_settings (evaluation_year, area_code, organization_code, user_type_code, start_at,
+                                             end_at, base_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.areaCode}, #{request.organizationCode}, #{request.userTypeCode},
+                #{request.startAt}, #{request.endAt}, #{request.baseDate}, #{request.activeYn}, #{request.changeReason},
+                #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateEvaluationDate" resultMap="BusinessPeriodSettingRowMap">
+        update evaluation_date_settings
+        set evaluation_year = #{request.evaluationYear},
+            area_code = #{request.areaCode},
+            organization_code = #{request.organizationCode},
+            user_type_code = #{request.userTypeCode},
+            start_at = #{request.startAt},
+            end_at = #{request.endAt},
+            base_date = #{request.baseDate},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingEvaluationDates" resultType="int">
+        select count(*)
+        from evaluation_date_settings bp
+        where bp.active_yn = 'Y'
+          and bp.evaluation_year = #{evaluationYear}
+          <choose>
+              <when test="areaCode != null and areaCode != ''">
+                  and bp.area_code = #{areaCode}
+              </when>
+              <otherwise>
+                  and bp.area_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="organizationCode != null and organizationCode != ''">
+                  and bp.organization_code = #{organizationCode}
+              </when>
+              <otherwise>
+                  and bp.organization_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="userTypeCode != null and userTypeCode != ''">
+                  and bp.user_type_code = #{userTypeCode}
+              </when>
+              <otherwise>
+                  and bp.user_type_code is null
+              </otherwise>
+          </choose>
+          and tsrange(bp.start_at, bp.end_at, '[]') &amp;&amp; tsrange(#{startAt}, #{endAt}, '[]')
+          <if test="settingId != null">
+              and bp.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="existsAuthorizedEvaluationOrganization" resultType="int">
+        select count(*)
+        from evaluation_organization_mappings eom
+        where eom.user_id = #{userId}
+          and eom.organization_code = #{organizationCode}
+          and eom.business_type = 'FACULTY_ACHIEVEMENT'
+          and eom.data_scope in ('DEPARTMENT','COLLEGE','BUSINESS','ALL')
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+
+    <select id="listInputPeriods" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from input_period_settings bp
+        <include refid="businessPeriodFilters"/>
+        order by bp.evaluation_year desc, bp.area_code, bp.organization_code, bp.user_type_code, bp.start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countInputPeriods" resultType="long">
+        select count(*)
+        from input_period_settings bp
+        <include refid="businessPeriodFilters"/>
+    </select>
+
+    <select id="findInputPeriodById" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from input_period_settings bp
+        where bp.setting_id = #{settingId}
+    </select>
+
+    <select id="insertInputPeriod" resultMap="BusinessPeriodSettingRowMap">
+        insert into input_period_settings (evaluation_year, area_code, organization_code, user_type_code, start_at,
+                                           end_at, base_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.areaCode}, #{request.organizationCode}, #{request.userTypeCode},
+                #{request.startAt}, #{request.endAt}, #{request.baseDate}, #{request.activeYn}, #{request.changeReason},
+                #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateInputPeriod" resultMap="BusinessPeriodSettingRowMap">
+        update input_period_settings
+        set evaluation_year = #{request.evaluationYear},
+            area_code = #{request.areaCode},
+            organization_code = #{request.organizationCode},
+            user_type_code = #{request.userTypeCode},
+            start_at = #{request.startAt},
+            end_at = #{request.endAt},
+            base_date = #{request.baseDate},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingInputPeriods" resultType="int">
+        select count(*)
+        from input_period_settings bp
+        where bp.active_yn = 'Y'
+          and bp.evaluation_year = #{evaluationYear}
+          <choose>
+              <when test="areaCode != null and areaCode != ''">
+                  and bp.area_code = #{areaCode}
+              </when>
+              <otherwise>
+                  and bp.area_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="organizationCode != null and organizationCode != ''">
+                  and bp.organization_code = #{organizationCode}
+              </when>
+              <otherwise>
+                  and bp.organization_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="userTypeCode != null and userTypeCode != ''">
+                  and bp.user_type_code = #{userTypeCode}
+              </when>
+              <otherwise>
+                  and bp.user_type_code is null
+              </otherwise>
+          </choose>
+          and tsrange(bp.start_at, bp.end_at, '[]') &amp;&amp; tsrange(#{startAt}, #{endAt}, '[]')
+          <if test="settingId != null">
+              and bp.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="listModificationPeriods" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from modification_period_settings bp
+        <include refid="businessPeriodFilters"/>
+        order by bp.evaluation_year desc, bp.area_code, bp.organization_code, bp.user_type_code, bp.start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countModificationPeriods" resultType="long">
+        select count(*)
+        from modification_period_settings bp
+        <include refid="businessPeriodFilters"/>
+    </select>
+
+    <select id="findModificationPeriodById" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from modification_period_settings bp
+        where bp.setting_id = #{settingId}
+    </select>
+
+    <select id="insertModificationPeriod" resultMap="BusinessPeriodSettingRowMap">
+        insert into modification_period_settings (evaluation_year, area_code, organization_code, user_type_code, start_at,
+                                                  end_at, base_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.areaCode}, #{request.organizationCode}, #{request.userTypeCode},
+                #{request.startAt}, #{request.endAt}, #{request.baseDate}, #{request.activeYn}, #{request.changeReason},
+                #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateModificationPeriod" resultMap="BusinessPeriodSettingRowMap">
+        update modification_period_settings
+        set evaluation_year = #{request.evaluationYear},
+            area_code = #{request.areaCode},
+            organization_code = #{request.organizationCode},
+            user_type_code = #{request.userTypeCode},
+            start_at = #{request.startAt},
+            end_at = #{request.endAt},
+            base_date = #{request.baseDate},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingModificationPeriods" resultType="int">
+        select count(*)
+        from modification_period_settings bp
+        where bp.active_yn = 'Y'
+          and bp.evaluation_year = #{evaluationYear}
+          <choose>
+              <when test="areaCode != null and areaCode != ''">
+                  and bp.area_code = #{areaCode}
+              </when>
+              <otherwise>
+                  and bp.area_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="organizationCode != null and organizationCode != ''">
+                  and bp.organization_code = #{organizationCode}
+              </when>
+              <otherwise>
+                  and bp.organization_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="userTypeCode != null and userTypeCode != ''">
+                  and bp.user_type_code = #{userTypeCode}
+              </when>
+              <otherwise>
+                  and bp.user_type_code is null
+              </otherwise>
+          </choose>
+          and tsrange(bp.start_at, bp.end_at, '[]') &amp;&amp; tsrange(#{startAt}, #{endAt}, '[]')
+          <if test="settingId != null">
+              and bp.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="listDepartmentChairConfirmPeriods" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from department_chair_confirm_period_settings bp
+        <include refid="businessPeriodFilters"/>
+        order by bp.evaluation_year desc, bp.area_code, bp.organization_code, bp.user_type_code, bp.start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDepartmentChairConfirmPeriods" resultType="long">
+        select count(*)
+        from department_chair_confirm_period_settings bp
+        <include refid="businessPeriodFilters"/>
+    </select>
+
+    <select id="findDepartmentChairConfirmPeriodById" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from department_chair_confirm_period_settings bp
+        where bp.setting_id = #{settingId}
+    </select>
+
+    <select id="insertDepartmentChairConfirmPeriod" resultMap="BusinessPeriodSettingRowMap">
+        insert into department_chair_confirm_period_settings (evaluation_year, area_code, organization_code, user_type_code, start_at,
+                                                             end_at, base_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.areaCode}, #{request.organizationCode}, #{request.userTypeCode},
+                #{request.startAt}, #{request.endAt}, #{request.baseDate}, #{request.activeYn}, #{request.changeReason},
+                #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateDepartmentChairConfirmPeriod" resultMap="BusinessPeriodSettingRowMap">
+        update department_chair_confirm_period_settings
+        set evaluation_year = #{request.evaluationYear},
+            area_code = #{request.areaCode},
+            organization_code = #{request.organizationCode},
+            user_type_code = #{request.userTypeCode},
+            start_at = #{request.startAt},
+            end_at = #{request.endAt},
+            base_date = #{request.baseDate},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingDepartmentChairConfirmPeriods" resultType="int">
+        select count(*)
+        from department_chair_confirm_period_settings bp
+        where bp.active_yn = 'Y'
+          and bp.evaluation_year = #{evaluationYear}
+          <choose>
+              <when test="areaCode != null and areaCode != ''">
+                  and bp.area_code = #{areaCode}
+              </when>
+              <otherwise>
+                  and bp.area_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="organizationCode != null and organizationCode != ''">
+                  and bp.organization_code = #{organizationCode}
+              </when>
+              <otherwise>
+                  and bp.organization_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="userTypeCode != null and userTypeCode != ''">
+                  and bp.user_type_code = #{userTypeCode}
+              </when>
+              <otherwise>
+                  and bp.user_type_code is null
+              </otherwise>
+          </choose>
+          and tsrange(bp.start_at, bp.end_at, '[]') &amp;&amp; tsrange(#{startAt}, #{endAt}, '[]')
+          <if test="settingId != null">
+              and bp.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="listBusinessPeriods" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from business_period_integrated_settings bp
+        <include refid="businessPeriodFilters"/>
+        order by bp.evaluation_year desc, bp.area_code, bp.organization_code, bp.user_type_code, bp.start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countBusinessPeriods" resultType="long">
+        select count(*)
+        from business_period_integrated_settings bp
+        <include refid="businessPeriodFilters"/>
+    </select>
+
+    <select id="findBusinessPeriodById" resultMap="BusinessPeriodSettingRowMap">
+        select <include refid="businessPeriodColumns"/>
+        from business_period_integrated_settings bp
+        where bp.setting_id = #{settingId}
+    </select>
+
+    <select id="insertBusinessPeriod" resultMap="BusinessPeriodSettingRowMap">
+        insert into business_period_integrated_settings (evaluation_year, area_code, organization_code, user_type_code, start_at,
+                                                         end_at, base_date, active_yn, change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.areaCode}, #{request.organizationCode}, #{request.userTypeCode},
+                #{request.startAt}, #{request.endAt}, #{request.baseDate}, #{request.activeYn}, #{request.changeReason},
+                #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateBusinessPeriod" resultMap="BusinessPeriodSettingRowMap">
+        update business_period_integrated_settings
+        set evaluation_year = #{request.evaluationYear},
+            area_code = #{request.areaCode},
+            organization_code = #{request.organizationCode},
+            user_type_code = #{request.userTypeCode},
+            start_at = #{request.startAt},
+            end_at = #{request.endAt},
+            base_date = #{request.baseDate},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  organization_code as "organizationCode",
+                  user_type_code as "userTypeCode",
+                  start_at as "startAt",
+                  end_at as "endAt",
+                  base_date as "baseDate",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingBusinessPeriods" resultType="int">
+        select count(*)
+        from business_period_integrated_settings bp
+        where bp.active_yn = 'Y'
+          and bp.evaluation_year = #{evaluationYear}
+          <choose>
+              <when test="areaCode != null and areaCode != ''">
+                  and bp.area_code = #{areaCode}
+              </when>
+              <otherwise>
+                  and bp.area_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="organizationCode != null and organizationCode != ''">
+                  and bp.organization_code = #{organizationCode}
+              </when>
+              <otherwise>
+                  and bp.organization_code is null
+              </otherwise>
+          </choose>
+          <choose>
+              <when test="userTypeCode != null and userTypeCode != ''">
+                  and bp.user_type_code = #{userTypeCode}
+              </when>
+              <otherwise>
+                  and bp.user_type_code is null
+              </otherwise>
+          </choose>
+          and tsrange(bp.start_at, bp.end_at, '[]') &amp;&amp; tsrange(#{startAt}, #{endAt}, '[]')
+          <if test="settingId != null">
+              and bp.setting_id != #{settingId}
+          </if>
+    </select>
+</mapper>

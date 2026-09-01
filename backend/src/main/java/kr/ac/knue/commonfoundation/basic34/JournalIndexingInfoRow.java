@@ -1,5 +1,6 @@
 package kr.ac.knue.commonfoundation.basic34;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -21,4 +22,9 @@ public record JournalIndexingInfoRow(
         String changeReason,
         Long updatedBy,
         LocalDateTime updatedAt
-) {}
+) {
+    @JsonProperty("ruleVersionStatus")
+    public String ruleVersionStatus() {
+        return versionStatus;
+    }
+}

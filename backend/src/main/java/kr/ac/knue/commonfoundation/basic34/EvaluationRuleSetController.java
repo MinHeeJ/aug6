@@ -45,6 +45,14 @@ public class EvaluationRuleSetController {
                 targetScope, ruleSetName, ruleSetStatus, activeYn, keyword)), effectiveRequestId(requestId));
     }
 
+    @PostMapping("/api/admin/evaluation-rule-sets")
+    public ApiResponse<EvaluationRuleSetRow> saveEvaluationRuleSetContractOperation(
+            @Valid @RequestBody SaveEvaluationRuleSetRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest servletRequest) {
+        return saveEvaluationRuleSet(request, requestId, servletRequest);
+    }
+
     @PostMapping("/api/admin/evaluation-rule-sets/save")
     public ApiResponse<EvaluationRuleSetRow> saveEvaluationRuleSet(
             @Valid @RequestBody SaveEvaluationRuleSetRequest request,

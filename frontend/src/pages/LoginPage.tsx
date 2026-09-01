@@ -263,6 +263,24 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 영역별 평가요소 체계 관리",
   },
   {
+    path: "/admin/evaluation-dates",
+    label: "평가일자 관리",
+    screenId: "SCR-EVALUATION-DATE-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 평가일자 관리",
+  },
+  {
+    path: "/admin/input-periods",
+    label: "입력기간 관리",
+    screenId: "SCR-INPUT-PERIOD-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 입력기간 관리",
+  },
+  {
+    path: "/admin/modification-periods",
+    label: "수정기간 관리",
+    screenId: "SCR-MODIFICATION-PERIOD-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 수정기간 관리",
+  },
+  {
     path: "/admin/business-status-codes",
     label: "상태코드 관리",
     screenId: "SCR-BUSINESS-STATUS-CODE",
@@ -309,6 +327,18 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     label: "계산식 관리",
     screenId: "SCR-CALC-FORMULA-MGMT",
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 계산식 관리",
+  },
+  {
+    path: "/admin/department-chair-confirm-periods",
+    label: "학과장 확인기간 관리",
+    screenId: "SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 학과장 확인기간 관리",
+  },
+  {
+    path: "/admin/business-periods",
+    label: "평가·업적입력 기간 관리",
+    screenId: "SCR-BUSINESS-PERIOD-INTEGRATED-MGMT",
+    menuPath: "평가 기준 관리 > 업무기간 관리 > 평가·업적입력 기간 관리",
   },
   {
     path: "/admin/evaluation-rule-sets",

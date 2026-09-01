@@ -36,10 +36,10 @@ describe("LoginPage", () => {
 
   it("describes BASIC-19 menu paths with menu screens under roles and privacy screens under system management", () => {
     expect(routePath("/admin/menu-structure")).toBe(
-      "시스템 관리 > 역할·권한 관리 > 메뉴 구조 관리",
+      "시스템 관리 > 메뉴 관리 > 메뉴 구조 관리",
     );
     expect(routePath("/admin/menu-info")).toBe(
-      "시스템 관리 > 역할·권한 관리 > 메뉴 정보 관리",
+      "시스템 관리 > 메뉴 관리 > 메뉴 정보 관리",
     );
     expect(routePath("/admin/menu-usage")).toBe(
       "시스템 관리 > 역할·권한 관리 > 메뉴 사용 관리",
@@ -80,10 +80,45 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(52);
+    expect(ADMIN_ROUTES).toHaveLength(62);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);
+  });
+
+  it("uses menu URLs rather than role codes alone as the frontend route guard", () => {
+    const r09WithoutTargetMenu: CurrentUser = {
+      userId: 1,
+      loginId: "admin",
+      employeeNo: "E0001",
+      name: "시스템 관리자",
+      roles: ["R09"],
+      menus: [
+        {
+          menuId: 100,
+          menuName: "시스템 관리",
+          displayOrder: 1,
+          children: [
+            {
+              menuId: 111,
+              parentMenuId: 100,
+              menuName: "사용자 관리",
+              screenId: "SCR-USER-MGMT",
+              url: "/admin/users",
+              displayOrder: 1,
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(canAccessAdminRoute(r09WithoutTargetMenu, "/admin/users")).toBe(
+      true,
+    );
+    expect(canAccessAdminRoute(r09WithoutTargetMenu, "/admin/roles")).toBe(
+      false,
+    );
   });
 });
 

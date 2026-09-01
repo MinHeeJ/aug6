@@ -92,6 +92,27 @@ class EvaluationScoreApiTest {
     }
 
     @Test
+    void postEvaluationScoresPersistsDraftScoreRuleForOpenApiContract() throws Exception {
+        when(service.save(any(SaveEvaluationScoreRequest.class), eq(1L), eq("REQ-B34-EVAL-SCORE-POST"))).thenReturn(row());
+
+        mockMvc.perform(post("/api/admin/evaluation-scores")
+                        .requestAttr("currentUser", systemAdmin)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-B34-EVAL-SCORE-POST")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ruleVersionId":10,"managementItemId":400,"organizationCode":"COL-EDU","evaluationYear":"2026","baseScore":10.5,"maxScore":20.0,"effectiveStartDate":"2026-01-01","effectiveEndDate":"2026-12-31","activeYn":"Y","changeReason":"평가점수 정비"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.scoreRuleId").value(700))
+                .andExpect(jsonPath("$.data.ruleVersionStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.data.baseScore").value(10.5))
+                .andExpect(jsonPath("$.data.activeYn").value("Y"));
+        verify(service).save(any(SaveEvaluationScoreRequest.class), eq(1L), eq("REQ-B34-EVAL-SCORE-POST"));
+    }
+
+    @Test
     void saveEvaluationScorePersistsDraftScoreAndReturnsRequestIdForReq993Req994() throws Exception {
         when(service.save(any(SaveEvaluationScoreRequest.class), eq(1L), eq("REQ-B34-EVAL-SCORE-SAVE"))).thenReturn(row());
 

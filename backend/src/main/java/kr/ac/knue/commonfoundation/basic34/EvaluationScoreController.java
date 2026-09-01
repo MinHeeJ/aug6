@@ -50,6 +50,14 @@ public class EvaluationScoreController {
                 organizationCode, activeYn, keyword)), effectiveRequestId(requestId));
     }
 
+    @PostMapping("/api/admin/evaluation-scores")
+    public ApiResponse<EvaluationScoreRow> saveEvaluationScoreContractOperation(
+            @Valid @RequestBody SaveEvaluationScoreRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest servletRequest) {
+        return saveEvaluationScore(request, requestId, servletRequest);
+    }
+
     @PostMapping("/api/admin/evaluation-scores/save")
     public ApiResponse<EvaluationScoreRow> saveEvaluationScore(
             @Valid @RequestBody SaveEvaluationScoreRequest request,

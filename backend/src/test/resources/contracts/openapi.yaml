@@ -5250,6 +5250,138 @@ paths:
         - REQ-1189
         - REQ-1190
         - REQ-1193
+  /api/admin/appeal-periods:
+    get:
+      operationId: listAppealPeriods
+      summary: 이의신청기간 목록 조회
+      security: [{SessionCookie: []}]
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: collegeOrganizationCode, in: query, schema: { type: string } }
+        - { name: departmentOrganizationCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-contract-fields: [settingId, evaluationYear, collegeOrganizationCode, departmentOrganizationCode, appealStartAt, appealEndAt, handlerUserId, activeYn, requestId]
+      x-business-rules: [동적 predicate 기반 filter만 사용하고 null-or 조건을 사용하지 않는다, R04/R09만 이의신청기간을 조회할 수 있다]
+      x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
+  /api/admin/appeal-periods/save:
+    post:
+      operationId: saveAppealPeriod
+      summary: 이의신청기간 저장
+      security: [{SessionCookie: []}]
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SaveAppealPeriodRequest' } } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 기간 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-contract-fields: [evaluationYear, collegeOrganizationCode, departmentOrganizationCode, appealStartAt, appealEndAt, handlerUserId, activeYn, changeReason, requestId]
+      x-required-tests: [happy, auth, validation, business, side-effect]
+      x-side-effects: [appeal_period_settings 저장, permission_change_history row에 request_id와 변경 사유 기록]
+      x-state-transitions: [appeal_period_settings requested -> persisted]
+      x-business-rules: [이의신청기간 종료일시는 시작일시 이후여야 하며 동일 평가연도/조직 활성 기간 중복을 금지한다]
+      x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
+  /api/admin/result-view-periods:
+    get:
+      operationId: listResultViewPeriods
+      summary: 결과조회기간 목록 조회
+      security: [{SessionCookie: []}]
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: collegeOrganizationCode, in: query, schema: { type: string } }
+        - { name: departmentOrganizationCode, in: query, schema: { type: string } }
+        - { name: visibilityScope, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-contract-fields: [settingId, evaluationYear, collegeOrganizationCode, departmentOrganizationCode, viewStartAt, viewEndAt, visibilityScope, activeYn, requestId]
+      x-business-rules: [동적 predicate 기반 filter만 사용하고 null-or 조건을 사용하지 않는다, R04/R09만 결과조회기간을 조회할 수 있다]
+      x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
+  /api/admin/result-view-periods/save:
+    post:
+      operationId: saveResultViewPeriod
+      summary: 결과조회기간 저장
+      security: [{SessionCookie: []}]
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SaveResultViewPeriodRequest' } } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 기간 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-contract-fields: [evaluationYear, collegeOrganizationCode, departmentOrganizationCode, viewStartAt, viewEndAt, visibilityScope, activeYn, changeReason, requestId]
+      x-required-tests: [happy, auth, validation, business, side-effect]
+      x-side-effects: [result_view_period_settings 저장, permission_change_history row에 request_id와 변경 사유 기록]
+      x-state-transitions: [result_view_period_settings requested -> persisted]
+      x-business-rules: [결과조회기간 종료일시는 시작일시 이후여야 하며 동일 평가연도/조직/공개범위 활성 기간 중복을 금지한다]
+      x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
+  /api/admin/exception-periods:
+    get:
+      operationId: listExceptionPeriods
+      summary: 예외기간 목록 조회
+      security: [{SessionCookie: []}]
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: teacherUserId, in: query, schema: { type: integer, format: int64 } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: targetFunctionCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-contract-fields: [settingId, evaluationYear, teacherUserId, areaCode, targetFunctionCode, exceptionStartAt, exceptionEndAt, approvalReason, activeYn, requestId]
+      x-business-rules: [동적 predicate 기반 filter만 사용하고 null-or 조건을 사용하지 않는다, 예외기간은 기본 기간 통제보다 우선 적용한다]
+      x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
+  /api/admin/exception-periods/save:
+    post:
+      operationId: saveExceptionPeriod
+      summary: 예외기간 저장
+      security: [{SessionCookie: []}]
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SaveExceptionPeriodRequest' } } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 기간 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-contract-fields: [evaluationYear, teacherUserId, areaCode, targetFunctionCode, exceptionStartAt, exceptionEndAt, approvalReason, approverUserId, activeYn, changeReason, requestId]
+      x-required-tests: [happy, auth, validation, business, side-effect]
+      x-side-effects: [exception_period_settings 저장, permission_change_history row에 request_id와 변경 사유 기록]
+      x-state-transitions: [exception_period_settings requested -> persisted]
+      x-business-rules: [예외기간 종료일시는 시작일시 이후여야 하며 동일 평가연도/교원/영역/대상기능 활성 기간 중복을 금지한다]
+      x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
+
 x-uncovered-requirements:
   - canonical_id: REQ-713
     status: non-functional
@@ -5424,6 +5556,48 @@ components:
       name: SESSION
       description: HttpOnly SameSite=Lax session cookie
   schemas:
+
+    SaveAppealPeriodRequest:
+      type: object
+      required: [evaluationYear, collegeOrganizationCode, appealStartAt, appealEndAt, handlerUserId, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64 }
+        evaluationYear: { type: string }
+        collegeOrganizationCode: { type: string }
+        departmentOrganizationCode: { type: string }
+        appealStartAt: { type: string, format: date-time }
+        appealEndAt: { type: string, format: date-time }
+        handlerUserId: { type: integer, format: int64 }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveResultViewPeriodRequest:
+      type: object
+      required: [evaluationYear, collegeOrganizationCode, viewStartAt, viewEndAt, visibilityScope, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64 }
+        evaluationYear: { type: string }
+        collegeOrganizationCode: { type: string }
+        departmentOrganizationCode: { type: string }
+        viewStartAt: { type: string, format: date-time }
+        viewEndAt: { type: string, format: date-time }
+        visibilityScope: { type: string }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveExceptionPeriodRequest:
+      type: object
+      required: [evaluationYear, teacherUserId, areaCode, targetFunctionCode, exceptionStartAt, exceptionEndAt, approvalReason, approverUserId, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64 }
+        evaluationYear: { type: string }
+        teacherUserId: { type: integer, format: int64 }
+        areaCode: { type: string }
+        targetFunctionCode: { type: string }
+        exceptionStartAt: { type: string, format: date-time }
+        exceptionEndAt: { type: string, format: date-time }
+        approvalReason: { type: string }
+        approverUserId: { type: integer, format: int64 }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
     SessionTerminateRequest:
       type: object
       required: [reason]

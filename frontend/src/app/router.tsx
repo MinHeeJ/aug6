@@ -58,6 +58,9 @@ import { AreaElementSystemManagementPage } from "../pages/admin/SCR-AREA-ELEMENT
 import { EvaluationDateManagementPage } from "../pages/admin/SCR-EVALUATION-DATE-MGMT";
 import { InputPeriodManagementPage } from "../pages/admin/SCR-INPUT-PERIOD-MGMT";
 import { ModificationPeriodManagementPage } from "../pages/admin/SCR-MODIFICATION-PERIOD-MGMT";
+import { AppealPeriodManagementPage } from "../pages/admin/SCR-APPEAL-PERIOD-MGMT";
+import { ResultViewPeriodManagementPage } from "../pages/admin/SCR-RESULT-VIEW-PERIOD-MGMT";
+import { ExceptionPeriodManagementPage } from "../pages/admin/SCR-EXCEPTION-PERIOD-MGMT";
 import { DepartmentChairConfirmPeriodManagementPage } from "../pages/admin/SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT";
 import { BusinessPeriodManagementPage } from "../pages/admin/SCR-BUSINESS-PERIOD-INTEGRATED-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
@@ -287,6 +290,12 @@ function renderAdminPage(path: string | undefined) {
       return <InputPeriodManagementPage />;
     case "/admin/modification-periods":
       return <ModificationPeriodManagementPage />;
+    case "/admin/appeal-periods":
+      return <AppealPeriodManagementPage />;
+    case "/admin/result-view-periods":
+      return <ResultViewPeriodManagementPage />;
+    case "/admin/exception-periods":
+      return <ExceptionPeriodManagementPage />;
     case "/admin/department-chair-confirm-periods":
       return <DepartmentChairConfirmPeriodManagementPage />;
     case "/admin/business-periods":

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "basic40.phase1.effective-contract-lock.v1",
+  "source": "approved BASIC-40 effective design documents materialized by the runner",
+  "implementationScope": "Phase 1: Shared Prerequisites only (T001-T004)",
+  "frozenDocuments": [
+    {
+      "path": "data-model.md",
+      "status": "changed",
+      "effective_sha256": "46e2a0fcb64c44939e46ed5bdf2357aafc305362ff5d40637d6518834a186161",
+      "patch_sha256": "ae096ab81d711ab8ca932fa87ff614f38749d9cca0d0c5fc5b4a6f750de4bf6c",
+      "reason": "신규 기간통제 세 table과 validation/seed/screen reference 계약이 추가되어 변경된다."
+    },
+    {
+      "path": "contracts/openapi.yaml",
+      "status": "changed",
+      "effective_sha256": "89246657df499030298d18272773b9060169e67a871da816c7020833bd40227d",
+      "patch_sha256": "1fc83959d484418399f79b03869ffa91b7678c1671ecf07e75896bd5794e2475",
+      "reason": "신규 기간통제 6개 path/operation과 request schema 및 요구 미매핑 회계가 추가되어 변경된다."
+    },
+    {
+      "path": "research.md",
+      "status": "reference_only",
+      "effective_sha256": "c8ed7abea35d448b96daa94d9e72dd3487ee9fb60b4f27af7e438e2c2b667350",
+      "patch_sha256": null,
+      "reason": "기존 imperative/MyBatis/PostgreSQL 결정은 이번 변경의 기술 선택 근거로만 참조하며 새 연구 결정이나 trade-off가 필요하지 않다."
+    },
+    {
+      "path": "quickstart.md",
+      "status": "changed",
+      "effective_sha256": "fa432b1a0ed962aec2a023501b7be17e2991466942356fc029ef0d36a3f02f45",
+      "patch_sha256": "4abd02e8e49fe8780a206ee551fe05d4e1c90f881347c7643be08994fcb919d8",
+      "reason": "신규 기간통제 API와 route smoke 검증 절차가 추가되어 변경된다."
+    },
+    {
+      "path": "architecture.md",
+      "status": "changed",
+      "effective_sha256": "cb2c97696bf5619db53074cb936e44cc11c01d0aef2fb2239054e871fd76b2fe",
+      "patch_sha256": "255ce23066a65e0930a2d6f4f4915b610d1201794a4c86c5b6a5616ef45bbc38",
+      "reason": "신규 기간통제 업무 module과 예외기간 우선 적용 흐름이 component boundary에 추가되어 변경된다."
+    },
+    {
+      "path": "ui-design.md",
+      "status": "changed",
+      "effective_sha256": "722372473b011af2a4259aed68cbfd59a99fe626e977c72b6ba90e0754473f2e",
+      "patch_sha256": "ca86617f1326a5de77543fecb9d9b7329a703d6a75c0eb79857c6219081191f8",
+      "reason": "신규 기간통제 3개 route/screen/action/wireframe/trace 계약이 추가되어 변경된다."
+    }
+  ],
+  "durableOpenApiFixture": {
+    "path": "backend/src/test/resources/contracts/openapi.yaml",
+    "sha256": "bdf5ad24512b2036a97779615f7c3595d87a75deba334d3946070d839fd98fda",
+    "containsOperations": [
+      "listAppealPeriods",
+      "saveAppealPeriod",
+      "listResultViewPeriods",
+      "saveResultViewPeriod",
+      "listExceptionPeriods",
+      "saveExceptionPeriod"
+    ]
+  },
+  "migrationReservation": {
+    "nextMigration": "backend/src/main/resources/db/migration/V41__basic40_remaining_period_controls.sql",
+    "rollbackPlan": "Do not edit existing migrations. If reversal is required, add a later forward Flyway migration that deactivates BASIC-40 seed/menu rows and drops only BASIC-40 tables after confirming no production data dependency; otherwise restore from backup before applying V41."
+  }
+}

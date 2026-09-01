@@ -80,7 +80,7 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(69);
+    expect(ADMIN_ROUTES).toHaveLength(72);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);

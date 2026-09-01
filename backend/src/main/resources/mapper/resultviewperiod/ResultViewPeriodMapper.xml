@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.resultviewperiod.ResultViewPeriodMapper">
+    <resultMap id="ResultViewPeriodRowMap" type="kr.ac.knue.commonfoundation.resultviewperiod.ResultViewPeriodRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="collegeOrganizationCode" javaType="string"/>
+            <arg column="departmentOrganizationCode" javaType="string"/>
+            <arg column="viewStartAt" javaType="java.time.LocalDateTime"/>
+            <arg column="viewEndAt" javaType="java.time.LocalDateTime"/>
+            <arg column="visibilityScope" javaType="string"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="resultViewPeriodColumns">
+        rv.setting_id as "settingId",
+        rv.evaluation_year as "evaluationYear",
+        rv.college_organization_code as "collegeOrganizationCode",
+        rv.department_organization_code as "departmentOrganizationCode",
+        rv.view_start_at as "viewStartAt",
+        rv.view_end_at as "viewEndAt",
+        rv.visibility_scope as "visibilityScope",
+        rv.active_yn as "activeYn",
+        rv.created_by as "createdBy",
+        rv.updated_by as "updatedBy",
+        rv.created_at as "createdAt",
+        rv.updated_at as "updatedAt",
+        rv.change_reason as "changeReason"
+    </sql>
+
+    <sql id="resultViewPeriodFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                rv.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedCollegeOrganizationCode != null">
+                and rv.college_organization_code = #{criteria.normalizedCollegeOrganizationCode}
+            </if>
+            <if test="criteria.normalizedDepartmentOrganizationCode != null">
+                and rv.department_organization_code = #{criteria.normalizedDepartmentOrganizationCode}
+            </if>
+            <if test="criteria.normalizedVisibilityScope != null">
+                and rv.visibility_scope = #{criteria.normalizedVisibilityScope}
+            </if>
+            <if test="criteria.normalizedActiveYn != null">
+                and rv.active_yn = #{criteria.normalizedActiveYn}
+            </if>
+            <if test="criteria.normalizedKeyword != null">
+                and (rv.evaluation_year ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or rv.college_organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or rv.department_organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or rv.visibility_scope ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+            <if test="criteria.restrictOrganizationScope">
+                and exists (
+                    select 1
+                    from evaluation_organization_mappings eom
+                    where eom.user_id = #{criteria.requesterUserId}
+                      and eom.organization_code in (rv.college_organization_code, rv.department_organization_code)
+                      and eom.business_type = 'FACULTY_ACHIEVEMENT'
+                      and eom.data_scope in ('DEPARTMENT','COLLEGE','BUSINESS','ALL')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listResultViewPeriods" resultMap="ResultViewPeriodRowMap">
+        select <include refid="resultViewPeriodColumns"/>
+        from result_view_period_settings rv
+        <include refid="resultViewPeriodFilters"/>
+        order by rv.evaluation_year desc, rv.college_organization_code, rv.department_organization_code, rv.visibility_scope, rv.view_start_at desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countResultViewPeriods" resultType="long">
+        select count(*)
+        from result_view_period_settings rv
+        <include refid="resultViewPeriodFilters"/>
+    </select>
+
+    <select id="findResultViewPeriodById" resultMap="ResultViewPeriodRowMap">
+        select <include refid="resultViewPeriodColumns"/>
+        from result_view_period_settings rv
+        where rv.setting_id = #{settingId}
+    </select>
+
+    <select id="insertResultViewPeriod" resultMap="ResultViewPeriodRowMap">
+        insert into result_view_period_settings (evaluation_year, college_organization_code, department_organization_code,
+                                                 view_start_at, view_end_at, visibility_scope, active_yn,
+                                                 change_reason, created_by, updated_by)
+        values (#{request.evaluationYear}, #{request.collegeOrganizationCode}, #{request.departmentOrganizationCode},
+                #{request.viewStartAt}, #{request.viewEndAt}, #{request.visibilityScope}, #{request.activeYn},
+                #{request.changeReason}, #{userId}, #{userId})
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  college_organization_code as "collegeOrganizationCode",
+                  department_organization_code as "departmentOrganizationCode",
+                  view_start_at as "viewStartAt",
+                  view_end_at as "viewEndAt",
+                  visibility_scope as "visibilityScope",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="updateResultViewPeriod" resultMap="ResultViewPeriodRowMap">
+        update result_view_period_settings
+        set evaluation_year = #{request.evaluationYear},
+            college_organization_code = #{request.collegeOrganizationCode},
+            department_organization_code = #{request.departmentOrganizationCode},
+            view_start_at = #{request.viewStartAt},
+            view_end_at = #{request.viewEndAt},
+            visibility_scope = #{request.visibilityScope},
+            active_yn = #{request.activeYn},
+            change_reason = #{request.changeReason},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        where setting_id = #{request.settingId}
+        returning setting_id as "settingId",
+                  evaluation_year as "evaluationYear",
+                  college_organization_code as "collegeOrganizationCode",
+                  department_organization_code as "departmentOrganizationCode",
+                  view_start_at as "viewStartAt",
+                  view_end_at as "viewEndAt",
+                  visibility_scope as "visibilityScope",
+                  active_yn as "activeYn",
+                  created_by as "createdBy",
+                  updated_by as "updatedBy",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt",
+                  change_reason as "changeReason"
+    </select>
+
+    <select id="countOverlappingResultViewPeriods" resultType="int">
+        select count(*)
+        from result_view_period_settings rv
+        where rv.active_yn = 'Y'
+          and rv.evaluation_year = #{evaluationYear}
+          and rv.college_organization_code = #{collegeOrganizationCode}
+          and rv.department_organization_code is not distinct from #{departmentOrganizationCode}
+          and rv.visibility_scope = #{visibilityScope}
+          and tsrange(rv.view_start_at, rv.view_end_at, '[]') &amp;&amp; tsrange(#{viewStartAt}, #{viewEndAt}, '[]')
+          <if test="settingId != null">
+              and rv.setting_id != #{settingId}
+          </if>
+    </select>
+
+    <select id="existsAuthorizedEvaluationOrganization" resultType="int">
+        select count(*)
+        from evaluation_organization_mappings eom
+        where eom.user_id = #{userId}
+          and eom.organization_code = #{organizationCode}
+          and eom.business_type = 'FACULTY_ACHIEVEMENT'
+          and eom.data_scope in ('DEPARTMENT','COLLEGE','BUSINESS','ALL')
+    </select>
+
+    <select id="findActiveResultViewPeriodForAccess" resultMap="ResultViewPeriodRowMap">
+        select <include refid="resultViewPeriodColumns"/>
+        from result_view_period_settings rv
+        where rv.active_yn = 'Y'
+          and (rv.department_organization_code = #{organizationCode}
+               or (rv.department_organization_code is null and rv.college_organization_code = #{organizationCode}))
+          and rv.visibility_scope = #{visibilityScope}
+          and rv.view_start_at &lt;= #{requestAt}
+          and rv.view_end_at &gt;= #{requestAt}
+        order by rv.view_start_at desc
+        limit 1
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

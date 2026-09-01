@@ -93,6 +93,27 @@ class ParticipationRateApiTest {
     }
 
     @Test
+    void postParticipationRatesPersistsDraftRateRuleForOpenApiContract() throws Exception {
+        when(service.save(any(SaveParticipationRateRequest.class), eq(1L), eq("REQ-B34-PARTICIPATION-POST"))).thenReturn(row());
+
+        mockMvc.perform(post("/api/admin/participation-rates")
+                        .requestAttr("currentUser", systemAdmin)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-B34-PARTICIPATION-POST")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ruleVersionId":10,"managementItemId":400,"researcherCount":3,"participationType":"LEAD","distributionRate":0.5,"effectiveStartDate":"2026-01-01","effectiveEndDate":"2026-12-31","activeYn":"Y","changeReason":"배분율 정비"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.participationRateRuleId").value(710))
+                .andExpect(jsonPath("$.data.ruleVersionStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.data.participationType").value("LEAD"))
+                .andExpect(jsonPath("$.data.activeYn").value("Y"));
+        verify(service).save(any(SaveParticipationRateRequest.class), eq(1L), eq("REQ-B34-PARTICIPATION-POST"));
+    }
+
+    @Test
     void saveParticipationRatePersistsDraftRateAndReturnsRequestIdForReq1001Req1002() throws Exception {
         when(service.save(any(SaveParticipationRateRequest.class), eq(1L), eq("REQ-B34-PARTICIPATION-SAVE"))).thenReturn(row());
 

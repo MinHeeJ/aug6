@@ -55,6 +55,11 @@ import { CalculationFormulaManagementPage } from "../pages/admin/SCR-CALC-FORMUL
 import { EvaluationRuleSetManagementPage } from "../pages/admin/SCR-EVAL-RULE-SET-MGMT";
 import { JournalIndexingInfoManagementPage } from "../pages/admin/SCR-JOURNAL-INDEXING-MGMT";
 import { AreaElementSystemManagementPage } from "../pages/admin/SCR-AREA-ELEMENT-SYSTEM-MGMT";
+import { EvaluationDateManagementPage } from "../pages/admin/SCR-EVALUATION-DATE-MGMT";
+import { InputPeriodManagementPage } from "../pages/admin/SCR-INPUT-PERIOD-MGMT";
+import { ModificationPeriodManagementPage } from "../pages/admin/SCR-MODIFICATION-PERIOD-MGMT";
+import { DepartmentChairConfirmPeriodManagementPage } from "../pages/admin/SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT";
+import { BusinessPeriodManagementPage } from "../pages/admin/SCR-BUSINESS-PERIOD-INTEGRATED-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
 import { DataChangeHistoryPage } from "../pages/admin/SCR-DATA-CHANGE-HISTORY";
@@ -263,6 +268,16 @@ function renderAdminPage(path: string | undefined) {
       return <JournalIndexingInfoManagementPage />;
     case "/admin/area-element-systems":
       return <AreaElementSystemManagementPage />;
+    case "/admin/evaluation-dates":
+      return <EvaluationDateManagementPage />;
+    case "/admin/input-periods":
+      return <InputPeriodManagementPage />;
+    case "/admin/modification-periods":
+      return <ModificationPeriodManagementPage />;
+    case "/admin/department-chair-confirm-periods":
+      return <DepartmentChairConfirmPeriodManagementPage />;
+    case "/admin/business-periods":
+      return <BusinessPeriodManagementPage />;
     case "/admin/business-status-transitions":
       return <BusinessStatusTransitionPage />;
     case "/admin/rejection-reasons":

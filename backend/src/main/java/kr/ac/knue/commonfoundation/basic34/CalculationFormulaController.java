@@ -46,6 +46,14 @@ public class CalculationFormulaController {
                 formulaCode, calculationType, evaluationYear, roundingRule, activeYn, keyword)), effectiveRequestId(requestId));
     }
 
+    @PostMapping("/api/admin/calculation-formulas")
+    public ApiResponse<CalculationFormulaRow> saveCalculationFormulaContractOperation(
+            @Valid @RequestBody SaveCalculationFormulaRequest request,
+            @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest servletRequest) {
+        return saveCalculationFormula(request, requestId, servletRequest);
+    }
+
     @PostMapping("/api/admin/calculation-formulas/save")
     public ApiResponse<CalculationFormulaRow> saveCalculationFormula(
             @Valid @RequestBody SaveCalculationFormulaRequest request,

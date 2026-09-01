@@ -4768,6 +4768,246 @@ paths:
       summary: BASIC-29 OpenAPI path block boundary marker
       responses:
         '200': { description: 계약 경계 마커 }
+  /api/admin/evaluation-dates:
+    get:
+      operationId: listEvaluationDates
+      summary: 평가일자 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1116, REQ-1117]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/evaluation-dates/save:
+    post:
+      operationId: saveEvaluationDate
+      summary: 평가일자 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveEvaluationDateRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1116, REQ-1117, REQ-1118, REQ-1121]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - evaluation_date_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+      x-required-tests:
+        - 'happy: 유효한 평가일자 관리 저장 요청 -> 후속 listEvaluationDates 조회에서 evaluation_date_settings 변경 row가 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환되고 evaluation_date_settings row가 변경되지 않는다'
+        - 'validation: endAt이 startAt보다 빠른 요청 -> ApiError.fields.endAt이 반환된다'
+        - 'business: 동일 적용 조건의 겹치는 활성 기간 저장 요청 -> 409 ApiError와 기존 evaluation_date_settings row no-change가 확인된다'
+  /api/admin/input-periods:
+    get:
+      operationId: listInputPeriods
+      summary: 입력기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1122, REQ-1123]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/input-periods/save:
+    post:
+      operationId: saveInputPeriod
+      summary: 입력기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveInputPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1122, REQ-1123, REQ-1124, REQ-1127]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - input_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/modification-periods:
+    get:
+      operationId: listModificationPeriods
+      summary: 수정기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1128, REQ-1129]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/modification-periods/save:
+    post:
+      operationId: saveModificationPeriod
+      summary: 수정기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveModificationPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1128, REQ-1129, REQ-1130, REQ-1131, REQ-1134]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - modification_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/department-chair-confirm-periods:
+    get:
+      operationId: listDepartmentChairConfirmPeriods
+      summary: 학과장 확인기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1135, REQ-1136]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/department-chair-confirm-periods/save:
+    post:
+      operationId: saveDepartmentChairConfirmPeriod
+      summary: 학과장 확인기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveDepartmentChairConfirmPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1135, REQ-1136, REQ-1137, REQ-1138, REQ-1141]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - department_chair_confirm_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/business-periods:
+    get:
+      operationId: listBusinessPeriods
+      summary: 평가·업적입력 기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1142, REQ-1143]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/business-periods/save:
+    post:
+      operationId: saveBusinessPeriod
+      summary: 평가·업적입력 기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveBusinessPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1142, REQ-1143, REQ-1145, REQ-1146, REQ-1148]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - business_period_integrated_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
 components:
   securitySchemes:
     SessionCookie:
@@ -4842,6 +5082,76 @@ components:
         originalExecutionId: { type: string }
         failedItemKey: { type: string }
         retryReason: { type: string }
+    SaveEvaluationDateRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveInputPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveModificationPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveDepartmentChairConfirmPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveBusinessPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
     ApiResponse:
       type: object
       required:

@@ -922,6 +922,301 @@ export const businessStatusCodeApi = {
 export type EvaluationRuleVersionStatus = "DRAFT" | "CONFIRMED" | "DISCARDED";
 export type ActiveYn = "Y" | "N";
 
+export type EvaluationDateSetting = {
+  settingId: number;
+  evaluationYear: string;
+  areaCode?: string | null;
+  organizationCode?: string | null;
+  userTypeCode?: string | null;
+  startAt: string;
+  endAt: string;
+  baseDate?: string | null;
+  activeYn: ActiveYn;
+  createdBy?: number | null;
+  updatedBy?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+  changeReason?: string;
+};
+
+export type EvaluationDateSearchResponse = {
+  evaluationDates: EvaluationDateSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type EvaluationDatePayload = {
+  settingId?: number | null;
+  evaluationYear: string;
+  areaCode?: string | null;
+  organizationCode: string;
+  userTypeCode?: string | null;
+  startAt: string;
+  endAt: string;
+  baseDate: string;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const evaluationDateApi = {
+  listEvaluationDates(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      organizationCode?: string;
+      userTypeCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim()) {
+      query.set("organizationCode", params.organizationCode.trim());
+    }
+    if (params.userTypeCode?.trim()) {
+      query.set("userTypeCode", params.userTypeCode.trim());
+    }
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<EvaluationDateSearchResponse>(
+      `/api/admin/evaluation-dates?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationDate(payload: EvaluationDatePayload) {
+    return apiRequest<EvaluationDateSetting>(
+      "/api/admin/evaluation-dates/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type InputPeriodSetting = EvaluationDateSetting;
+
+export type InputPeriodSearchResponse = {
+  inputPeriods: InputPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type InputPeriodPayload = EvaluationDatePayload;
+
+export const inputPeriodApi = {
+  listInputPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      organizationCode?: string;
+      userTypeCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim()) {
+      query.set("organizationCode", params.organizationCode.trim());
+    }
+    if (params.userTypeCode?.trim()) {
+      query.set("userTypeCode", params.userTypeCode.trim());
+    }
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<InputPeriodSearchResponse>(
+      `/api/admin/input-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveInputPeriod(payload: InputPeriodPayload) {
+    return apiRequest<InputPeriodSetting>("/api/admin/input-periods/save", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export type ModificationPeriodSetting = EvaluationDateSetting;
+
+export type ModificationPeriodSearchResponse = {
+  modificationPeriods: ModificationPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ModificationPeriodPayload = EvaluationDatePayload;
+
+export const modificationPeriodApi = {
+  listModificationPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      organizationCode?: string;
+      userTypeCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim()) {
+      query.set("organizationCode", params.organizationCode.trim());
+    }
+    if (params.userTypeCode?.trim()) {
+      query.set("userTypeCode", params.userTypeCode.trim());
+    }
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<ModificationPeriodSearchResponse>(
+      `/api/admin/modification-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveModificationPeriod(payload: ModificationPeriodPayload) {
+    return apiRequest<ModificationPeriodSetting>(
+      "/api/admin/modification-periods/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type DepartmentChairConfirmPeriodSetting = EvaluationDateSetting;
+
+export type DepartmentChairConfirmPeriodSearchResponse = {
+  departmentChairConfirmPeriods: DepartmentChairConfirmPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type DepartmentChairConfirmPeriodPayload = EvaluationDatePayload;
+
+export const departmentChairConfirmPeriodApi = {
+  listDepartmentChairConfirmPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      organizationCode?: string;
+      userTypeCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim()) {
+      query.set("organizationCode", params.organizationCode.trim());
+    }
+    if (params.userTypeCode?.trim()) {
+      query.set("userTypeCode", params.userTypeCode.trim());
+    }
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<DepartmentChairConfirmPeriodSearchResponse>(
+      `/api/admin/department-chair-confirm-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveDepartmentChairConfirmPeriod(
+    payload: DepartmentChairConfirmPeriodPayload,
+  ) {
+    return apiRequest<DepartmentChairConfirmPeriodSetting>(
+      "/api/admin/department-chair-confirm-periods/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type BusinessPeriodSetting = EvaluationDateSetting;
+
+export type BusinessPeriodSearchResponse = {
+  businessPeriods: BusinessPeriodSetting[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type BusinessPeriodPayload = EvaluationDatePayload;
+
+export const businessPeriodApi = {
+  listBusinessPeriods(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      organizationCode?: string;
+      userTypeCode?: string;
+      activeYn?: ActiveYn | "";
+      keyword?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim()) {
+      query.set("organizationCode", params.organizationCode.trim());
+    }
+    if (params.userTypeCode?.trim()) {
+      query.set("userTypeCode", params.userTypeCode.trim());
+    }
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<BusinessPeriodSearchResponse>(
+      `/api/admin/business-periods?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveBusinessPeriod(payload: BusinessPeriodPayload) {
+    return apiRequest<BusinessPeriodSetting>(
+      "/api/admin/business-periods/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type EvaluationArea = {
   areaId: number;
   ruleVersionId: number;

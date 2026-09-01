@@ -88,6 +88,27 @@ class JournalIndexingInfoApiTest {
     }
 
     @Test
+    void postJournalIndexingInfosPersistsDraftInfoForOpenApiContract() throws Exception {
+        when(service.save(any(SaveJournalIndexingInfoRequest.class), eq(1L), eq("REQ-B34-JOURNAL-POST"))).thenReturn(row());
+
+        mockMvc.perform(post("/api/admin/journal-indexing-infos")
+                        .requestAttr("currentUser", systemAdmin)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-B34-JOURNAL-POST")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ruleVersionId":10,"issn":"1225-6463","journalName":"한국교육학술지","indexingType":"KCI","publicationCountry":"KR","validStartDate":"2026-01-01","validEndDate":"2026-12-31","sourceName":"파일럿 시드","sourceUpdatedAt":"2026-08-31T09:00:00","activeYn":"Y","changeReason":"학술지 등재정보 정비"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.journalIndexingInfoId").value(920))
+                .andExpect(jsonPath("$.data.ruleVersionStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.data.indexingType").value("KCI"))
+                .andExpect(jsonPath("$.data.activeYn").value("Y"));
+        verify(service).save(any(SaveJournalIndexingInfoRequest.class), eq(1L), eq("REQ-B34-JOURNAL-POST"));
+    }
+
+    @Test
     void saveJournalIndexingInfoPersistsDraftInfoAndReturnsRequestIdForReq1026Req1027() throws Exception {
         when(service.save(any(SaveJournalIndexingInfoRequest.class), eq(1L), eq("REQ-B34-JOURNAL-SAVE"))).thenReturn(row());
 

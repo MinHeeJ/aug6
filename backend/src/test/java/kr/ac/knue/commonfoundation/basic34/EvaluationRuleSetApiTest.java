@@ -87,6 +87,27 @@ class EvaluationRuleSetApiTest {
     }
 
     @Test
+    void postEvaluationRuleSetsPersistsDraftActiveRuleSetForOpenApiContract() throws Exception {
+        when(service.save(any(SaveEvaluationRuleSetRequest.class), eq(1L), eq("REQ-B34-RULE-SET-POST"))).thenReturn(row());
+
+        mockMvc.perform(post("/api/admin/evaluation-rule-sets")
+                        .requestAttr("currentUser", systemAdmin)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-B34-RULE-SET-POST")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ruleVersionId":10,"targetScope":"FACULTY","ruleSetName":"교수업적 기준·점수규칙","ruleSetStatus":"DRAFT","activeYn":"Y","effectiveStartDate":"2026-01-01","effectiveEndDate":"2026-12-31","changeReason":"통합 기준 정비"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.ruleSetId").value(910))
+                .andExpect(jsonPath("$.data.ruleVersionStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.data.ruleSetStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.data.activeYn").value("Y"));
+        verify(service).save(any(SaveEvaluationRuleSetRequest.class), eq(1L), eq("REQ-B34-RULE-SET-POST"));
+    }
+
+    @Test
     void saveEvaluationRuleSetPersistsDraftRuleSetAndReturnsRequestIdForReq1018Req1019() throws Exception {
         when(service.save(any(SaveEvaluationRuleSetRequest.class), eq(1L), eq("REQ-B34-RULE-SET-SAVE"))).thenReturn(row());
 

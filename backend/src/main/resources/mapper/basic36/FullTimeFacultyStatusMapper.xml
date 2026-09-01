@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic36.FullTimeFacultyStatusMapper">
+    <resultMap id="FullTimeFacultyStatusRowMap" type="kr.ac.knue.commonfoundation.basic36.FullTimeFacultyStatusRow">
+        <constructor>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="collegeCode" javaType="string"/>
+            <arg column="collegeName" javaType="string"/>
+            <arg column="departmentCode" javaType="string"/>
+            <arg column="departmentName" javaType="string"/>
+            <arg column="rankName" javaType="string"/>
+            <arg column="retirementDate" javaType="java.time.LocalDate"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="statusColumns">
+        k.employee_no as "employeeNo",
+        k.name,
+        coalesce(college.organization_code, dept.organization_code) as "collegeCode",
+        coalesce(college.organization_name, dept.organization_name) as "collegeName",
+        dept.organization_code as "departmentCode",
+        dept.organization_name as "departmentName",
+        k.rank_name as "rankName",
+        k.retirement_date as "retirementDate"
+    </sql>
+
+    <sql id="statusFrom">
+        from korus_personnel_snapshots k
+        left join organizations dept
+          on dept.organization_code = k.organization_code
+         and dept.status = 'ACTIVE'
+        left join organization_relations rel
+          on rel.organization_code = k.organization_code
+         and rel.status = 'ACTIVE'
+         and rel.effective_start_date &lt;= make_date(#{criteria.baseYear}, 12, 31)
+         and (rel.effective_end_date is null or rel.effective_end_date &gt;= make_date(#{criteria.baseYear}, 1, 1))
+        left join organizations college
+          on college.organization_code = rel.parent_organization_code
+         and college.status = 'ACTIVE'
+    </sql>
+
+    <sql id="statusFilters">
+        <where>
+            k.status = 'ACTIVE'
+            and k.snapshot_year = #{criteria.baseYear}
+            <if test="criteria.normalizedOrganizationCode != null">
+                and (k.organization_code = #{criteria.normalizedOrganizationCode}
+                     or rel.parent_organization_code = #{criteria.normalizedOrganizationCode})
+            </if>
+            <if test="criteria.normalizedEmployeeNo != null">
+                and k.employee_no = #{criteria.normalizedEmployeeNo}
+            </if>
+            <if test="criteria.normalizedName != null">
+                and k.name ilike concat('%', #{criteria.normalizedName}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listStatuses" resultMap="FullTimeFacultyStatusRowMap">
+        select <include refid="statusColumns"/>
+        <include refid="statusFrom"/>
+        <include refid="statusFilters"/>
+        order by coalesce(college.organization_name, dept.organization_name), dept.organization_name, k.employee_no
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countStatuses" resultType="long">
+        select count(*)
+        <include refid="statusFrom"/>
+        <include refid="statusFilters"/>
+    </select>
+</mapper>

@@ -384,6 +384,48 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-PERMISSION-CHANGE-LOG",
     menuPath: "보안·감사 관리 > 감사로그 관리 > 권한변경 로그",
   },
+  {
+    path: "/admin/korus-faculty-sync",
+    label: "KORUS 교원 동기화",
+    screenId: "SCR-KORUS-FACULTY-SYNC",
+    menuPath: "교수업적평가 파일럿 > KORUS 연계 > KORUS 교원 동기화",
+  },
+  {
+    path: "/admin/full-time-faculty-statuses",
+    label: "전임교원 현황",
+    screenId: "SCR-FULL-TIME-FACULTY-STATUS",
+    menuPath: "교수업적평가 파일럿 > 교원 현황 > 전임교원 현황",
+  },
+  {
+    path: "/researcher-profiles",
+    label: "연구자 프로필 목록",
+    screenId: "SCR-RESEARCHER-PROFILE-LIST",
+    menuPath: "교수업적평가 파일럿 > 연구자 프로필 > 프로필 목록",
+  },
+  {
+    path: "/researcher-profiles/{employeeNo}",
+    label: "연구자 프로필 상세",
+    screenId: "SCR-RESEARCHER-PROFILE-DETAIL",
+    menuPath: "교수업적평가 파일럿 > 연구자 프로필 > 프로필 상세",
+  },
+  {
+    path: "/admin/researcher-profiles/degree-prerequisite-missing",
+    label: "선행학위 미충족",
+    screenId: "SCR-DEGREE-PREREQ-MISSING",
+    menuPath: "교수업적평가 파일럿 > 연구자 프로필 > 선행학위 미충족",
+  },
+  {
+    path: "/admin/achievement-data-histories",
+    label: "업적데이터 변경이력",
+    screenId: "SCR-ACHIEVEMENT-DATA-HISTORY",
+    menuPath: "교수업적평가 파일럿 > 업적 데이터 이력 > 변경이력 조회",
+  },
+  {
+    path: "/admin/achievement-data-as-of",
+    label: "업적데이터 기준시점",
+    screenId: "SCR-ACHIEVEMENT-DATA-AS-OF",
+    menuPath: "교수업적평가 파일럿 > 업적 데이터 이력 > 기준시점 조회",
+  },
 ];
 
 export type LoginValidationErrors = Partial<
@@ -433,8 +475,28 @@ export function canAccessAdminRoute(
 
 function hasMenuUrl(menus: CurrentUser["menus"], path: string): boolean {
   return menus.some(
-    (menu) => menu.url === path || hasMenuUrl(menu.children, path),
+    (menu) =>
+      menuUrlMatchesPath(menu.url, path) || hasMenuUrl(menu.children, path),
   );
+}
+
+function menuUrlMatchesPath(
+  menuUrl: string | undefined,
+  path: string,
+): boolean {
+  if (!menuUrl) {
+    return false;
+  }
+  if (menuUrl === path) {
+    return true;
+  }
+  if (!menuUrl.includes("{")) {
+    return false;
+  }
+  const pattern = new RegExp(
+    `^${menuUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\{[^/]+\\\}/g, "[^/]+")}$`,
+  );
+  return pattern.test(path);
 }
 
 type LoginPageProps = {

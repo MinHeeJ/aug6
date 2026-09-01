@@ -4752,7 +4752,504 @@ paths:
         '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-
+  /api/admin/korus-faculty-sync-results:
+    get:
+      operationId: listKorusFacultySyncResults
+      summary: KORUS 연계 결과 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R09, R04]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, enum: [20, 50, 100] }
+      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements:
+        - REQ-1238
+        - REQ-1239
+        - REQ-1240
+        - REQ-1241
+        - REQ-1242
+        - REQ-1243
+        - REQ-1244
+        - REQ-1245
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/admin/korus-faculty-sync-results/{syncResultId}/retry:
+    post:
+      operationId: createKorusFacultySyncRetry
+      summary: KORUS 실패 재처리
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - KORUS 원천 데이터는 직접 수정하지 않는다.
+        - 동일 원천 식별자 재수신은 중복 생성하지 않는다.
+      x-side-effects:
+        - korus_faculty_sync_runs와 korus_faculty_sync_results에 request_id와 처리 결과를 기록한다.
+      x-required-tests:
+        - happy: 유효한 기간으로 수동 실행 -> korus_faculty_sync_runs row와 request_id가 후속 조회된다
+        - auth: 권한 없는 R01 세션 -> HTTP 403 ApiError를 반환한다
+        - validation: targetStartDate 누락 -> fields.targetStartDate 오류를 반환한다
+        - business: 동일 appointment_id 재수신 -> korus_faculty_sync_results 중복 row 없이 변경 이력만 남는다
+        - side-effect: 실패 건 발생 -> korus_faculty_sync_results.error_message가 후속 조회된다
+      x-state-transitions:
+        - from: REQUESTED
+          to: COMPLETED_OR_FAILED
+          trigger: service transaction result
+      x-related-requirements:
+        - REQ-1238
+        - REQ-1239
+        - REQ-1240
+        - REQ-1241
+        - REQ-1242
+        - REQ-1243
+        - REQ-1244
+        - REQ-1245
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/admin/korus-faculty-sync-runs:
+    post:
+      operationId: createKorusFacultySyncRun
+      summary: KORUS 동기화 실행
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - KORUS 원천 데이터는 직접 수정하지 않는다.
+        - 동일 원천 식별자 재수신은 중복 생성하지 않는다.
+      x-side-effects:
+        - korus_faculty_sync_runs와 korus_faculty_sync_results에 request_id와 처리 결과를 기록한다.
+      x-required-tests:
+        - happy: 유효한 기간으로 수동 실행 -> korus_faculty_sync_runs row와 request_id가 후속 조회된다
+        - auth: 권한 없는 R01 세션 -> HTTP 403 ApiError를 반환한다
+        - validation: targetStartDate 누락 -> fields.targetStartDate 오류를 반환한다
+        - business: 동일 appointment_id 재수신 -> korus_faculty_sync_results 중복 row 없이 변경 이력만 남는다
+        - side-effect: 실패 건 발생 -> korus_faculty_sync_results.error_message가 후속 조회된다
+      x-state-transitions:
+        - from: REQUESTED
+          to: COMPLETED_OR_FAILED
+          trigger: service transaction result
+      x-related-requirements:
+        - REQ-1238
+        - REQ-1239
+        - REQ-1240
+        - REQ-1241
+        - REQ-1242
+        - REQ-1243
+        - REQ-1244
+        - REQ-1245
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/admin/full-time-faculty-statuses:
+    get:
+      operationId: listFullTimeFacultyStatuses
+      summary: 전임교원 현황 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, enum: [20, 50, 100] }
+      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements:
+        - REQ-1251
+        - REQ-1252
+        - REQ-1253
+        - REQ-1254
+        - REQ-1255
+        - REQ-1256
+        - REQ-1257
+        - REQ-1258
+        - REQ-1259
+        - REQ-1260
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/researcher-profiles:
+    get:
+      operationId: listResearcherProfiles
+      summary: 연구자 프로필 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R04, R09]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, enum: [20, 50, 100] }
+      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/researcher-profiles/{employeeNo}:
+    get:
+      operationId: getResearcherProfile
+      summary: 연구자 프로필 상세
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R04, R09]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, enum: [20, 50, 100] }
+      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/researcher-profiles/{employeeNo}/research-fields:
+    put:
+      operationId: saveResearcherProfileResearchFields
+      summary: 연구분야 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
+        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
+      x-side-effects:
+        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
+      x-required-tests:
+        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
+        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
+        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
+        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
+        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
+      x-state-transitions:
+        - from: DRAFT
+          to: DRAFT
+          trigger: tab save metadata update
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/researcher-profiles/{employeeNo}/careers:
+    put:
+      operationId: saveResearcherProfileCareers
+      summary: 경력 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
+        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
+      x-side-effects:
+        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
+      x-required-tests:
+        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
+        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
+        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
+        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
+        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
+      x-state-transitions:
+        - from: DRAFT
+          to: DRAFT
+          trigger: tab save metadata update
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/researcher-profiles/{employeeNo}/degrees:
+    put:
+      operationId: saveResearcherProfileDegrees
+      summary: 학위 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
+        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
+      x-side-effects:
+        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
+      x-required-tests:
+        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
+        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
+        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
+        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
+        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
+      x-state-transitions:
+        - from: DRAFT
+          to: DRAFT
+          trigger: tab save metadata update
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/researcher-profiles/{employeeNo}/certifications:
+    put:
+      operationId: saveResearcherProfileCertifications
+      summary: 자격 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R01, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
+        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
+      x-side-effects:
+        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
+      x-required-tests:
+        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
+        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
+        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
+        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
+        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
+      x-state-transitions:
+        - from: DRAFT
+          to: DRAFT
+          trigger: tab save metadata update
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
+  /api/admin/researcher-profiles/degree-prerequisite-missing:
+    get:
+      operationId: listDegreePrerequisiteMissingResearchers
+      summary: 선행학위 미충족 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, enum: [20, 50, 100] }
+      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements:
+        - REQ-1265
+        - REQ-1266
+        - REQ-1267
+        - REQ-1268
+        - REQ-1269
+        - REQ-1270
+        - REQ-1271
+        - REQ-1272
+        - REQ-1273
+        - REQ-1274
+        - REQ-1275
+        - REQ-1276
+        - REQ-1277
+        - REQ-1186
+        - REQ-1187
+        - REQ-1188
+        - REQ-1189
+        - REQ-1190
+        - REQ-1193
 x-uncovered-requirements:
   - canonical_id: REQ-713
     status: non-functional

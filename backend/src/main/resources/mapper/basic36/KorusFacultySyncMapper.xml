@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic36.KorusFacultySyncMapper">
+    <resultMap id="KorusFacultySyncRunRowMap" type="kr.ac.knue.commonfoundation.basic36.KorusFacultySyncRunRow">
+        <constructor>
+            <arg column="runId" javaType="long"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="runType" javaType="string"/>
+            <arg column="targetStartDate" javaType="java.time.LocalDate"/>
+            <arg column="targetEndDate" javaType="java.time.LocalDate"/>
+            <arg column="runStatus" javaType="string"/>
+            <arg column="totalCount" javaType="int"/>
+            <arg column="successCount" javaType="int"/>
+            <arg column="failureCount" javaType="int"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="startedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="finishedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="failureReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="KorusFacultySyncResultRowMap" type="kr.ac.knue.commonfoundation.basic36.KorusFacultySyncResultRow">
+        <constructor>
+            <arg column="resultId" javaType="long"/>
+            <arg column="runId" javaType="long"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="rankName" javaType="string"/>
+            <arg column="appointmentId" javaType="string"/>
+            <arg column="syncStatus" javaType="string"/>
+            <arg column="errorMessage" javaType="string"/>
+            <arg column="retryOfResultId" javaType="java.lang.Long"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="KorusFacultySourceRowMap" type="kr.ac.knue.commonfoundation.basic36.KorusFacultySourceRow">
+        <constructor>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="rankName" javaType="string"/>
+            <arg column="appointmentId" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="runColumns">
+        run_id as "runId",
+        request_id as "requestId",
+        run_type as "runType",
+        target_start_date as "targetStartDate",
+        target_end_date as "targetEndDate",
+        run_status as "runStatus",
+        total_count as "totalCount",
+        success_count as "successCount",
+        failure_count as "failureCount",
+        created_by as "createdBy",
+        started_at as "startedAt",
+        finished_at as "finishedAt",
+        failure_reason as "failureReason"
+    </sql>
+
+    <sql id="resultColumns">
+        result_id as "resultId",
+        run_id as "runId",
+        request_id as "requestId",
+        employee_no as "employeeNo",
+        name,
+        organization_code as "organizationCode",
+        rank_name as "rankName",
+        appointment_id as "appointmentId",
+        sync_status as "syncStatus",
+        error_message as "errorMessage",
+        retry_of_result_id as "retryOfResultId",
+        created_at as "createdAt"
+    </sql>
+
+    <select id="requestIdExists" resultType="boolean">
+        select exists(select 1 from korus_faculty_sync_runs where request_id = #{requestId})
+    </select>
+
+    <insert id="insertRun">
+        insert into korus_faculty_sync_runs (request_id, run_type, target_start_date, target_end_date, run_status, created_by)
+        values (#{requestId}, #{runType}, #{targetStartDate}, #{targetEndDate}, 'RUNNING', #{createdBy})
+    </insert>
+
+    <select id="findRunByRequestId" resultMap="KorusFacultySyncRunRowMap">
+        select <include refid="runColumns"/>
+        from korus_faculty_sync_runs
+        where request_id = #{requestId}
+    </select>
+
+    <select id="listFacultySources" resultMap="KorusFacultySourceRowMap">
+        select employee_no as "employeeNo",
+               name,
+               organization_code as "organizationCode",
+               rank_name as "rankName",
+               appointment_id as "appointmentId"
+        from korus_personnel_snapshots
+        where status = 'ACTIVE'
+          and last_synced_at::date between #{targetStartDate} and #{targetEndDate}
+        order by employee_no
+    </select>
+
+    <select id="organizationExists" resultType="boolean">
+        select exists(select 1 from organizations where organization_code = #{organizationCode} and status = 'ACTIVE')
+    </select>
+
+    <insert id="upsertResult">
+        insert into korus_faculty_sync_results (run_id, request_id, employee_no, name, organization_code, rank_name, appointment_id, sync_status, error_message, retry_of_result_id)
+        values (#{runId}, #{requestId}, #{source.employeeNo}, #{source.name}, #{source.organizationCode}, #{source.rankName}, #{source.appointmentId}, #{syncStatus}, #{errorMessage}, #{retryOfResultId})
+        on conflict (run_id, employee_no, organization_code, appointment_id)
+        do update set request_id = EXCLUDED.request_id,
+                      name = EXCLUDED.name,
+                      rank_name = EXCLUDED.rank_name,
+                      sync_status = EXCLUDED.sync_status,
+                      error_message = EXCLUDED.error_message,
+                      retry_of_result_id = EXCLUDED.retry_of_result_id,
+                      created_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="updateRunCounts">
+        update korus_faculty_sync_runs
+        set run_status = #{runStatus},
+            total_count = #{totalCount},
+            success_count = #{successCount},
+            failure_count = #{failureCount},
+            failure_reason = #{failureReason},
+            finished_at = CURRENT_TIMESTAMP
+        where run_id = #{runId}
+    </update>
+
+    <select id="findResult" resultMap="KorusFacultySyncResultRowMap">
+        select <include refid="resultColumns"/>
+        from korus_faculty_sync_results
+        where result_id = #{resultId}
+    </select>
+
+    <sql id="resultFilters">
+        <where>
+            <if test="criteria.targetStartDate != null">
+                r.created_at::date &gt;= #{criteria.targetStartDate}
+            </if>
+            <if test="criteria.targetEndDate != null">
+                and r.created_at::date &lt;= #{criteria.targetEndDate}
+            </if>
+            <if test="criteria.normalizedSyncStatus != null">
+                and r.sync_status = #{criteria.normalizedSyncStatus}
+            </if>
+            <if test="criteria.normalizedRequestId != null">
+                and r.request_id ilike concat('%', #{criteria.normalizedRequestId}, '%')
+            </if>
+            <if test="criteria.normalizedEmployeeNo != null">
+                and r.employee_no = #{criteria.normalizedEmployeeNo}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listResults" resultMap="KorusFacultySyncResultRowMap">
+        select <include refid="resultColumns"/>
+        from korus_faculty_sync_results r
+        <include refid="resultFilters"/>
+        order by r.created_at desc, r.result_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countResults" resultType="long">
+        select count(*)
+        from korus_faculty_sync_results r
+        <include refid="resultFilters"/>
+    </select>
+</mapper>

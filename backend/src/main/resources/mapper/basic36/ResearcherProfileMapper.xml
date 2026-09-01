@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic36.ResearcherProfileMapper">
+    <resultMap id="ResearcherProfileSummaryMap" type="kr.ac.knue.commonfoundation.basic36.ResearcherProfileSummary">
+        <constructor>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="organizationName" javaType="string"/>
+            <arg column="rankName" javaType="string"/>
+            <arg column="appointmentId" javaType="string"/>
+            <arg column="contact" javaType="string"/>
+            <arg column="researcherRegistrationNo" javaType="string"/>
+            <arg column="externalProvisionYn" javaType="string"/>
+            <arg column="informationPublicYn" javaType="string"/>
+            <arg column="finalDegreeType" javaType="string"/>
+            <arg column="degreePrerequisiteMissing" javaType="boolean"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="profileColumns">
+        k.employee_no as "employeeNo",
+        k.name,
+        k.organization_code as "organizationCode",
+        org.organization_name as "organizationName",
+        k.rank_name as "rankName",
+        k.appointment_id as "appointmentId",
+        p.contact,
+        p.researcher_registration_no as "researcherRegistrationNo",
+        p.external_provision_yn as "externalProvisionYn",
+        p.information_public_yn as "informationPublicYn",
+        p.final_degree_type as "finalDegreeType",
+        coalesce(p.degree_prerequisite_missing_yn, 'N') = 'Y' as "degreePrerequisiteMissing",
+        p.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="profileFrom">
+        from korus_personnel_snapshots k
+        left join organizations org on org.organization_code = k.organization_code
+        left join researcher_profiles p on p.employee_no = k.employee_no
+    </sql>
+
+    <sql id="profileFilters">
+        <where>
+            k.status = 'ACTIVE'
+            <if test="criteria.selfOnly">
+                and k.employee_no = #{criteria.normalizedRequesterEmployeeNo}
+            </if>
+            <if test="criteria.normalizedEmployeeNo != null">
+                and k.employee_no = #{criteria.normalizedEmployeeNo}
+            </if>
+            <if test="criteria.normalizedName != null">
+                and k.name ilike concat('%', #{criteria.normalizedName}, '%')
+            </if>
+            <if test="criteria.normalizedOrganizationCode != null">
+                and k.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listProfiles" resultMap="ResearcherProfileSummaryMap">
+        select <include refid="profileColumns"/>
+        <include refid="profileFrom"/>
+        <include refid="profileFilters"/>
+        order by k.employee_no
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countProfiles" resultType="long">
+        select count(*)
+        <include refid="profileFrom"/>
+        <include refid="profileFilters"/>
+    </select>
+
+    <select id="findProfile" resultMap="ResearcherProfileSummaryMap">
+        select <include refid="profileColumns"/>
+        <include refid="profileFrom"/>
+        where k.employee_no = #{employeeNo} and k.status = 'ACTIVE'
+    </select>
+
+    <insert id="ensureProfile">
+        insert into researcher_profiles (employee_no, contact, external_provision_yn, information_public_yn, created_by, updated_by)
+        values (#{employeeNo}, '', 'N', 'N', #{changedBy}, #{changedBy})
+        on conflict (employee_no) do nothing
+    </insert>
+
+    <select id="listResearchFields" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherResearchFieldRow">
+        select research_field_id as "researchFieldId", employee_no as "employeeNo", major_name as "majorName", detail_major_name as "detailMajorName", major_series as "majorSeries", changed_by as "changedBy", changed_at as "changedAt"
+        from researcher_research_fields where employee_no = #{employeeNo} order by research_field_id
+    </select>
+
+    <select id="listCareers" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherCareerRow">
+        select career_id as "careerId", employee_no as "employeeNo", work_start_ym as "workStartYm", work_end_ym as "workEndYm", workplace, position_name as "positionName", duty, changed_by as "changedBy", changed_at as "changedAt"
+        from researcher_careers where employee_no = #{employeeNo} order by career_id
+    </select>
+
+    <select id="listDegrees" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherDegreeRow">
+        select degree_id as "degreeId", employee_no as "employeeNo", degree_type as "degreeType", university_name as "universityName", start_ym as "startYm", acquired_ym as "acquiredYm", country_name as "countryName", college_name as "collegeName", advisor_name as "advisorName", changed_by as "changedBy", changed_at as "changedAt"
+        from researcher_degrees where employee_no = #{employeeNo} order by degree_id
+    </select>
+
+    <select id="listCertifications" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherCertificationRow">
+        select certification_id as "certificationId", employee_no as "employeeNo", acquired_ym as "acquiredYm", certification_name as "certificationName", issuing_organization_name as "issuingOrganizationName", changed_by as "changedBy", changed_at as "changedAt"
+        from researcher_certifications where employee_no = #{employeeNo} order by certification_id
+    </select>
+
+    <delete id="deleteResearchFields">delete from researcher_research_fields where employee_no = #{employeeNo}</delete>
+    <delete id="deleteCareers">delete from researcher_careers where employee_no = #{employeeNo}</delete>
+    <delete id="deleteDegrees">delete from researcher_degrees where employee_no = #{employeeNo}</delete>
+    <delete id="deleteCertifications">delete from researcher_certifications where employee_no = #{employeeNo}</delete>
+
+    <insert id="insertResearchField">
+        insert into researcher_research_fields (employee_no, major_name, detail_major_name, major_series, changed_by)
+        values (#{employeeNo}, #{item.majorName}, #{item.detailMajorName}, #{item.majorSeries}, #{changedBy})
+    </insert>
+
+    <insert id="insertCareer">
+        insert into researcher_careers (employee_no, work_start_ym, work_end_ym, workplace, position_name, duty, changed_by)
+        values (#{employeeNo}, #{item.workStartYm}, #{item.workEndYm}, #{item.workplace}, #{item.positionName}, #{item.duty}, #{changedBy})
+    </insert>
+
+    <insert id="insertDegree">
+        insert into researcher_degrees (employee_no, degree_type, university_name, start_ym, acquired_ym, country_name, college_name, advisor_name, changed_by)
+        values (#{employeeNo}, #{item.degreeType}, #{item.universityName}, #{item.startYm}, #{item.acquiredYm}, #{item.countryName}, #{item.collegeName}, #{item.advisorName}, #{changedBy})
+    </insert>
+
+    <insert id="insertCertification">
+        insert into researcher_certifications (employee_no, acquired_ym, certification_name, issuing_organization_name, changed_by)
+        values (#{employeeNo}, #{item.acquiredYm}, #{item.certificationName}, #{item.issuingOrganizationName}, #{changedBy})
+    </insert>
+
+    <update id="updateProfileDegreeStatus">
+        update researcher_profiles
+        set final_degree_type = #{finalDegreeType}, degree_prerequisite_missing_yn = case when #{missing} then 'Y' else 'N' end, updated_by = #{changedBy}, updated_at = CURRENT_TIMESTAMP
+        where employee_no = #{employeeNo}
+    </update>
+
+    <update id="touchProfile">
+        update researcher_profiles set updated_by = #{changedBy}, updated_at = CURRENT_TIMESTAMP where employee_no = #{employeeNo}
+    </update>
+
+    <select id="listDegreePrerequisiteMissing" resultMap="ResearcherProfileSummaryMap">
+        select <include refid="profileColumns"/>
+        <include refid="profileFrom"/>
+        <include refid="profileFilters"/>
+        and coalesce(p.degree_prerequisite_missing_yn, 'N') = 'Y'
+        order by k.employee_no
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDegreePrerequisiteMissing" resultType="long">
+        select count(*)
+        <include refid="profileFrom"/>
+        <include refid="profileFilters"/>
+        and coalesce(p.degree_prerequisite_missing_yn, 'N') = 'Y'
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        values ('BASIC36_RESEARCHER_PROFILE', #{employeeNo}, 'UPDATE', #{tab}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
+
+    <insert id="insertAchievementHistory">
+        insert into achievement_data_histories (achievement_type, achievement_key, employee_no, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        values ('BASIC36_RESEARCHER_PROFILE', #{employeeNo}, #{employeeNo}, 'UPDATE', #{tab}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
+</mapper>

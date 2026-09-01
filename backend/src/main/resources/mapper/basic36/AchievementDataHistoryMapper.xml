@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic36.AchievementDataHistoryMapper">
+    <resultMap id="AchievementDataHistoryRowMap" type="kr.ac.knue.commonfoundation.basic36.AchievementDataHistoryRow">
+        <constructor>
+            <arg column="historyId" javaType="long"/>
+            <arg column="achievementType" javaType="string"/>
+            <arg column="achievementKey" javaType="string"/>
+            <arg column="changeType" javaType="string"/>
+            <arg column="fieldName" javaType="string"/>
+            <arg column="beforeValue" javaType="string"/>
+            <arg column="afterValue" javaType="string"/>
+            <arg column="changedBy" javaType="long"/>
+            <arg column="changedByLoginId" javaType="string"/>
+            <arg column="changedByName" javaType="string"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="AchievementDataAsOfRowMap" type="kr.ac.knue.commonfoundation.basic36.AchievementDataAsOfRow">
+        <constructor>
+            <arg column="snapshotId" javaType="long"/>
+            <arg column="achievementType" javaType="string"/>
+            <arg column="achievementKey" javaType="string"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="achievementTitle" javaType="string"/>
+            <arg column="achievementStatus" javaType="string"/>
+            <arg column="snapshotValue" javaType="string"/>
+            <arg column="baseAt" javaType="java.time.LocalDateTime"/>
+            <arg column="capturedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="historyColumns">
+        adh.history_id as "historyId",
+        adh.achievement_type as "achievementType",
+        adh.achievement_key as "achievementKey",
+        adh.change_type as "changeType",
+        adh.field_name as "fieldName",
+        adh.before_value as "beforeValue",
+        adh.after_value as "afterValue",
+        adh.changed_by as "changedBy",
+        u.login_id as "changedByLoginId",
+        coalesce(kps.name, u.login_id) as "changedByName",
+        adh.changed_at as "changedAt",
+        adh.change_reason as "changeReason"
+    </sql>
+
+    <sql id="historyFilters">
+        <where>
+            <if test="criteria.achievementType != null and criteria.achievementType != ''">
+                adh.achievement_type = #{criteria.achievementType}
+            </if>
+            <if test="criteria.achievementKey != null and criteria.achievementKey != ''">
+                and adh.achievement_key ilike concat('%', #{criteria.achievementKey}, '%')
+            </if>
+            <if test="criteria.employeeNo != null and criteria.employeeNo != ''">
+                and adh.employee_no = #{criteria.employeeNo}
+            </if>
+            <if test="criteria.changedAtFrom != null and criteria.changedAtFrom != ''">
+                and adh.changed_at &gt;= cast(#{criteria.changedAtFrom} as timestamp)
+            </if>
+            <if test="criteria.changedAtTo != null and criteria.changedAtTo != ''">
+                and adh.changed_at &lt;= cast(#{criteria.changedAtTo} as timestamp)
+            </if>
+            <if test="criteria.changeType != null and criteria.changeType != ''">
+                and adh.change_type = #{criteria.changeType}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listHistories" resultMap="AchievementDataHistoryRowMap">
+        select <include refid="historyColumns"/>
+        from achievement_data_histories adh
+        join users u on u.user_id = adh.changed_by
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="historyFilters"/>
+        order by adh.changed_at desc, adh.history_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countHistories" resultType="long">
+        select count(*) from achievement_data_histories adh
+        <include refid="historyFilters"/>
+    </select>
+
+    <sql id="asOfFilters">
+        <where>
+            ads.base_at &lt;= cast(#{criteria.asOfAt} as timestamp)
+            <if test="criteria.achievementType != null and criteria.achievementType != ''">
+                and ads.achievement_type = #{criteria.achievementType}
+            </if>
+            <if test="criteria.achievementKey != null and criteria.achievementKey != ''">
+                and ads.achievement_key ilike concat('%', #{criteria.achievementKey}, '%')
+            </if>
+            <if test="criteria.employeeNo != null and criteria.employeeNo != ''">
+                and ads.employee_no = #{criteria.employeeNo}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listAsOfSnapshots" resultMap="AchievementDataAsOfRowMap">
+        select ads.snapshot_id as "snapshotId",
+               ads.achievement_type as "achievementType",
+               ads.achievement_key as "achievementKey",
+               ads.employee_no as "employeeNo",
+               ads.achievement_title as "achievementTitle",
+               ads.achievement_status as "achievementStatus",
+               ads.snapshot_value as "snapshotValue",
+               ads.base_at as "baseAt",
+               ads.captured_at as "capturedAt"
+        from achievement_data_as_of_snapshots ads
+        <include refid="asOfFilters"/>
+        order by ads.base_at desc, ads.snapshot_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countAsOfSnapshots" resultType="long">
+        select count(*) from achievement_data_as_of_snapshots ads
+        <include refid="asOfFilters"/>
+    </select>
+</mapper>

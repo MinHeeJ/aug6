@@ -72,6 +72,30 @@ class ExcelOperationsApiTest {
     }
 
     @Test
+    void basic37ListUploadTemplatesReturnsSeedTemplateRulesInApiResponseEnvelope() throws Exception {
+        ExcelTemplateRow row = new ExcelTemplateRow("BASIC37-SEED-EXCEL-TEMPLATE-001", "FACULTY_PROFILE", "v2026.1", LocalDate.parse("2026-01-01"),
+                "Y", "ACTIVE", "BASIC37-SEED-EXCEL-TEMPLATE-001-FILE-TOKEN", "BASIC37-SEED-EXCEL-TEMPLATE-001.xlsx",
+                List.of(new ExcelTemplateRuleRow("BASIC37-SEED-EXCEL-TEMPLATE-001-RULE-001", "업무구분", 1, "COMMON_STATUS.ACTIVE"),
+                        new ExcelTemplateRuleRow("BASIC37-SEED-EXCEL-TEMPLATE-001-RULE-002", "교번", 2, "COMMON_STATUS.ACTIVE")));
+        when(service.listUploadTemplates(eq(0), eq(20), eq("FACULTY_PROFILE"), eq(null)))
+                .thenReturn(new ExcelTemplateSearchResponse(List.of(row), 0, 20, 1));
+
+        mockMvc.perform(get("/api/admin/excel-upload-templates")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .param("page", "0")
+                        .param("size", "20")
+                        .param("businessType", "FACULTY_PROFILE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.templates[0].templateId").value("BASIC37-SEED-EXCEL-TEMPLATE-001"))
+                .andExpect(jsonPath("$.data.templates[0].templateVersion").value("v2026.1"))
+                .andExpect(jsonPath("$.data.templates[0].effectiveDate").value("2026-01-01"))
+                .andExpect(jsonPath("$.data.templates[0].rules[1].requiredColumn").value("교번"))
+                .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    @Test
     void saveUploadTemplateRejectsMissingRequiredRuleFieldsBeforeMapperSideEffects() {
         ExcelOperationsMapper mapper = org.mockito.Mockito.mock(ExcelOperationsMapper.class);
         ExcelOperationsService realService = new ExcelOperationsService(mapper);

@@ -34,6 +34,21 @@ public class ResearcherProfileService {
         return detail(summary);
     }
 
+    @Transactional(readOnly = true)
+    public ResearcherLookupPageResponse<FacultySearchResultRow> listFacultySearchResults(ResearcherLookupCriteria criteria) {
+        return new ResearcherLookupPageResponse<>(mapper.listFacultySearchResults(criteria), Math.max(criteria.page(), 0), criteria.safeSize(), mapper.countFacultySearchResults(criteria));
+    }
+
+    @Transactional(readOnly = true)
+    public ResearcherLookupPageResponse<ResearcherProfileListRow> listResearcherProfiles(ResearcherLookupCriteria criteria) {
+        return new ResearcherLookupPageResponse<>(mapper.listResearcherProfiles(criteria), Math.max(criteria.page(), 0), criteria.safeSize(), mapper.countResearcherProfiles(criteria));
+    }
+
+    @Transactional(readOnly = true)
+    public ResearcherLookupPageResponse<DegreeDeficiencyTargetRow> listDegreeDeficiencyTargets(ResearcherLookupCriteria criteria) {
+        return new ResearcherLookupPageResponse<>(mapper.listDegreeDeficiencyTargets(criteria), Math.max(criteria.page(), 0), criteria.safeSize(), mapper.countDegreeDeficiencyTargets(criteria));
+    }
+
     @Transactional
     public ResearcherProfileSaveResponse saveResearchFields(String employeeNo, ResearcherProfileTabSaveRequest request, CurrentUser user) {
         ensureWritable(employeeNo, user);
@@ -66,6 +81,9 @@ public class ResearcherProfileService {
         for (ResearcherProfileTabItem item : safeItems(request)) mapper.insertDegree(employeeNo, item, user.userId());
         boolean missing = hasDoctor(request) && !hasAllDoctorPrerequisites(request);
         mapper.updateProfileDegreeStatus(employeeNo, highestDegree(request), missing, user.userId());
+        mapper.upsertFacultySearchResultProjection(employeeNo);
+        mapper.deleteDegreeDeficiencyTargetsForEmployee(employeeNo);
+        if (missing) mapper.upsertDegreeDeficiencyTarget(employeeNo);
         List<String> warnings = missing ? List.of("박사 최종학위의 학사·석사·박사 선행학위 입력 여부를 확인하세요.") : List.of();
         return saved(employeeNo, "degrees", before, request, user, warnings);
     }

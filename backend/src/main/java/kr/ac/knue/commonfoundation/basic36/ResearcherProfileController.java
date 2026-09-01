@@ -47,6 +47,36 @@ public class ResearcherProfileController {
         return ApiResponse.ok(service.get(employeeNo, user), effectiveRequestId(requestId));
     }
 
+    @GetMapping("/api/admin/researcher-profiles/faculty-search")
+    public ApiResponse<ResearcherLookupPageResponse<FacultySearchResultRow>> listFacultySearchResults(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword, @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest request) {
+        requireAnyRole(request, "R09");
+        validateSize(size);
+        return ApiResponse.ok(service.listFacultySearchResults(new ResearcherLookupCriteria(page, size, keyword)), effectiveRequestId(requestId));
+    }
+
+    @GetMapping("/api/admin/researcher-profiles")
+    public ApiResponse<ResearcherLookupPageResponse<ResearcherProfileListRow>> listResearcherProfiles(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword, @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest request) {
+        requireAnyRole(request, "R09");
+        validateSize(size);
+        return ApiResponse.ok(service.listResearcherProfiles(new ResearcherLookupCriteria(page, size, keyword)), effectiveRequestId(requestId));
+    }
+
+    @GetMapping("/api/admin/researcher-profiles/degree-deficiencies")
+    public ApiResponse<ResearcherLookupPageResponse<DegreeDeficiencyTargetRow>> listDegreeDeficiencyTargets(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword, @RequestHeader(value = "X-Request-Id", required = false) String requestId,
+            HttpServletRequest request) {
+        requireAnyRole(request, "R09");
+        validateSize(size);
+        return ApiResponse.ok(service.listDegreeDeficiencyTargets(new ResearcherLookupCriteria(page, size, keyword)), effectiveRequestId(requestId));
+    }
+
     @PutMapping("/api/researcher-profiles/{employeeNo}/research-fields")
     public ApiResponse<ResearcherProfileSaveResponse> saveResearchFields(@PathVariable String employeeNo, @RequestBody Map<String, Object> body, @RequestHeader(value = "X-Request-Id", required = false) String requestId, HttpServletRequest request) {
         validateReadonlyPayload(body);

@@ -1,0 +1,214 @@
+{
+  "schemaVersion": "basic37.requirement-registry.v1",
+  "feature": "BASIC-37 기능 개선 요청",
+  "branch": "001-feature",
+  "scope": "Phase 1: Baseline Contract Setup",
+  "requirements": [
+    {
+      "canonicalId": "REQ-1149",
+      "title": "교원 검색 목록 조회 오류 수정",
+      "owningStory": "US-B37-01",
+      "type": "query",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1149",
+      "testLabels": [
+        "basic37:backend-contract:researcher-profiles",
+        "trace:req-1149"
+      ],
+      "acceptanceProof": "listFacultySearchResults"
+    },
+    {
+      "canonicalId": "REQ-1150",
+      "title": "연구자 프로필 목록 조회 오류 수정",
+      "owningStory": "US-B37-01",
+      "type": "query",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1150",
+      "testLabels": [
+        "basic37:backend-contract:researcher-profiles",
+        "trace:req-1150"
+      ],
+      "acceptanceProof": "listResearcherProfiles"
+    },
+    {
+      "canonicalId": "REQ-1151",
+      "title": "선행학위 미충족 대상 조회 오류 수정",
+      "owningStory": "US-B37-01",
+      "type": "query",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1151",
+      "testLabels": [
+        "basic37:backend-contract:researcher-profiles",
+        "trace:req-1151"
+      ],
+      "acceptanceProof": "listDegreeDeficiencyTargets"
+    },
+    {
+      "canonicalId": "REQ-1152",
+      "title": "동일 DTO 매핑 유형 조회 오류 동반 수정",
+      "owningStory": "US-B37-01",
+      "type": "query",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1152",
+      "testLabels": [
+        "basic37:backend-contract:query-dto-mapping",
+        "trace:req-1152"
+      ],
+      "acceptanceProof": "dto-mapping-regression-audit"
+    },
+    {
+      "canonicalId": "REQ-1153",
+      "title": "배치 결과 조회 기능 오류 수정",
+      "owningStory": "US-B37-02",
+      "type": "query",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1153",
+      "testLabels": [
+        "basic37:backend-contract:batch-results",
+        "trace:req-1153"
+      ],
+      "acceptanceProof": "listBatchResults|getBatchResultLog"
+    },
+    {
+      "canonicalId": "REQ-1154",
+      "title": "업로드 양식 관리 조회 오류 수정",
+      "owningStory": "US-B37-03",
+      "type": "query",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1154",
+      "testLabels": [
+        "basic37:backend-contract:excel-upload-templates",
+        "trace:req-1154"
+      ],
+      "acceptanceProof": "listUploadTemplates"
+    },
+    {
+      "canonicalId": "REQ-1155",
+      "title": "엑셀 관리 5개 메뉴 UI 일관성 개선",
+      "owningStory": "US-B37-04",
+      "type": "ui-alignment",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1155",
+      "testLabels": [
+        "basic37:frontend-contract:excel-management",
+        "trace:req-1155"
+      ],
+      "acceptanceProof": "excel-management-layout-regression"
+    },
+    {
+      "canonicalId": "REQ-1156",
+      "title": "개발·검증용 최소 예시 데이터 추가",
+      "owningStory": "seed-data",
+      "type": "data",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1156",
+      "testLabels": [
+        "basic37:persistence-contract:seed-fixtures",
+        "trace:req-1156"
+      ],
+      "acceptanceProof": "basic37-seed-fixture-regression"
+    },
+    {
+      "canonicalId": "REQ-1157",
+      "title": "헤더 중심 호버 메뉴 구조 변경",
+      "owningStory": "US-B37-05",
+      "type": "navigation",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1157",
+      "testLabels": [
+        "basic37:frontend-contract:header-navigation",
+        "trace:req-1157"
+      ],
+      "acceptanceProof": "header-hover-navigation"
+    },
+    {
+      "canonicalId": "REQ-1158",
+      "title": "기존 메뉴 접근성 동등 유지",
+      "owningStory": "US-B37-05",
+      "type": "navigation",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1158",
+      "testLabels": [
+        "basic37:e2e-contract:route-reachability",
+        "trace:req-1158"
+      ],
+      "acceptanceProof": "route-inventory-reachability"
+    },
+    {
+      "canonicalId": "REQ-1159",
+      "title": "메뉴 검색 키워드 입력 활성화",
+      "owningStory": "US-B37-06",
+      "type": "menu-search",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1159",
+      "testLabels": [
+        "basic37:frontend-contract:menu-search",
+        "trace:req-1159"
+      ],
+      "acceptanceProof": "menu-search-keyword-input"
+    },
+    {
+      "canonicalId": "REQ-1160",
+      "title": "메뉴 검색 결과 이동",
+      "owningStory": "US-B37-06",
+      "type": "navigation",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1160",
+      "testLabels": [
+        "basic37:e2e-contract:menu-search-navigation",
+        "trace:req-1160"
+      ],
+      "acceptanceProof": "menu-search-result-navigation"
+    },
+    {
+      "canonicalId": "REQ-1161",
+      "title": "변경 범위와 우선순위",
+      "owningStory": "phase-planning",
+      "type": "non-functional",
+      "sourceTrace": "BASIC-37 approved change contract",
+      "implementationIssueLabel": "basic37:req-1161",
+      "testLabels": [
+        "basic37:baseline-contract:phase1",
+        "trace:req-1161"
+      ],
+      "acceptanceProof": "basic37-phase-order-baseline"
+    }
+  ],
+  "phaseTasks": [
+    {
+      "taskId": "T001",
+      "canonicalIds": [
+        "REQ-1161"
+      ],
+      "description": "REQ-1149~REQ-1161 trace를 구현 issue/test label과 연결한다.",
+      "validationTarget": ".specify/specs/001-feature/requirement-registry.json",
+      "testLabels": [
+        "basic37:phase1-baseline-contract",
+        "basic37:requirement-trace-labels"
+      ],
+      "implementationIssueLabel": "basic37:phase1-t001-requirement-trace"
+    },
+    {
+      "taskId": "T002",
+      "canonicalIds": [
+        "REQ-1161"
+      ],
+      "description": "OpenAPI/data/ui effective contract를 생성하고 SessionCookie/ApiResponse/ApiError 기준을 확인한다.",
+      "validationTarget": "docs/requirements/basic37/effective-contract/",
+      "testLabels": [
+        "basic37:phase1-baseline-contract",
+        "basic37:effective-contract-envelope"
+      ],
+      "implementationIssueLabel": "basic37:phase1-t002-effective-contract"
+    }
+  ],
+  "preservedBehavior": [
+    "기존 backend/frontend/infra stack과 runtime 계약은 변경하지 않는다.",
+    "기존 API envelope, SessionCookie 보안 경계, route/permission guard를 baseline으로 고정한다.",
+    "Phase 2 이후 seed/API/UI 구현 task는 이번 Phase 1에서 구현하지 않는다."
+  ],
+  "requestedChange": [
+    "BASIC-37 전체 요구 REQ-1149~REQ-1161을 구현 issue/test label과 연결한다.",
+    "승인된 effective OpenAPI/data/ui contract를 durable repository artifact와 backend OpenAPI resource로 materialize한다."
+  ]
+}

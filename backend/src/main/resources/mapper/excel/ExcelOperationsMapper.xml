@@ -1,7 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.ac.knue.commonfoundation.excel.ExcelOperationsMapper">
-    <select id="listUploadTemplates" resultType="kr.ac.knue.commonfoundation.excel.ExcelTemplateRow">
+    <resultMap id="ExcelTemplateRowMap" type="kr.ac.knue.commonfoundation.excel.ExcelTemplateRow">
+        <constructor>
+            <arg column="templateId" javaType="string"/>
+            <arg column="businessType" javaType="string"/>
+            <arg column="templateVersion" javaType="string"/>
+            <arg column="effectiveDate" javaType="java.time.LocalDate"/>
+            <arg column="systemUseYn" javaType="string"/>
+            <arg column="status" javaType="string"/>
+            <arg column="fileToken" javaType="string"/>
+            <arg column="originalFileName" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ExcelTemplateRuleRowMap" type="kr.ac.knue.commonfoundation.excel.ExcelTemplateRuleRow">
+        <constructor>
+            <arg column="ruleId" javaType="string"/>
+            <arg column="requiredColumn" javaType="string"/>
+            <arg column="columnOrder" javaType="java.lang.Integer"/>
+            <arg column="codeRuleRef" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <select id="listUploadTemplates" resultMap="ExcelTemplateRowMap">
         select t.template_id as "templateId",
                t.business_type as "businessType",
                t.template_version as "templateVersion",
@@ -39,8 +61,11 @@
         </where>
     </select>
 
-    <select id="listTemplateRules" resultType="kr.ac.knue.commonfoundation.excel.ExcelTemplateRuleRow">
-        select rule_id as "ruleId", required_column as "requiredColumn", column_order as "columnOrder", code_rule_ref as "codeRuleRef"
+    <select id="listTemplateRules" resultMap="ExcelTemplateRuleRowMap">
+        select rule_id as "ruleId",
+               required_column as "requiredColumn",
+               column_order as "columnOrder",
+               code_rule_ref as "codeRuleRef"
         from excel_upload_template_rules
         where template_id = #{templateId}
         order by column_order
@@ -68,7 +93,7 @@
         on conflict (file_token) do update set original_file_name = excluded.original_file_name
     </insert>
 
-    <select id="findUploadTemplate" resultType="kr.ac.knue.commonfoundation.excel.ExcelTemplateRow">
+    <select id="findUploadTemplate" resultMap="ExcelTemplateRowMap">
         select t.template_id as "templateId", t.business_type as "businessType", t.template_version as "templateVersion",
                t.effective_date as "effectiveDate", t.system_use_yn as "systemUseYn", t.status as "status",
                f.file_token as "fileToken", f.original_file_name as "originalFileName"

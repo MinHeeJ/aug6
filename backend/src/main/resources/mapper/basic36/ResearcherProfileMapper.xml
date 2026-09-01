@@ -79,6 +79,124 @@
         where k.employee_no = #{employeeNo} and k.status = 'ACTIVE'
     </select>
 
+    <sql id="adminLookupFrom">
+        from korus_personnel_snapshots k
+        left join organizations org on org.organization_code = k.organization_code
+        left join researcher_profiles p on p.employee_no = k.employee_no
+    </sql>
+
+    <sql id="adminKeywordFilter">
+        <where>
+            k.status = 'ACTIVE'
+            <if test="criteria.normalizedKeyword != null">
+                and (
+                    k.employee_no ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or k.name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or k.organization_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(org.organization_name, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(p.researcher_registration_no, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <sql id="facultySearchProjectionFilter">
+        <where>
+            <if test="criteria.normalizedKeyword != null">
+                and (
+                    faculty_id ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or faculty_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(organization_code, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(organization_name, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(rank_name, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(appointment_id, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listFacultySearchResults" resultType="kr.ac.knue.commonfoundation.basic36.FacultySearchResultRow">
+        select faculty_id as "facultyId",
+               faculty_name as "facultyName",
+               organization_code as "organizationCode",
+               organization_name as "organizationName",
+               rank_name as "rankName",
+               employment_status as "employmentStatus",
+               position_name as "positionName",
+               appointment_id as "appointmentId"
+        from faculty_search_results
+        <include refid="facultySearchProjectionFilter"/>
+        order by faculty_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countFacultySearchResults" resultType="long">
+        select count(*)
+        from faculty_search_results
+        <include refid="facultySearchProjectionFilter"/>
+    </select>
+
+    <select id="listResearcherProfiles" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherProfileListRow">
+        select coalesce(p.researcher_registration_no, k.employee_no) as "researcherProfileId",
+               k.employee_no as "facultyId",
+               k.name as "facultyName",
+               k.organization_code as "organizationCode",
+               org.organization_name as "organizationName",
+               k.rank_name as "rankName",
+               k.employment_status as "employmentStatus",
+               p.final_degree_type as "finalDegreeType",
+               case when p.employee_no is null then 'MISSING_PROFILE' else 'ACTIVE' end as "profileStatus",
+               p.information_public_yn as "informationPublicYn",
+               p.updated_at as "updatedAt"
+        <include refid="adminLookupFrom"/>
+        <include refid="adminKeywordFilter"/>
+        order by k.employee_no
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countResearcherProfiles" resultType="long">
+        select count(*)
+        <include refid="adminLookupFrom"/>
+        <include refid="adminKeywordFilter"/>
+    </select>
+
+    <sql id="degreeDeficiencyProjectionFilter">
+        <where>
+            <if test="criteria.normalizedKeyword != null">
+                and (
+                    target_id ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or researcher_profile_id ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or faculty_id ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or faculty_name ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(organization_code, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or coalesce(organization_name, '') ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or deficiency_reason ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listDegreeDeficiencyTargets" resultType="kr.ac.knue.commonfoundation.basic36.DegreeDeficiencyTargetRow">
+        select target_id as "targetId",
+               researcher_profile_id as "researcherProfileId",
+               faculty_id as "facultyId",
+               faculty_name as "facultyName",
+               organization_code as "organizationCode",
+               organization_name as "organizationName",
+               final_degree_type as "finalDegreeType",
+               deficiency_reason as "deficiencyReason",
+               updated_at as "updatedAt"
+        from degree_deficiency_targets
+        <include refid="degreeDeficiencyProjectionFilter"/>
+        order by faculty_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDegreeDeficiencyTargets" resultType="long">
+        select count(*)
+        from degree_deficiency_targets
+        <include refid="degreeDeficiencyProjectionFilter"/>
+    </select>
     <insert id="ensureProfile">
         insert into researcher_profiles (employee_no, contact, external_provision_yn, information_public_yn, created_by, updated_by)
         values (#{employeeNo}, '', 'N', 'N', #{changedBy}, #{changedBy})
@@ -135,6 +253,67 @@
         set final_degree_type = #{finalDegreeType}, degree_prerequisite_missing_yn = case when #{missing} then 'Y' else 'N' end, updated_by = #{changedBy}, updated_at = CURRENT_TIMESTAMP
         where employee_no = #{employeeNo}
     </update>
+
+    <insert id="upsertFacultySearchResultProjection">
+        insert into faculty_search_results (faculty_id, faculty_name, organization_code, organization_name, rank_name, employment_status, position_name, appointment_id, source_snapshot_employee_no, updated_at)
+        select k.employee_no, k.name, k.organization_code, org.organization_name, k.rank_name, k.employment_status, k.position_name, k.appointment_id, k.employee_no, CURRENT_TIMESTAMP
+        from korus_personnel_snapshots k
+        left join organizations org on org.organization_code = k.organization_code
+        where k.employee_no = #{employeeNo}
+          and k.status = 'ACTIVE'
+        on conflict (faculty_id) do update set
+            faculty_name = EXCLUDED.faculty_name,
+            organization_code = EXCLUDED.organization_code,
+            organization_name = EXCLUDED.organization_name,
+            rank_name = EXCLUDED.rank_name,
+            employment_status = EXCLUDED.employment_status,
+            position_name = EXCLUDED.position_name,
+            appointment_id = EXCLUDED.appointment_id,
+            source_snapshot_employee_no = EXCLUDED.source_snapshot_employee_no,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="upsertDegreeDeficiencyTarget">
+        insert into degree_deficiency_targets (target_id, researcher_profile_id, faculty_id, faculty_name, organization_code, organization_name, final_degree_type, deficiency_reason, source_degree_id, updated_at)
+        select coalesce(d.degree_id::text, k.employee_no || '-DEGREE-DEFICIENCY'),
+               coalesce(p.researcher_registration_no, k.employee_no),
+               k.employee_no,
+               k.name,
+               k.organization_code,
+               org.organization_name,
+               p.final_degree_type,
+               '박사 최종학위의 학사·석사·박사 선행학위 입력 여부를 확인하세요.',
+               d.degree_id,
+               CURRENT_TIMESTAMP
+        from korus_personnel_snapshots k
+        join researcher_profiles p on p.employee_no = k.employee_no
+        left join organizations org on org.organization_code = k.organization_code
+        left join lateral (
+            select degree_id
+            from researcher_degrees degree
+            where degree.employee_no = k.employee_no
+              and degree.degree_type = 'DOCTOR'
+            order by degree.degree_id
+            limit 1
+        ) d on true
+        where k.employee_no = #{employeeNo}
+          and k.status = 'ACTIVE'
+          and p.degree_prerequisite_missing_yn = 'Y'
+        on conflict (target_id) do update set
+            researcher_profile_id = EXCLUDED.researcher_profile_id,
+            faculty_id = EXCLUDED.faculty_id,
+            faculty_name = EXCLUDED.faculty_name,
+            organization_code = EXCLUDED.organization_code,
+            organization_name = EXCLUDED.organization_name,
+            final_degree_type = EXCLUDED.final_degree_type,
+            deficiency_reason = EXCLUDED.deficiency_reason,
+            source_degree_id = EXCLUDED.source_degree_id,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <delete id="deleteDegreeDeficiencyTargetsForEmployee">
+        delete from degree_deficiency_targets where faculty_id = #{employeeNo}
+    </delete>
 
     <update id="touchProfile">
         update researcher_profiles set updated_by = #{changedBy}, updated_at = CURRENT_TIMESTAMP where employee_no = #{employeeNo}

@@ -60,6 +60,27 @@ class BatchResultManagementApiTest {
     }
 
     @Test
+    void basic37ListBatchResultsContractReturnsApiResponseForSeedExecutionWithoutDtoMappingLeak() throws Exception {
+        BatchResultRow row = new BatchResultRow("BASIC37-SEED-BATCH-001", "BASIC37-SEED-BATCH-001", "FACULTY_PROFILE_SYNC",
+                "COMPLETED", LocalDateTime.parse("2026-08-27T01:00:00"),
+                LocalDateTime.parse("2026-08-27T01:05:00"), 50, 49, 1, 0, 300000L, true);
+        when(service.listBatchResults(eq(0), eq(20), any(BatchResultSearchCriteria.class)))
+                .thenReturn(new BatchResultSearchResponse(List.of(row), 0, 20, 1));
+
+        mockMvc.perform(get("/api/admin/batch-results")
+                        .param("page", "0")
+                        .param("size", "20")
+                        .param("executionId", "BASIC37-SEED-BATCH-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.results[0].executionId").value("BASIC37-SEED-BATCH-001"))
+                .andExpect(jsonPath("$.data.results[0].batchType").value("FACULTY_PROFILE_SYNC"))
+                .andExpect(jsonPath("$.data.results[0].totalCount").value(50))
+                .andExpect(jsonPath("$.data.results[0].elapsedMillis").value(300000))
+                .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    @Test
     void getBatchResultLogReturnsExecutionLinkedLogWithoutMutationEndpoint() throws Exception {
         when(service.getBatchResultLog("EXEC-FAILED-001"))
                 .thenReturn(new BatchResultLogResponse("EXEC-FAILED-001", "logs/batch/EXEC-FAILED-001.log"));
@@ -78,6 +99,19 @@ class BatchResultManagementApiTest {
         assertThat(List.of(BatchResultService.class.getDeclaredMethods()).stream()
                 .map(method -> method.getName()).toList())
                 .doesNotContain("replaceBatchResultLog", "deleteBatchResultLog", "updateBatchResult");
+    }
+
+    @Test
+    void basic37GetBatchResultLogContractReturnsReadonlyLogRefForSelectedExecution() throws Exception {
+        when(service.getBatchResultLog("BASIC37-SEED-BATCH-001"))
+                .thenReturn(new BatchResultLogResponse("BASIC37-SEED-BATCH-001", "logs/batch/BASIC37-SEED-BATCH-001.log"));
+
+        mockMvc.perform(get("/api/admin/batch-results/{executionId}/log", "BASIC37-SEED-BATCH-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.executionId").value("BASIC37-SEED-BATCH-001"))
+                .andExpect(jsonPath("$.data.logFileRef").value("logs/batch/BASIC37-SEED-BATCH-001.log"))
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test

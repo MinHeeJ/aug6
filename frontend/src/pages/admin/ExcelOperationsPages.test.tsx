@@ -8,6 +8,7 @@ import {
   ExcelUploadManagementPage,
   UploadTemplateManagementPage,
   excelApi,
+  getUploadTemplateRouteContract,
 } from "./ExcelOperationsPages";
 
 const compatibilitySmokeMatrix = [
@@ -30,6 +31,11 @@ describe("BASIC-26 Excel 운영 화면 계약", () => {
   });
 
   it("업로드 양식 API는 상대 /api 경로와 실제 선택 templateId를 사용한다", async () => {
+    expect(getUploadTemplateRouteContract()).toEqual({
+      route: "/admin/excel-upload-templates",
+      screenId: "SCR-UPLOAD-TEMPLATE-MGMT",
+      operations: ["listUploadTemplates"],
+    });
     const fetchMock = vi.fn(async () => ({
       ok: true,
       headers: new Headers({ "content-type": "application/json" }),
@@ -77,6 +83,88 @@ describe("BASIC-26 Excel 운영 화면 계약", () => {
       outputType: "ERROR",
       queryCondition: { uploadId: "UP-2026-ERROR" },
     });
+  });
+
+  it("BASIC-37 엑셀 5개 route는 공통 관리 화면 CSS/layout 계약을 공유한다", async () => {
+    const fetchMock = vi.fn(async (url: string) => ({
+      ok: true,
+      headers: new Headers({ "content-type": "application/json" }),
+      json: async () => {
+        if (url.includes("excel-upload-histories"))
+          return {
+            success: true,
+            data: { histories: [], page: 0, size: 20, totalElements: 0 },
+          };
+        if (url.includes("excel-upload-errors"))
+          return {
+            success: true,
+            data: { errors: [], page: 0, size: 20, totalElements: 0 },
+          };
+        return {
+          success: true,
+          data: { templates: [], page: 0, size: 20, totalElements: 0 },
+        };
+      },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pages = [
+      {
+        component: <UploadTemplateManagementPage />,
+        screenId: "SCR-UPLOAD-TEMPLATE-MGMT",
+        title: "업로드 양식 관리",
+      },
+      {
+        component: <ExcelUploadManagementPage />,
+        screenId: "SCR-EXCEL-UPLOAD-MGMT",
+        title: "엑셀 업로드 관리",
+      },
+      {
+        component: <ExcelUploadHistoryManagementPage />,
+        screenId: "SCR-UPLOAD-HISTORY-MGMT",
+        title: "업로드 이력 관리",
+      },
+      {
+        component: <ExcelUploadErrorManagementPage />,
+        screenId: "SCR-UPLOAD-ERROR-MGMT",
+        title: "업로드 오류 관리",
+      },
+      {
+        component: <ExcelDownloadManagementPage />,
+        screenId: "SCR-EXCEL-DOWNLOAD-MGMT",
+        title: "엑셀 다운로드 관리",
+      },
+    ];
+
+    const { rerender } = render(pages[0].component);
+
+    for (const page of pages) {
+      rerender(page.component);
+      const screenRoot = await screen.findByTestId(
+        `${page.screenId.toLowerCase()}-screen`,
+      );
+      expect(screenRoot).toHaveAttribute("data-screen-id", page.screenId);
+      expect(
+        screen.getByRole("heading", { level: 1, name: page.title }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId("excel-management-search-section")).toHaveClass(
+        "rounded-2xl",
+        "bg-white",
+        "shadow-md",
+      );
+      expect(screen.getByTestId("excel-management-list-section")).toHaveClass(
+        "rounded-2xl",
+        "bg-white",
+        "shadow-md",
+      );
+      expect(screen.getByTestId("excel-management-state-region")).toHaveClass(
+        "space-y-3",
+      );
+      expect(screen.getByTestId("excel-management-cta-group")).toHaveClass(
+        "flex",
+        "gap-2",
+      );
+    }
   });
 
   it("신규 Excel route는 표준 상태 영역과 접근 가능한 조작 요소를 렌더링한다", async () => {
@@ -148,6 +236,51 @@ describe("BASIC-26 Excel 운영 화면 계약", () => {
     expect(screen.getByTestId("excel-downloads-screen")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /생성/ })).toBeEnabled();
     expect(screen.getByLabelText("현재 조회조건")).toBeInTheDocument();
+  });
+
+  it("BASIC-37 업로드 양식 관리 진입 시 seed 양식과 규칙을 목록에 표시한다", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => ({
+          success: true,
+          data: {
+            templates: [
+              {
+                templateId: "SEED-EXCEL-TEMPLATE-001",
+                businessType: "PROFESSOR_ACHIEVEMENT",
+                templateVersion: "v1.0",
+                effectiveDate: "2026-01-01",
+                originalFileName: "업로드양식_v1.xlsx",
+                rules: [
+                  {
+                    ruleId: "SEED-EXCEL-TEMPLATE-RULE-001",
+                    requiredColumn: "교번",
+                    columnOrder: 1,
+                    codeRuleRef: "COMMON_STATUS.ACTIVE",
+                  },
+                ],
+              },
+            ],
+            page: 0,
+            size: 20,
+            totalElements: 1,
+          },
+          meta: {},
+        }),
+      })),
+    );
+
+    render(<UploadTemplateManagementPage />);
+
+    expect(
+      await screen.findByText("SEED-EXCEL-TEMPLATE-001"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("PROFESSOR_ACHIEVEMENT")).toBeInTheDocument();
+    expect(screen.getByText("v1.0")).toBeInTheDocument();
+    expect(screen.getByText("1.교번")).toBeInTheDocument();
   });
 
   it("호환성 smoke matrix는 데스크톱 주요 브라우저와 태블릿 환경을 명시한다", () => {

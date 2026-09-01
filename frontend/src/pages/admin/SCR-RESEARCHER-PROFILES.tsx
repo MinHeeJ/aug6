@@ -5,11 +5,14 @@ import {
   ApiClientError,
   researcherProfileApi,
   type ApiErrorField,
+  type DegreeDeficiencyTargetRow,
+  type FacultySearchResultRow,
   type PageSize,
   type ResearcherCareer,
   type ResearcherCertification,
   type ResearcherDegree,
   type ResearcherProfileDetail,
+  type ResearcherProfileListRow,
   type ResearcherProfileSummary,
   type ResearcherResearchField,
 } from "../../api/apiClient";
@@ -31,6 +34,270 @@ const defaultFilters: ProfileFilters = {
   name: "",
   organizationCode: "",
 };
+
+export function FacultySearchListPage() {
+  return (
+    <ResearcherAdminLookupPage<FacultySearchResultRow>
+      screenId="SCR-FACULTY-SEARCH-LIST"
+      testId="faculty-search-list-page"
+      title="교원 검색 목록"
+      path="연구자 프로필 관리 / 교원 검색 목록"
+      description="KORUS 교원 기본정보를 DTO 매핑 오류 없이 조회합니다."
+      list={(params) => researcherProfileApi.listFacultySearchResults(params)}
+      emptyTitle="조회된 교원이 없습니다"
+      keywordPlaceholder="교번, 성명, 소속을 입력하세요"
+      columns={[
+        { header: "교번", value: (row) => row.facultyId },
+        { header: "성명", value: (row) => row.facultyName },
+        {
+          header: "소속",
+          value: (row) => row.organizationName ?? row.organizationCode,
+        },
+        { header: "직급", value: (row) => row.rankName ?? "-" },
+        { header: "재직상태", value: (row) => row.employmentStatus ?? "-" },
+        { header: "보직", value: (row) => row.positionName ?? "-" },
+      ]}
+      rowKey={(row) => row.facultyId}
+    />
+  );
+}
+
+export function AdminResearcherProfileListPage() {
+  return (
+    <ResearcherAdminLookupPage<ResearcherProfileListRow>
+      screenId="SCR-RESEARCHER-PROFILE-LIST"
+      testId="admin-researcher-profile-list-page"
+      title="연구자 프로필 목록"
+      path="연구자 프로필 관리 / 연구자 프로필 목록"
+      description="연구자 프로필 요약을 DTO 매핑 오류 없이 조회합니다."
+      list={(params) =>
+        researcherProfileApi.listAdminResearcherProfiles(params)
+      }
+      emptyTitle="조회된 연구자 프로필이 없습니다"
+      keywordPlaceholder="교번, 성명, 소속, 연구자등록번호를 입력하세요"
+      columns={[
+        { header: "연구자프로필ID", value: (row) => row.researcherProfileId },
+        { header: "교번", value: (row) => row.facultyId },
+        { header: "성명", value: (row) => row.facultyName },
+        {
+          header: "소속",
+          value: (row) => row.organizationName ?? row.organizationCode,
+        },
+        {
+          header: "최종학위",
+          value: (row) => degreeLabel(row.finalDegreeType),
+        },
+        { header: "상태", value: (row) => row.profileStatus ?? "-" },
+      ]}
+      rowKey={(row) => row.researcherProfileId}
+    />
+  );
+}
+
+export function DegreeDeficiencyTargetListPage() {
+  return (
+    <ResearcherAdminLookupPage<DegreeDeficiencyTargetRow>
+      screenId="SCR-DEGREE-DEFICIENCY-TARGET-LIST"
+      testId="degree-deficiency-target-list-page"
+      title="선행학위 미충족 대상"
+      path="연구자 프로필 관리 / 선행학위 미충족 대상"
+      description="박사 최종학위의 선행학위 미충족 대상을 DTO 매핑 오류 없이 조회합니다."
+      list={(params) =>
+        researcherProfileApi.listDegreeDeficiencyTargets(params)
+      }
+      emptyTitle="선행학위 미충족 대상이 없습니다"
+      keywordPlaceholder="교번, 성명, 소속을 입력하세요"
+      columns={[
+        { header: "대상ID", value: (row) => row.targetId },
+        { header: "교번", value: (row) => row.facultyId },
+        { header: "성명", value: (row) => row.facultyName },
+        {
+          header: "소속",
+          value: (row) => row.organizationName ?? row.organizationCode,
+        },
+        {
+          header: "최종학위",
+          value: (row) => degreeLabel(row.finalDegreeType),
+        },
+        { header: "미충족 사유", value: (row) => row.deficiencyReason ?? "-" },
+      ]}
+      rowKey={(row) => row.targetId}
+    />
+  );
+}
+
+type AdminLookupColumn<T> = {
+  header: string;
+  value: (row: T) => React.ReactNode;
+};
+
+function ResearcherAdminLookupPage<T>({
+  screenId,
+  testId,
+  title,
+  path,
+  description,
+  list,
+  emptyTitle,
+  keywordPlaceholder,
+  columns,
+  rowKey,
+}: {
+  screenId: string;
+  testId: string;
+  title: string;
+  path: string;
+  description: string;
+  list: (params: {
+    page: number;
+    size: PageSize;
+    keyword?: string;
+  }) => Promise<{
+    data?: { rows: T[]; page: number; pageSize: number; totalElements: number };
+  }>;
+  emptyTitle: string;
+  keywordPlaceholder: string;
+  columns: AdminLookupColumn<T>[];
+  rowKey: (row: T) => string;
+}) {
+  const [keyword, setKeyword] = useState("");
+  const [rows, setRows] = useState<T[]>([]);
+  const [pageSize, setPageSize] = useState<PageSize>(20);
+  const [page, setPage] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setPermissionDenied(false);
+      const response = await list({ page, size: pageSize, keyword });
+      setRows(response.data?.rows ?? []);
+      setTotalElements(response.data?.totalElements ?? 0);
+    } catch (caught) {
+      handleApiError(
+        caught,
+        setPermissionDenied,
+        setError,
+        `${title} 조회에 실패했습니다.`,
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, [page, pageSize]);
+
+  if (permissionDenied)
+    return (
+      <section data-screen-id={screenId} data-testid={testId}>
+        <PermissionState
+          title={`${title} 권한이 없습니다`}
+          message="R09 역할과 메뉴 권한이 필요합니다."
+        />
+      </section>
+    );
+
+  return (
+    <section
+      className="space-y-6"
+      data-screen-id={screenId}
+      data-testid={testId}
+    >
+      <Header title={title} path={path} description={description} />
+      {error ? <ErrorState title={`${title} 오류`} message={error} /> : null}
+      <section
+        className="rounded-md border border-ld bg-white p-5 shadow-md"
+        data-testid={`${testId}-filter-panel`}
+      >
+        <label className="block text-sm font-medium text-dark">
+          검색어
+          <input
+            className="mt-1 w-full rounded-md border border-ld px-3 py-2 text-sm"
+            data-testid={`${testId}-keyword-input`}
+            placeholder={keywordPlaceholder}
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+        </label>
+        <button
+          className="mt-4 rounded-md bg-lightprimary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary hover:text-white"
+          data-testid={`${testId}-search-button`}
+          type="button"
+          onClick={() => {
+            setPage(0);
+            void load();
+          }}
+        >
+          조회
+        </button>
+      </section>
+      <section className="rounded-md border border-ld bg-white p-5 shadow-md">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold text-dark">{title}</h2>
+          <span className="rounded-full bg-lightprimary px-3 py-1 text-sm font-semibold text-primary">
+            총 {totalElements}건
+          </span>
+        </div>
+        {loading ? (
+          <LoadingState
+            title={`${title} 조회 중`}
+            message="목록을 불러오고 있습니다."
+          />
+        ) : null}
+        {!loading && rows.length === 0 ? (
+          <EmptyState
+            title={emptyTitle}
+            message="검색 조건을 변경한 뒤 조회하세요."
+          />
+        ) : null}
+        {!loading && rows.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-ld text-sm">
+              <thead className="bg-lightgray text-left text-xs font-semibold uppercase text-muted">
+                <tr>
+                  {columns.map((column) => (
+                    <th className="px-3 py-3" key={column.header}>
+                      {column.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ld">
+                {rows.map((row) => (
+                  <tr
+                    className="hover:bg-lightsecondary"
+                    data-testid={`${testId}-row`}
+                    key={rowKey(row)}
+                  >
+                    {columns.map((column) => (
+                      <td className="px-3 py-3" key={column.header}>
+                        {column.value(row)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+        <Pager
+          page={page}
+          pageSize={pageSize}
+          totalElements={totalElements}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          testPrefix={testId}
+        />
+      </section>
+    </section>
+  );
+}
 
 export function ResearcherProfileListPage() {
   const [filters, setFilters] = useState(defaultFilters);

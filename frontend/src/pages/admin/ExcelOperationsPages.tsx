@@ -87,6 +87,14 @@ export type ExcelDownloadJobRow = {
 
 export const EXCEL_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
 
+export function getUploadTemplateRouteContract() {
+  return {
+    route: "/admin/excel-upload-templates",
+    screenId: "SCR-UPLOAD-TEMPLATE-MGMT",
+    operations: ["listUploadTemplates"],
+  } as const;
+}
+
 function describeError(caught: unknown, fallback: string) {
   if (caught instanceof ApiClientError && caught.status === 403)
     return "권한이 없습니다.";
@@ -199,22 +207,105 @@ export const excelApi = {
   },
 };
 
-function ScreenCard({
+function ExcelManagementPageLayout({
+  screenId,
+  legacyTestId,
   title,
+  menuPath,
   children,
 }: {
+  screenId: string;
+  legacyTestId: string;
   title: string;
+  menuPath: string;
   children: React.ReactNode;
 }) {
   return (
-    <section
-      className="rounded-md bg-white p-6 shadow-md"
-      data-testid={`${title.replace(/\s+/g, "-")}-panel`}
+    <main
+      className="space-y-6"
+      data-screen-id={screenId}
+      data-testid={`${screenId.toLowerCase()}-screen`}
     >
+      <div className="mb-6 overflow-hidden rounded-md border-none bg-lightsecondary py-4 px-6 shadow-none">
+        <div data-testid={legacyTestId}>
+          <h1 className="text-xl font-semibold text-dark">{title}</h1>
+          <p className="mt-2 text-sm text-link">{menuPath}</p>
+        </div>
+      </div>
+      {children}
+    </main>
+  );
+}
+
+function ScreenCard({
+  title,
+  description,
+  children,
+  kind = "detail",
+  count,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  kind?: "search" | "list" | "detail";
+  count?: number;
+}) {
+  const testId =
+    kind === "search"
+      ? "excel-management-search-section"
+      : kind === "list"
+        ? "excel-management-list-section"
+        : `${title.replace(/\s+/g, "-")}-panel`;
+  return (
+    <section
+      className="rounded-2xl bg-white p-6 shadow-md"
+      data-testid={testId}
+    >
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-dark">{title}</h2>
+          {description ? (
+            <p className="mt-1 text-sm text-muted">{description}</p>
+          ) : null}
+        </div>
+        {count !== undefined ? (
+          <span className="rounded bg-lightprimary px-3 py-1 text-sm font-semibold text-primary">
+            {count}건
+          </span>
+        ) : null}
+      </div>
       {children}
     </section>
   );
 }
+
+function ExcelManagementToolbar({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex flex-wrap items-end gap-2"
+      data-testid="excel-management-cta-group"
+    >
+      {children}
+    </div>
+  );
+}
+
+function ExcelManagementStateRegion({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-3" data-testid="excel-management-state-region">
+      {children}
+    </div>
+  );
+}
+
+function ExcelManagementTable({ children }: { children: React.ReactNode }) {
+  return <div className="overflow-x-auto">{children}</div>;
+}
+
 function StatusView({
   status,
   message,
@@ -327,9 +418,18 @@ export function UploadTemplateManagementPage() {
     }
   };
   return (
-    <main className="space-y-6" data-testid="excel-upload-templates-screen">
-      <ScreenCard title="업로드 양식 관리">
-        <div className="mb-4 flex flex-wrap gap-3">
+    <ExcelManagementPageLayout
+      screenId="SCR-UPLOAD-TEMPLATE-MGMT"
+      legacyTestId="excel-upload-templates-screen"
+      title="업로드 양식 관리"
+      menuPath="파일·데이터 관리 · 엑셀 관리 · 업로드 양식 관리"
+    >
+      <ScreenCard
+        title="검색조건"
+        description="업무구분과 시행일 기준으로 업로드 양식을 조회합니다."
+        kind="search"
+      >
+        <ExcelManagementToolbar>
           <input
             data-testid="excel-template-business-type-input"
             className="form-input"
@@ -363,8 +463,8 @@ export function UploadTemplateManagementPage() {
             <Search size={16} />
             조회
           </button>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        </ExcelManagementToolbar>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
           <input
             data-testid="excel-template-version-input"
             className="form-input"
@@ -416,55 +516,61 @@ export function UploadTemplateManagementPage() {
           </button>
         </div>
       </ScreenCard>
-      <StatusView status={status} message={message} />
-      {status === "empty" && (
-        <EmptyState
-          title="양식 없음"
-          message="조회 조건에 맞는 업로드 양식이 없습니다."
-        />
-      )}
-      <ScreenCard title="업로드 양식 목록">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>업무구분</th>
-              <th>버전</th>
-              <th>시행일</th>
-              <th>검증규칙</th>
-              <th>파일</th>
-              <th>작업</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr data-testid="excel-template-row" key={row.templateId}>
-                <td>{row.businessType}</td>
-                <td>{row.templateVersion}</td>
-                <td>{row.effectiveDate}</td>
-                <td>
-                  {row.rules
-                    .map((r) => `${r.columnOrder}.${r.requiredColumn}`)
-                    .join(", ")}
-                </td>
-                <td>{row.originalFileName}</td>
-                <td>
-                  <button
-                    data-testid="excel-template-download-button"
-                    className="btn-secondary"
-                    onClick={() =>
-                      void excelApi.downloadTemplate(row.templateId)
-                    }
-                  >
-                    <Download size={16} />
-                    다운로드
-                  </button>
-                </td>
+      <ExcelManagementStateRegion>
+        <StatusView status={status} message={message} />
+        {status === "empty" && (
+          <EmptyState
+            title="양식 없음"
+            message="조회 조건에 맞는 업로드 양식이 없습니다."
+          />
+        )}
+      </ExcelManagementStateRegion>
+      <ScreenCard title="업로드 양식 목록" kind="list" count={rows.length}>
+        <ExcelManagementTable>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>양식ID</th>
+                <th>업무구분</th>
+                <th>버전</th>
+                <th>시행일</th>
+                <th>검증규칙</th>
+                <th>파일</th>
+                <th>작업</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr data-testid="excel-template-row" key={row.templateId}>
+                  <td>{row.templateId}</td>
+                  <td>{row.businessType}</td>
+                  <td>{row.templateVersion}</td>
+                  <td>{row.effectiveDate}</td>
+                  <td>
+                    {row.rules
+                      .map((r) => `${r.columnOrder}.${r.requiredColumn}`)
+                      .join(", ")}
+                  </td>
+                  <td>{row.originalFileName}</td>
+                  <td>
+                    <button
+                      data-testid="excel-template-download-button"
+                      className="btn-secondary"
+                      onClick={() =>
+                        void excelApi.downloadTemplate(row.templateId)
+                      }
+                    >
+                      <Download size={16} />
+                      다운로드
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ExcelManagementTable>
       </ScreenCard>
-    </main>
+    </ExcelManagementPageLayout>
   );
 }
 
@@ -511,9 +617,18 @@ export function ExcelUploadManagementPage() {
     }
   };
   return (
-    <main className="space-y-6" data-testid="excel-uploads-screen">
-      <ScreenCard title="엑셀 업로드">
-        <div className="grid gap-3 md:grid-cols-4">
+    <ExcelManagementPageLayout
+      screenId="SCR-EXCEL-UPLOAD-MGMT"
+      legacyTestId="excel-uploads-screen"
+      title="엑셀 업로드 관리"
+      menuPath="파일·데이터 관리 · 엑셀 관리 · 엑셀 업로드 관리"
+    >
+      <ScreenCard
+        title="검색조건"
+        description="업무구분, 양식 버전, 파일을 선택해 사전검증을 실행합니다."
+        kind="search"
+      >
+        <ExcelManagementToolbar>
           <input
             data-testid="excel-upload-business-type-input"
             className="form-input"
@@ -544,47 +659,58 @@ export function ExcelUploadManagementPage() {
             <Upload size={16} />
             업로드·검증
           </button>
-        </div>
+        </ExcelManagementToolbar>
         <p className="mt-3 text-sm text-muted">
           절차: 템플릿 다운로드 → 파일 업로드 → 검증 → 검증결과 확인 → 반영
         </p>
       </ScreenCard>
-      <StatusView status={status} message={message} />
-      {result && (
-        <ScreenCard title="검증 결과">
-          <div className="grid gap-3 md:grid-cols-5">
-            <b>원본 {result.totalCount}</b>
-            <b>정상 {result.successCount}</b>
-            <b>오류 {result.errorCount}</b>
-            <b>제외 {result.excludedCount}</b>
-            <b>저장 {result.savedCount}</b>
-          </div>
-          {result.errors.length ? (
-            <table className="table mt-4">
-              <tbody>
-                {result.errors.map((e) => (
-                  <tr data-testid="excel-upload-error-row" key={e.errorId}>
-                    <td>{e.rowNumber}</td>
-                    <td>{e.columnName}</td>
-                    <td>{e.errorReason}</td>
-                    <td>{e.correctionGuide}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <button
-              data-testid="excel-upload-commit-button"
-              className="btn-primary mt-4"
-              onClick={commit}
-            >
-              <Save size={16} />
-              전체 반영
-            </button>
-          )}
-        </ScreenCard>
-      )}
-    </main>
+      <ExcelManagementStateRegion>
+        <StatusView status={status} message={message} />
+      </ExcelManagementStateRegion>
+      <ScreenCard title="검증 결과" kind="list" count={result ? 1 : 0}>
+        {result ? (
+          <>
+            <div className="grid gap-3 md:grid-cols-5">
+              <b>원본 {result.totalCount}</b>
+              <b>정상 {result.successCount}</b>
+              <b>오류 {result.errorCount}</b>
+              <b>제외 {result.excludedCount}</b>
+              <b>저장 {result.savedCount}</b>
+            </div>
+            {result.errors.length ? (
+              <ExcelManagementTable>
+                <table className="table mt-4">
+                  <tbody>
+                    {result.errors.map((e) => (
+                      <tr data-testid="excel-upload-error-row" key={e.errorId}>
+                        <td>{e.rowNumber}</td>
+                        <td>{e.columnName}</td>
+                        <td>{e.errorReason}</td>
+                        <td>{e.correctionGuide}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </ExcelManagementTable>
+            ) : (
+              <button
+                data-testid="excel-upload-commit-button"
+                className="btn-primary mt-4"
+                onClick={commit}
+              >
+                <Save size={16} />
+                전체 반영
+              </button>
+            )}
+          </>
+        ) : (
+          <EmptyState
+            title="검증 결과 없음"
+            message="업로드와 사전검증을 실행하면 결과가 표시됩니다."
+          />
+        )}
+      </ScreenCard>
+    </ExcelManagementPageLayout>
   );
 }
 
@@ -616,9 +742,18 @@ export function ExcelUploadHistoryManagementPage() {
     void load();
   }, [pageSize]);
   return (
-    <main className="space-y-6" data-testid="excel-upload-histories-screen">
-      <ScreenCard title="업로드 이력 조회">
-        <div className="flex flex-wrap gap-3">
+    <ExcelManagementPageLayout
+      screenId="SCR-UPLOAD-HISTORY-MGMT"
+      legacyTestId="excel-upload-histories-screen"
+      title="업로드 이력 관리"
+      menuPath="파일·데이터 관리 · 엑셀 관리 · 업로드 이력 관리"
+    >
+      <ScreenCard
+        title="검색조건"
+        description="업로드ID 또는 파일명으로 처리 이력을 조회합니다."
+        kind="search"
+      >
+        <ExcelManagementToolbar>
           <input
             data-testid="excel-history-upload-id-input"
             className="form-input"
@@ -651,52 +786,56 @@ export function ExcelUploadHistoryManagementPage() {
             <RefreshCw size={16} />
             조회
           </button>
-        </div>
+        </ExcelManagementToolbar>
       </ScreenCard>
-      <StatusView status={status} message={message} />
-      {status === "empty" && (
-        <EmptyState
-          title="이력 없음"
-          message="조회 조건의 업로드 이력이 없습니다."
-        />
-      )}
+      <ExcelManagementStateRegion>
+        <StatusView status={status} message={message} />
+        {status === "empty" && (
+          <EmptyState
+            title="이력 없음"
+            message="조회 조건의 업로드 이력이 없습니다."
+          />
+        )}
+      </ExcelManagementStateRegion>
       <ExcelHistoryTable rows={rows} />
-    </main>
+    </ExcelManagementPageLayout>
   );
 }
 function ExcelHistoryTable({ rows }: { rows: ExcelUploadHistoryRow[] }) {
   return (
-    <ScreenCard title="처리건수">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>업로드ID</th>
-            <th>파일명</th>
-            <th>업로더</th>
-            <th>원본</th>
-            <th>정상</th>
-            <th>오류</th>
-            <th>제외</th>
-            <th>저장</th>
-            <th>처리시간(ms)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr data-testid="excel-history-row" key={r.uploadId}>
-              <td>{r.uploadId}</td>
-              <td>{r.originalFileName}</td>
-              <td>{r.uploaderUserId ?? "-"}</td>
-              <td>{r.totalCount}</td>
-              <td>{r.successCount}</td>
-              <td>{r.errorCount}</td>
-              <td>{r.excludedCount}</td>
-              <td>{r.savedCount}</td>
-              <td>{r.processingTimeMillis}</td>
+    <ScreenCard title="처리건수" kind="list" count={rows.length}>
+      <ExcelManagementTable>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>업로드ID</th>
+              <th>파일명</th>
+              <th>업로더</th>
+              <th>원본</th>
+              <th>정상</th>
+              <th>오류</th>
+              <th>제외</th>
+              <th>저장</th>
+              <th>처리시간(ms)</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr data-testid="excel-history-row" key={r.uploadId}>
+                <td>{r.uploadId}</td>
+                <td>{r.originalFileName}</td>
+                <td>{r.uploaderUserId ?? "-"}</td>
+                <td>{r.totalCount}</td>
+                <td>{r.successCount}</td>
+                <td>{r.errorCount}</td>
+                <td>{r.excludedCount}</td>
+                <td>{r.savedCount}</td>
+                <td>{r.processingTimeMillis}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </ExcelManagementTable>
     </ScreenCard>
   );
 }
@@ -729,9 +868,18 @@ export function ExcelUploadErrorManagementPage() {
     void load();
   }, []);
   return (
-    <main className="space-y-6" data-testid="excel-upload-errors-screen">
-      <ScreenCard title="업로드 오류 관리">
-        <div className="flex flex-wrap gap-3">
+    <ExcelManagementPageLayout
+      screenId="SCR-UPLOAD-ERROR-MGMT"
+      legacyTestId="excel-upload-errors-screen"
+      title="업로드 오류 관리"
+      menuPath="파일·데이터 관리 · 엑셀 관리 · 업로드 오류 관리"
+    >
+      <ScreenCard
+        title="검색조건"
+        description="업로드ID로 오류 상세와 오류목록 파일을 조회합니다."
+        kind="search"
+      >
+        <ExcelManagementToolbar>
           <input
             data-testid="excel-error-upload-id-input"
             className="form-input"
@@ -756,42 +904,46 @@ export function ExcelUploadErrorManagementPage() {
             <Download size={16} />
             오류목록 다운로드
           </button>
-        </div>
+        </ExcelManagementToolbar>
       </ScreenCard>
-      <StatusView status={status} message={message} />
-      {status === "empty" && (
-        <EmptyState
-          title="오류 없음"
-          message={message ?? "조회 조건의 오류행이 없습니다."}
-        />
-      )}
-      <ScreenCard title="오류 상세">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>행</th>
-              <th>컬럼</th>
-              <th>입력값</th>
-              <th>오류코드</th>
-              <th>오류사유</th>
-              <th>수정안내</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr data-testid="excel-error-row" key={r.errorId}>
-                <td>{r.rowNumber}</td>
-                <td>{r.columnName}</td>
-                <td>{r.inputValue}</td>
-                <td>{r.errorCode}</td>
-                <td>{r.errorReason}</td>
-                <td>{r.correctionGuide}</td>
+      <ExcelManagementStateRegion>
+        <StatusView status={status} message={message} />
+        {status === "empty" && (
+          <EmptyState
+            title="오류 없음"
+            message={message ?? "조회 조건의 오류행이 없습니다."}
+          />
+        )}
+      </ExcelManagementStateRegion>
+      <ScreenCard title="오류 상세" kind="list" count={rows.length}>
+        <ExcelManagementTable>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>행</th>
+                <th>컬럼</th>
+                <th>입력값</th>
+                <th>오류코드</th>
+                <th>오류사유</th>
+                <th>수정안내</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr data-testid="excel-error-row" key={r.errorId}>
+                  <td>{r.rowNumber}</td>
+                  <td>{r.columnName}</td>
+                  <td>{r.inputValue}</td>
+                  <td>{r.errorCode}</td>
+                  <td>{r.errorReason}</td>
+                  <td>{r.correctionGuide}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ExcelManagementTable>
       </ScreenCard>
-    </main>
+    </ExcelManagementPageLayout>
   );
 }
 
@@ -818,9 +970,18 @@ export function ExcelDownloadManagementPage() {
     }
   };
   return (
-    <main className="space-y-6" data-testid="excel-downloads-screen">
-      <ScreenCard title="엑셀 다운로드">
-        <div className="grid gap-3 md:grid-cols-3">
+    <ExcelManagementPageLayout
+      screenId="SCR-EXCEL-DOWNLOAD-MGMT"
+      legacyTestId="excel-downloads-screen"
+      title="엑셀 다운로드 관리"
+      menuPath="파일·데이터 관리 · 엑셀 관리 · 엑셀 다운로드 관리"
+    >
+      <ScreenCard
+        title="검색조건"
+        description="결과 유형과 현재 조회조건을 지정해 Excel 파일을 생성합니다."
+        kind="search"
+      >
+        <ExcelManagementToolbar>
           <select
             data-testid="excel-download-output-type-select"
             className="form-input"
@@ -848,19 +1009,26 @@ export function ExcelDownloadManagementPage() {
             <FileSpreadsheet size={16} />
             생성
           </button>
-        </div>
+        </ExcelManagementToolbar>
         <p className="mt-3 text-sm text-muted">
           서버에서 현재 조회조건과 사용자 데이터 범위 권한을 재검증합니다.
         </p>
       </ScreenCard>
-      <StatusView status={status} message={message} />
-      {job && (
-        <ScreenCard title="생성 결과">
+      <ExcelManagementStateRegion>
+        <StatusView status={status} message={message} />
+      </ExcelManagementStateRegion>
+      <ScreenCard title="생성 결과" kind="list" count={job ? 1 : 0}>
+        {job ? (
           <p data-testid="excel-download-job-row">
             {job.downloadId} / {job.outputType} / {job.fileToken} / {job.status}
           </p>
-        </ScreenCard>
-      )}
-    </main>
+        ) : (
+          <EmptyState
+            title="생성 결과 없음"
+            message="생성을 실행하면 다운로드 파일 정보가 표시됩니다."
+          />
+        )}
+      </ScreenCard>
+    </ExcelManagementPageLayout>
   );
 }

@@ -2736,6 +2736,64 @@ export type ResearcherProfileSaveResponse = {
   warnings: string[];
 };
 
+export type FacultySearchResultRow = {
+  facultyId: string;
+  facultyName: string;
+  organizationCode: string;
+  organizationName?: string | null;
+  rankName?: string | null;
+  employmentStatus?: string | null;
+  positionName?: string | null;
+  appointmentId?: string | null;
+};
+
+export type ResearcherProfileListRow = {
+  researcherProfileId: string;
+  facultyId: string;
+  facultyName: string;
+  organizationCode: string;
+  organizationName?: string | null;
+  rankName?: string | null;
+  employmentStatus?: string | null;
+  finalDegreeType?: "BACHELOR" | "MASTER" | "DOCTOR" | null;
+  profileStatus?: string | null;
+  informationPublicYn?: YesNo | null;
+  updatedAt?: string | null;
+};
+
+export type DegreeDeficiencyTargetRow = {
+  targetId: string;
+  researcherProfileId: string;
+  facultyId: string;
+  facultyName: string;
+  organizationCode: string;
+  organizationName?: string | null;
+  finalDegreeType?: "BACHELOR" | "MASTER" | "DOCTOR" | null;
+  deficiencyReason?: string | null;
+  updatedAt?: string | null;
+};
+
+export type ResearcherLookupPageResponse<T> = {
+  rows: T[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+type ResearcherLookupParams = {
+  page?: number;
+  size?: PageSize;
+  keyword?: string;
+};
+
+function researcherLookupQuery(params: ResearcherLookupParams = {}) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("size", String(params.size ?? 20));
+  if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+  return query.toString();
+}
+
 export const researcherProfileApi = {
   listProfiles(
     params: {
@@ -2756,6 +2814,21 @@ export const researcherProfileApi = {
       query.set("organizationCode", params.organizationCode.trim());
     return apiRequest<ResearcherProfileSearchResponse>(
       `/api/researcher-profiles?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  listFacultySearchResults(params: ResearcherLookupParams = {}) {
+    return apiRequest<ResearcherLookupPageResponse<FacultySearchResultRow>>(
+      `/api/admin/researcher-profiles/faculty-search?${researcherLookupQuery(params)}` as `/api/${string}`,
+    );
+  },
+  listAdminResearcherProfiles(params: ResearcherLookupParams = {}) {
+    return apiRequest<ResearcherLookupPageResponse<ResearcherProfileListRow>>(
+      `/api/admin/researcher-profiles?${researcherLookupQuery(params)}` as `/api/${string}`,
+    );
+  },
+  listDegreeDeficiencyTargets(params: ResearcherLookupParams = {}) {
+    return apiRequest<ResearcherLookupPageResponse<DegreeDeficiencyTargetRow>>(
+      `/api/admin/researcher-profiles/degree-deficiencies?${researcherLookupQuery(params)}` as `/api/${string}`,
     );
   },
   getProfile(employeeNo: string) {

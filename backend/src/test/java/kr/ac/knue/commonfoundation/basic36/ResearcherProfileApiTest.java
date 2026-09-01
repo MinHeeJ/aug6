@@ -69,6 +69,82 @@ class ResearcherProfileApiTest {
                 .andExpect(jsonPath("$.data.certifications[0].certificationName").value("교원자격"));
     }
 
+
+    @Test
+    void saveResearcherProfileResearchFieldsPersistsEditableRowsAndRejectsKorusReadonlyFieldsForReq1270() throws Exception {
+        ResearcherProfileSaveResponse response = new ResearcherProfileSaveResponse(detail(), List.of());
+        when(service.saveResearchFields(eq("E1001"), any(), eq(teacher))).thenReturn(response);
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/research-fields")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"majorName\":\"컴퓨터교육\",\"detailFieldName\":\"AI교육\",\"researchCategoryName\":\"공학\"}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.profile.researchFields[0].majorName").value("컴퓨터교육"));
+        verify(service).saveResearchFields(eq("E1001"), any(), eq(teacher));
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/research-fields")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"employeeNo\":\"E9999\",\"majorName\":\"컴퓨터교육\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").value("items[0].employeeNo"));
+    }
+
+    @Test
+    void saveResearcherProfileCareersPersistsEditableRowsAndKeepsKorusColumnsReadonlyForReq1271() throws Exception {
+        ResearcherProfileSaveResponse response = new ResearcherProfileSaveResponse(detail(), List.of());
+        when(service.saveCareers(eq("E1001"), any(), eq(teacher))).thenReturn(response);
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/careers")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"startYm\":\"202001\",\"endYm\":\"202412\",\"workplace\":\"한국교원대학교\",\"positionName\":\"교수\",\"workContent\":\"연구\"}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.profile.careers[0].workplace").value("한국교원대학교"));
+        verify(service).saveCareers(eq("E1001"), any(), eq(teacher));
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/careers")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"organizationCode\":\"KNUE-DEPT-SCI\",\"workplace\":\"한국교원대학교\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").value("items[0].organizationCode"));
+    }
+
+    @Test
+    void saveResearcherProfileCertificationsPersistsEditableRowsAndRejectsReadonlyPayloadForReq1278() throws Exception {
+        ResearcherProfileSaveResponse response = new ResearcherProfileSaveResponse(detail(), List.of());
+        when(service.saveCertifications(eq("E1001"), any(), eq(teacher))).thenReturn(response);
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/certifications")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"acquiredYm\":\"202403\",\"certificationName\":\"교원자격\",\"issuerName\":\"교육부\"}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.profile.certifications[0].certificationName").value("교원자격"));
+        verify(service).saveCertifications(eq("E1001"), any(), eq(teacher));
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/certifications")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"appointmentId\":\"APPT-9999\",\"certificationName\":\"교원자격\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").value("items[0].appointmentId"));
+    }
+
     @Test
     void saveResearcherProfileDegreesRejectsKorusReadonlyPayloadForReq1275() throws Exception {
         mockMvc.perform(put("/api/researcher-profiles/E1001/degrees")

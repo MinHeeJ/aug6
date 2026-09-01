@@ -9,6 +9,12 @@ public interface ResearcherProfileMapper {
     List<ResearcherProfileSummary> listProfiles(@Param("criteria") ResearcherProfileSearchCriteria criteria);
     long countProfiles(@Param("criteria") ResearcherProfileSearchCriteria criteria);
     ResearcherProfileSummary findProfile(@Param("employeeNo") String employeeNo);
+    List<FacultySearchResultRow> listFacultySearchResults(@Param("criteria") ResearcherLookupCriteria criteria);
+    long countFacultySearchResults(@Param("criteria") ResearcherLookupCriteria criteria);
+    List<ResearcherProfileListRow> listResearcherProfiles(@Param("criteria") ResearcherLookupCriteria criteria);
+    long countResearcherProfiles(@Param("criteria") ResearcherLookupCriteria criteria);
+    List<DegreeDeficiencyTargetRow> listDegreeDeficiencyTargets(@Param("criteria") ResearcherLookupCriteria criteria);
+    long countDegreeDeficiencyTargets(@Param("criteria") ResearcherLookupCriteria criteria);
     void ensureProfile(@Param("employeeNo") String employeeNo, @Param("changedBy") Long changedBy);
     List<ResearcherResearchFieldRow> listResearchFields(@Param("employeeNo") String employeeNo);
     List<ResearcherCareerRow> listCareers(@Param("employeeNo") String employeeNo);
@@ -23,6 +29,9 @@ public interface ResearcherProfileMapper {
     void insertDegree(@Param("employeeNo") String employeeNo, @Param("item") ResearcherProfileTabItem item, @Param("changedBy") Long changedBy);
     void insertCertification(@Param("employeeNo") String employeeNo, @Param("item") ResearcherProfileTabItem item, @Param("changedBy") Long changedBy);
     void updateProfileDegreeStatus(@Param("employeeNo") String employeeNo, @Param("finalDegreeType") String finalDegreeType, @Param("missing") boolean missing, @Param("changedBy") Long changedBy);
+    void upsertFacultySearchResultProjection(@Param("employeeNo") String employeeNo);
+    void upsertDegreeDeficiencyTarget(@Param("employeeNo") String employeeNo);
+    void deleteDegreeDeficiencyTargetsForEmployee(@Param("employeeNo") String employeeNo);
     void touchProfile(@Param("employeeNo") String employeeNo, @Param("changedBy") Long changedBy);
     List<ResearcherProfileSummary> listDegreePrerequisiteMissing(@Param("criteria") ResearcherProfileSearchCriteria criteria);
     long countDegreePrerequisiteMissing(@Param("criteria") ResearcherProfileSearchCriteria criteria);

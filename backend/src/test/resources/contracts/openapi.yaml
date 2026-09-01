@@ -2978,7 +2978,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FunctionPermissionRequest'
-      x-contract-fields: [screenId, roleCode, functionType, permissionAllowed]
+      x-request-fields: [screenId, roleCode, functionType, permissionAllowed, changeReason]
       x-related-requirements: [REQ-149, REQ-152, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3123,7 +3123,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PeriodPermissionRequest'
-      x-contract-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt]
+      x-request-fields: [businessPeriodId, functionPermissionId, effectiveStartAt, effectiveEndAt, changeReason]
       x-related-requirements: [REQ-153, REQ-169, REQ-170, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3217,7 +3217,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TemporaryPermissionRequest'
-      x-contract-fields: [userId, workDataRef, functionType, validStartAt, validEndAt]
+      x-request-fields: [userId, workDataRef, functionType, validStartAt, validEndAt, changeReason]
       x-related-requirements: [REQ-157, REQ-158, REQ-159, REQ-160, REQ-161, REQ-162]
       security: [{SessionCookie: []}]
       x-roles: [R09]
@@ -3290,7 +3290,7 @@ paths:
         - R09
       parameters:
         - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: pageSize, in: query, required: false, schema: {type: integer, enum: [20, 50, 100], default: 20} }
       responses:
         '200':
           description: 성공
@@ -3480,7 +3480,7 @@ paths:
         - R09
       parameters:
         - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: pageSize, in: query, required: false, schema: {type: integer, enum: [20, 50, 100], default: 20} }
       responses:
         '200':
           description: 성공
@@ -3708,7 +3708,7 @@ paths:
         - R09
       parameters:
         - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: pageSize, in: query, required: false, schema: {type: integer, enum: [20, 50, 100], default: 20} }
       responses:
         '200':
           description: 성공
@@ -3845,7 +3845,7 @@ paths:
         - R09
       parameters:
         - { name: page, in: query, required: false, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, required: false, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: pageSize, in: query, required: false, schema: {type: integer, enum: [20, 50, 100], default: 20} }
       responses:
         '200':
           description: 성공
@@ -4000,17 +4000,13 @@ paths:
       x-roles: [R09]
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
-        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 }, deprecated: true }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
         - { name: batchId, in: query, schema: { type: string } }
-        - { name: batchType, in: query, schema: { type: string } }
-        - { name: scheduleCycle, in: query, schema: { type: string } }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [동적 predicate 기반 filter만 사용하고 null-or 조건을 사용하지 않는다]
       x-related-requirements: [REQ-409, REQ-383]
     post:
       operationId: saveBatchDefinition
@@ -4023,74 +4019,96 @@ paths:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/BatchDefinitionRequest' }
-      x-contract-fields: [batchId, scheduleCycle, ownerUserId, predecessorBatchIds, successorBatchIds, parameters]
+      x-request-fields: [batchId, batchType, scheduleCycle, ownerUserId, predecessorBatchIds, successorBatchIds, parameters]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [batch_definitions 저장, batch_dependencies 저장, batch_parameters 저장, request_id 기록]
-      x-state-transitions: [draft_or_active]
-      x-related-requirements: [REQ-410]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [배치ID 기준 선후행 관계와 실행조건을 저장하며 다른 배치 정의를 임의 변경하지 않는다.]
+      x-side-effects: [batch_definitions, batch_dependencies, batch_parameters에 변경 메타정보와 request_id를 기록한다.]
+      x-state-transitions: [definition:DRAFT_OR_ACTIVE -> definition:SAVED]
+      x-required-tests:
+        - 'happy: 유효한 batchId/scheduleCycle/ownerUserId 저장 -> batch_definitions.batch_id가 follow-up read에 나타난다'
+        - 'auth: R09가 아닌 사용자 저장 요청 -> 403과 batch_definitions 행 미생성'
+        - 'validation: scheduleCycle 누락 -> 400 ApiError.fields.scheduleCycle 반환'
+        - 'business: 다른 batchId의 parameter 수정 포함 요청 -> 409과 기존 batch_parameters 유지'
+        - 'side-effect: 저장 성공 -> batch_definitions.updated_by와 request_id가 기록된다'
+      x-related-requirements: [REQ-410, REQ-416, REQ-418, REQ-420]
   /api/admin/batch-executions:
     get:
       operationId: listBatchExecutions
-      summary: 배치 실행 조회
+      summary: 배치 실행 목록
       security: [{ SessionCookie: [] }]
       x-roles: [R09]
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
-        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 }, deprecated: true }
-        - { name: batchId, in: query, schema: { type: string } }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
         - { name: executionStatus, in: query, schema: { type: string } }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [동적 predicate 기반 filter만 사용하고 null-or 조건을 사용하지 않는다]
       x-related-requirements: [REQ-426]
     post:
       operationId: createBatchExecution
-      summary: 수동 배치 실행
+      summary: 배치 수동실행
       security: [{ SessionCookie: [] }]
       x-roles: [R09]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/BatchExecutionRequest' } } }
-      x-contract-fields: [batchId, reason, operatorUserId, MANUAL_RUN]
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchExecutionRequest' }
+      x-request-fields: [batchId, reason, operatorUserId, originalExecutionId, MANUAL_RUN, RERUN]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [batch_executions 생성, operator_user_id 저장, request_id 기록]
-      x-state-transitions: [waiting]
-      x-related-requirements: [REQ-427]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [수동실행은 권한 있는 운영자에게만 허용하고 파라미터와 사유를 기록한다.]
+      x-side-effects: [batch_executions에 MANUAL_RUN, RUNNING, operator_user_id, reason, request_id를 기록한다.]
+      x-state-transitions: [WAITING -> RUNNING]
+      x-required-tests:
+        - 'happy: 실행 가능한 batchId와 reason 제출 -> batch_executions.execution_status=RUNNING 재조회'
+        - 'auth: 권한 없는 사용자 수동실행 -> 403과 batch_executions 행 미생성'
+        - 'validation: reason 누락 -> 400 ApiError.fields.reason 반환'
+        - 'business: 실행 불가 batchId 요청 -> 409와 실행 상태 미생성'
+        - 'side-effect: 수동실행 성공 -> operator_user_id와 request_id가 기록된다'
+      x-related-requirements: [REQ-427, REQ-437, REQ-438, REQ-439]
   /api/admin/batch-executions/{executionId}/status:
     patch:
       operationId: updateBatchExecutionStatus
-      summary: 배치 실행 상태 변경
+      summary: 배치 실행 중지
       security: [{ SessionCookie: [] }]
       x-roles: [R09]
       parameters:
         - { name: executionId, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/BatchExecutionStatusRequest' } } }
-      x-contract-fields: [executionId, targetStatus, reason, STOPPED]
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchExecutionStatusRequest' }
+      x-request-fields: [executionId, targetStatus, reason, STOPPED]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [batch_executions.execution_status 변경, operator_user_id 저장, request_id 기록]
-      x-state-transitions: [running, stopped, execution_status]
-      x-related-requirements: [REQ-428]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [실행중 배치만 중지할 수 있으며 배치 정의와 원천 업무자료는 변경하지 않는다.]
+      x-side-effects: [batch_executions.execution_status와 reason, operator_user_id, request_id를 기록한다.]
+      x-state-transitions: [RUNNING -> STOPPED]
+      x-required-tests:
+        - 'happy: RUNNING executionId 중지 -> batch_executions.execution_status=STOPPED 재조회'
+        - 'auth: 권한 없는 사용자 중지 -> 403과 execution_status=RUNNING 유지'
+        - 'validation: reason 누락 -> 400 ApiError.fields.reason 반환'
+        - 'business: COMPLETED executionId 중지 -> 409와 execution_status=COMPLETED 유지'
+        - 'side-effect: 중지 성공 -> batch_executions.updated_by와 request_id가 기록된다'
+      x-related-requirements: [REQ-428, REQ-437, REQ-438, REQ-439]
   /api/admin/batch-executions/{executionId}/rerun:
     post:
       operationId: createBatchRerun
@@ -4101,17 +4119,26 @@ paths:
         - { name: executionId, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/BatchRerunRequest' } } }
-      x-contract-fields: [executionId, originalExecutionId, reason, RERUN]
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchExecutionRequest' }
+      x-request-fields: [batchId, reason, operatorUserId, originalExecutionId, MANUAL_RUN, RERUN]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [batch_executions 생성, original_execution_id 저장, request_id 기록]
-      x-state-transitions: [rerun_running]
-      x-related-requirements: [REQ-429]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [재실행은 원실행을 식별할 수 있게 연결하고 실패 건 원천자료를 직접 수정하지 않는다.]
+      x-side-effects: [batch_executions.original_execution_id에 path executionId를 기록한 신규 RERUN 실행을 생성한다.]
+      x-state-transitions: [ORIGINAL_EXECUTION -> RERUN_RUNNING]
+      x-required-tests:
+        - 'happy: 기존 executionId 재실행 -> 신규 batch_executions.original_execution_id가 기존 executionId'
+        - 'auth: 권한 없는 사용자 재실행 -> 403과 신규 실행 미생성'
+        - 'validation: executionId 형식 누락 -> 400 ApiError.fields.executionId 반환'
+        - 'business: 존재하지 않는 원실행 재실행 -> 409와 신규 실행 미생성'
+        - 'side-effect: 재실행 성공 -> 신규 execution_id와 request_id가 기록된다'
+      x-related-requirements: [REQ-429, REQ-441]
   /api/admin/batch-results:
     get:
       operationId: listBatchResults
@@ -4120,15 +4147,14 @@ paths:
       x-roles: [R09]
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
         - { name: executionId, in: query, schema: { type: string } }
-      x-contract-fields: [startedAt, endedAt, totalCount, successCount, failureCount, excludedCount, elapsedMillis]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [동적 predicate 기반 filter만 사용한다]
+      x-response-fields: [startedAt, endedAt, totalCount, successCount, failureCount, excludedCount, elapsedMillis]
       x-related-requirements: [REQ-449, REQ-451, REQ-452, REQ-453, REQ-454, REQ-455, REQ-456, REQ-461]
   /api/admin/batch-results/{executionId}/log:
     get:
@@ -4138,30 +4164,29 @@ paths:
       x-roles: [R09]
       parameters:
         - { name: executionId, in: path, required: true, schema: { type: string } }
-      x-contract-fields: [executionId, logFileRef]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-457]
+      x-response-fields: [executionId, logFileRef]
+      x-related-requirements: [REQ-457, REQ-461]
   /api/admin/batch-retries/targets:
     get:
       operationId: listBatchRetryTargets
-      summary: 재처리 대상 조회
+      summary: 재처리 대상 목록
       security: [{ SessionCookie: [] }]
       x-roles: [R09]
       parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
         - { name: originalExecutionId, in: query, schema: { type: string } }
-        - { name: failedItemKey, in: query, schema: { type: string } }
-        - { name: status, in: query, schema: { type: string, enum: [FAILED] } }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [동적 predicate 기반 filter만 사용한다]
-      x-related-requirements: [REQ-466]
+      x-related-requirements: [REQ-466, REQ-467, REQ-477]
   /api/admin/batch-retries:
     post:
       operationId: createBatchRetry
@@ -4170,27 +4195,36 @@ paths:
       x-roles: [R09]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/BatchRetryRequest' } } }
-      x-contract-fields: [originalExecutionId, failedItemKey, retryReason, retryExecutionId]
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchRetryRequest' }
+      x-request-fields: [originalExecutionId, failedItemKey, retryReason, retryExecutionId]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [batch_retry_results 생성, original_execution_id 저장, retry_execution_id 저장, retry_reason 저장, failed_target 저장, request_id 기록]
-      x-state-transitions: [retry_running]
-      x-related-requirements: [REQ-468, REQ-480]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [재처리는 실패 대상만 선택하고 원실행 결과와 로그를 덮어쓰지 않으며 재처리 사유를 필수로 기록한다.]
+      x-side-effects: [batch_retry_results에 retry_execution_id, original_execution_id, retry_reason, request_id를 기록한다.]
+      x-state-transitions: [FAILED_TARGET -> RETRY_RUNNING]
+      x-required-tests:
+        - 'happy: 실패 대상과 retryReason 제출 -> batch_retry_results.retry_execution_id가 original_execution_id와 연결'
+        - 'auth: 권한 없는 사용자 재처리 -> 403과 batch_retry_results 행 미생성'
+        - 'validation: retryReason 누락 -> 400 ApiError.fields.retryReason 반환'
+        - 'business: 실패 상태가 아닌 대상 재처리 -> 409와 원실행 결과 유지'
+        - 'side-effect: 재처리 성공 -> batch_retry_results와 request_id가 기록된다'
+      x-related-requirements: [REQ-468, REQ-473, REQ-475, REQ-477, REQ-480]
   /api/admin/excel-upload-templates:
     get:
       operationId: listUploadTemplates
-      summary: 엑셀 업로드 양식 조회
+      summary: 엑셀 업로드 양식 목록
       security:
         - SessionCookie: []
       x-roles: [R09]
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
         - { name: businessType, in: query, schema: { type: string } }
         - { name: effectiveDate, in: query, schema: { type: string, format: date } }
       responses:
@@ -4198,7 +4232,8 @@ paths:
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements: [REQ-595, REQ-599]
+      x-business-rules: [R09 세션 사용자만 업로드 양식 목록을 조회하며 서버가 업무유형과 적용일자를 안전하게 필터링한다]
+      x-related-requirements: [REQ-595, REQ-596, REQ-597, REQ-598, REQ-599, REQ-585, REQ-586]
     post:
       operationId: saveUploadTemplate
       summary: 엑셀 업로드 양식 저장
@@ -4207,21 +4242,28 @@ paths:
       x-roles: [R09]
       requestBody:
         required: true
-        content: { application/json: { schema: { $ref: '#/components/schemas/UploadTemplateSaveRequest' } } }
-      x-contract-fields: [UploadTemplateSaveRequest, rules, requiredColumn, codeRuleRef]
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UploadTemplateSaveRequest' }
+      x-request-fields: [businessType, templateVersion, effectiveDate, rules, requiredColumn, requiredColumns, columnOrder, codeRuleRef, codeRuleRefs, fileToken, UploadTemplateSaveRequest]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [excel_upload_templates 저장]
-      x-state-transitions: [template_requested -> template_persisted]
-      x-related-requirements: [REQ-596]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [필수 컬럼과 코드 규칙을 서버에서 검증하고 원본 파일명과 저장 경로를 응답으로 노출하지 않는다]
+      x-side-effects: [excel_upload_templates, excel_upload_template_rules에 변경 메타정보를 기록한다]
+      x-required-tests:
+        - 'happy: 유효한 양식 저장 -> 후속 조회와 downloadUploadTemplate에서 templateId가 확인된다'
+        - 'auth: SessionCookie 없는 요청 -> 401 ApiError가 반환된다'
+        - 'validation: businessType 누락 -> 400 ApiError.fields.businessType 반환'
+        - 'business: 유효하지 않은 코드 규칙 -> 409 ApiError와 기존 양식 유지'
+      x-related-requirements: [REQ-595, REQ-596, REQ-597, REQ-598, REQ-599, REQ-585, REQ-586]
   /api/admin/excel-upload-templates/{templateId}/file:
     get:
       operationId: downloadUploadTemplate
-      summary: 엑셀 업로드 양식 파일 다운로드
+      summary: 업로드 양식 파일
       security:
         - SessionCookie: []
       x-roles: [R09]
@@ -4229,99 +4271,102 @@ paths:
         - { name: templateId, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: 파일 다운로드 성공, content: { application/octet-stream: { schema: { type: string, format: binary } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [auth, business, happy]
-      x-side-effects: [none]
-      x-state-transitions: [read_only]
-      x-related-requirements: [REQ-597, REQ-586]
+        '404': { description: 파일 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-597, REQ-585, REQ-586]
   /api/admin/excel-uploads:
     post:
       operationId: createExcelUpload
-      summary: 엑셀 업로드
+      summary: 엑셀 업로드 검증
       security:
         - SessionCookie: []
       x-roles: [R09]
       requestBody:
         required: true
-        content:
-          multipart/form-data:
-            schema: { $ref: '#/components/schemas/ExcelUploadRequest' }
+        content: { multipart/form-data: { schema: { $ref: '#/components/schemas/ExcelUploadRequest' } } }
       responses:
-        '200': { description: 업로드 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '200': { description: 검증 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [업로드 파일과 템플릿 규칙을 검증한다]
-      x-side-effects: [excel_upload_files 생성, excel_upload_staging_rows 생성, excel_upload_errors 생성, excel_upload_histories 생성]
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-state-transitions: [uploaded -> validated]
-      x-related-requirements: [REQ-601, REQ-603]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [확정 양식과 기존 첨부파일 정책을 적용한다, 헤더·필수값·형식·코드·중복을 사전검증한다]
+      x-side-effects: [excel_upload_files 생성, excel_upload_staging_rows 생성, excel_upload_errors 생성, excel_upload_histories 검증건수 기록]
+      x-required-tests:
+        - 'happy: 유효한 xlsx 파일 업로드 -> excel_upload_files.upload_id와 검증건수를 반환한다'
+        - 'auth: 권한 없는 사용자 -> 403 ApiError와 파일 row 미생성'
+        - 'validation: file 누락 -> 400 ApiError.fields.file가 반환된다'
+        - 'business: 중복 데이터 포함 -> validation_status=ERROR와 error_code가 기록된다'
+        - 'side-effect: 검증 오류 -> excel_upload_errors에 row_number와 error_reason이 저장된다'
+      x-state-transitions: [UPLOADED -> VALIDATED]
+      x-related-requirements: [REQ-580, REQ-581, REQ-582, REQ-601, REQ-602, REQ-605, REQ-606, REQ-615]
   /api/admin/excel-uploads/{uploadId}/commit:
     post:
       operationId: commitExcelUpload
       summary: 엑셀 업로드 반영
-      security: [{ SessionCookie: [] }]
+      security:
+        - SessionCookie: []
       x-roles: [R09]
       parameters:
         - { name: uploadId, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: 반영 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '409': { description: 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [auth, validation, business, side-effect]
-      x-side-effects: [excel_upload_histories 저장, saved_count 기록, transaction 적용]
-      x-state-transitions: [VALIDATED -> COMMITTED, rejected]
-      x-related-requirements: [REQ-603, REQ-604]
+        '409': { description: 오류 존재 또는 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules: [모든 행이 정상일 때만 하나의 트랜잭션으로 등록한다, 오류가 하나라도 있으면 전체를 반영하지 않는다]
+      x-side-effects: [업무자료 transaction 반영, excel_upload_histories.saved_count 갱신, 반영 결과 메타정보 기록]
+      x-required-tests:
+        - 'happy: 모든 row validation_status=NORMAL -> 업무자료와 excel_upload_histories.saved_count를 재조회할 수 있다'
+        - 'auth: 권한 없는 사용자 -> 403 ApiError와 업무자료 미변경'
+        - 'validation: uploadId 없음 -> 404 ApiError가 반환된다'
+        - 'business: ERROR row 1건 존재 -> 409 ApiError이며 업무자료 저장건수는 0이다'
+        - 'side-effect: 정상 반영 성공 -> excel_upload_histories.saved_count와 processing_time_millis가 기록된다'
+      x-state-transitions: [VALIDATED -> COMMITTED, VALIDATED -> REJECTED]
+      x-related-requirements: [REQ-603, REQ-604, REQ-583, REQ-584]
   /api/admin/excel-upload-histories:
     get:
       operationId: listExcelUploadHistories
-      summary: 엑셀 업로드 이력 조회
-      security: [{ SessionCookie: [] }]
+      summary: 업로드 이력 목록
+      security:
+        - SessionCookie: []
       x-roles: [R09]
       parameters:
-        - { name: page, in: query, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
         - { name: uploadId, in: query, schema: { type: string } }
         - { name: originalFileName, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
+      x-pagination: { pageParam: page, sizeParam: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [read_only]
-      x-required-tests: [happy, auth]
-      x-side-effects: [none]
-      x-state-transitions: [read_only]
-      x-related-requirements: [REQ-608, REQ-610]
+      x-related-requirements: [REQ-608, REQ-609, REQ-610, REQ-611, REQ-584]
   /api/admin/excel-upload-errors:
     get:
       operationId: listExcelUploadErrors
-      summary: 엑셀 업로드 오류 조회
-      security: [{ SessionCookie: [] }]
+      summary: 업로드 오류 목록
+      security:
+        - SessionCookie: []
       x-roles: [R09]
       parameters:
-        - { name: page, in: query, schema: { type: integer, default: 0 } }
-        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
         - { name: uploadId, in: query, required: true, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20} }
+      x-pagination: { pageParam: page, sizeParam: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [read_only]
-      x-required-tests: [happy, auth]
-      x-side-effects: [none]
-      x-state-transitions: [read_only]
-      x-related-requirements: [REQ-612, REQ-616]
+      x-related-requirements: [REQ-612, REQ-613, REQ-616]
   /api/admin/excel-upload-errors/download:
     get:
       operationId: downloadExcelUploadErrors
-      summary: 엑셀 업로드 오류 파일 다운로드
-      security: [{ SessionCookie: [] }]
+      summary: 업로드 오류 파일
+      security:
+        - SessionCookie: []
       x-roles: [R09]
       parameters:
         - { name: uploadId, in: query, required: true, schema: { type: string } }
@@ -4330,10 +4375,7 @@ paths:
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [auth, business, happy]
-      x-side-effects: [none]
-      x-state-transitions: [read_only]
-      x-related-requirements: [REQ-614, REQ-586]
+      x-related-requirements: [REQ-614, REQ-616, REQ-586]
   /api/admin/excel-downloads:
     post:
       operationId: createExcelDownload
@@ -4344,7 +4386,7 @@ paths:
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/ExcelDownloadRequest' } } }
-      x-contract-fields: [ExcelDownloadRequest, outputType, queryCondition]
+      x-request-fields: [ExcelDownloadRequest, outputType, queryCondition]
       responses:
         '200': { description: 생성 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
@@ -4353,7 +4395,7 @@ paths:
       x-business-rules: [현재 조회조건을 생성조건으로 사용한다, 서버에서 사용자 데이터 범위 권한을 적용한다, 권한 밖 자료는 포함하지 않는다]
       x-side-effects: [excel_download_jobs 생성, 권한 범위 파일 생성, file_token 발급]
       x-required-tests:
-        - 'happy: outputType=ERROR와 queryCondition 조회조건 요청 -> excel_download_jobs.file_token을 반환한다'
+        - 'happy: outputType=ERROR와 조회조건 요청 -> excel_download_jobs.file_token을 반환한다'
         - 'auth: 개인정보 출력권한 없는 사용자 -> 403 ApiError와 download job 미생성'
         - 'validation: outputType 누락 -> 400 ApiError.fields.outputType가 반환된다'
         - 'business: 데이터 범위 밖 자료 포함 요청 -> 생성 파일에서 권한 밖 row가 제외된다'
@@ -4370,41 +4412,41 @@ paths:
       x-roles:
         - R09
       parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
+        - name: size
+          in: query
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
+        - name: filter
+          in: query
+          required: false
+          schema: { type: string }
         - name: X-Request-Id
           in: header
           required: false
-          schema: {type: string}
-        - name: page
-          in: query
-          schema: {type: integer, default: 0, minimum: 0}
-        - name: pageSize
-          in: query
-          schema:
-            type: integer
-            enum:
-              - 20
-              - 50
-              - 100
-            default: 20
-        - name: filter
-          in: query
-          schema: {type: string}
-        - name: fromDate
-          in: query
-          schema: {type: string, format: date}
-        - name: toDate
-          in: query
-          schema: {type: string, format: date}
+          schema: { type: string }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [sessions ACTIVE rows are read with 동적 predicate filter]
-      x-side-effects: [requestId meta echo, REQ-661 request_id audit correlation]
-      x-state-transitions: [read_only sessions ACTIVE]
-      x-required-tests: [happy, auth, validation, business]
-      x-related-requirements: [REQ-679, REQ-680, REQ-644, REQ-645, REQ-646, REQ-661]
+      x-business-rules:
+        - 사용자·IP filter와 표시건수는 값이 있을 때만 MyBatis 동적 predicate로 추가한다.
+        - ACTIVE 세션만 sessions 조회 결과에 포함하고 EXPIRED, LOGGED_OUT, TERMINATED는 제외한다.
+      x-side-effects:
+        - 조회 요청의 requestId는 응답 meta와 감사 추적 컨텍스트에서 확인 가능해야 한다.
+      x-required-tests:
+        - 'happy: 접속현황 조회 -> meta.requestId와 sessions ACTIVE 목록 반환'
+      x-state-transitions:
+        - read_only: sessions
+      x-related-requirements: [REQ-644, REQ-645, REQ-661, REQ-679, REQ-680, REQ-684]
   /api/admin/security/active-sessions/{sessionId}/terminate:
     post:
       operationId: terminateActiveSession
@@ -4414,28 +4456,41 @@ paths:
       x-roles:
         - R09
       parameters:
-        - name: X-Request-Id
-          in: header
-          required: false
-          schema: {type: string}
         - name: sessionId
           in: path
           required: true
-          schema: {type: string}
+          schema: { type: string }
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/SessionTerminateRequest' }
-      x-contract-fields: [reason]
+            schema:
+              $ref: '#/components/schemas/SessionTerminateRequest'
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-required-tests: [happy, auth, validation, business, side-effect]
-      x-side-effects: [business_process_audit_logs insert, session_termination_history insert, request_id 저장, requestId meta echo, action_type SESSION_TERMINATE session_terminate]
-      x-state-transitions: [ACTIVE -> TERMINATED]
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-business-rules:
+        - 강제종료는 R09 시스템관리자만 수행하며 reason은 필수다.
+        - 종료되었거나 만료된 세션은 다시 강제종료할 수 없다.
+      x-side-effects:
+        - sessions.status를 TERMINATED로 변경하고 terminated_by, terminated_at, termination_reason을 기록한다.
+        - session_termination_history와 business_process_audit_logs에 처리자·사유·일시·request_id와 requestId를 기록한다.
+        - business_process_audit_logs.action_type은 SESSION_TERMINATE로 저장한다.
+      x-state-transitions:
+        - sessions: ACTIVE -> TERMINATED
+      x-required-tests:
+        - 'happy: ACTIVE sessionId와 reason 제출 -> sessions.status=TERMINATED 후속 조회'
+        - 'auth: R09가 아닌 사용자 요청 -> 403 ApiError와 sessions.status=ACTIVE 유지'
+        - 'validation: reason 누락 -> 400 ApiError.fields.reason 반환'
+        - 'business: EXPIRED sessionId 요청 -> 409 ApiError와 sessions.status=EXPIRED 유지'
+        - 'side-effect: 강제종료 성공 -> session_termination_history와 business_process_audit_logs row 생성'
       x-related-requirements: [REQ-661, REQ-662, REQ-681, REQ-682, REQ-683, REQ-684]
   /api/admin/security/session-termination-histories:
     get:
@@ -4446,31 +4501,53 @@ paths:
       x-roles:
         - R09
       parameters:
-        - name: X-Request-Id
-          in: header
-          schema: {type: string}
         - name: page
           in: query
-          schema: {type: integer, default: 0, minimum: 0}
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
         - name: pageSize
           in: query
-          schema:
-            type: integer
-            enum: [20, 50, 100]
-            default: 20
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
+        - name: size
+          in: query
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
         - name: filter
           in: query
-          schema: {type: string}
+          required: false
+          schema: { type: string }
+        - name: terminationType
+          in: query
+          required: false
+          schema: { type: string, enum: [LOGOUT, IDLE_TIMEOUT, ABSOLUTE_TIMEOUT, ADMIN_TERMINATED] }
+        - name: fromDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [session_termination_history 조회는 동적 predicate filter]
-      x-side-effects: [requestId meta echo, request_id audit correlation]
-      x-state-transitions: [read_only session_termination_history]
-      x-required-tests: [happy, auth, validation, business]
-      x-related-requirements: [REQ-687, REQ-688, REQ-689, REQ-690, REQ-692, REQ-693, REQ-644, REQ-645, REQ-646, REQ-661]
+      x-business-rules:
+        - 사용자·기간·종료유형 filter는 값이 있을 때만 MyBatis 동적 predicate로 추가한다.
+        - 수정·삭제 operation을 제공하지 않는 조회 전용 이력이다.
+      x-side-effects:
+        - session_termination_history 조회 requestId는 응답 meta와 감사 추적 컨텍스트에서 확인 가능해야 한다.
+      x-required-tests:
+        - 'happy: 세션 종료 이력 조회 -> meta.requestId와 session_termination_history 목록 반환'
+      x-state-transitions:
+        - read_only: session_termination_history
+      x-related-requirements: [REQ-644, REQ-645, REQ-661, REQ-687, REQ-688, REQ-689, REQ-690, REQ-692, REQ-693]
   /api/admin/audit/business-process-logs:
     get:
       operationId: listBusinessProcessLogs
@@ -4480,68 +4557,135 @@ paths:
       x-roles:
         - R09
       parameters:
-        - name: X-Request-Id
-          in: header
-          schema: {type: string}
         - name: page
           in: query
-          schema: {type: integer, default: 0, minimum: 0}
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
         - name: pageSize
           in: query
-          schema:
-            type: integer
-            enum: [20, 50, 100]
-            default: 20
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
+        - name: size
+          in: query
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
         - name: filter
           in: query
-          schema: {type: string}
+          required: false
+          schema: { type: string }
+        - name: actionType
+          in: query
+          required: false
+          schema: { type: string, enum: [CREATE, UPDATE, DELETE, CONFIRM, AUTH, APPROVE, CANCEL, BATCH, SESSION_TERMINATE] }
+        - name: targetKey
+          in: query
+          required: false
+          schema: { type: string }
+        - name: actorUserId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: resultStatus
+          in: query
+          required: false
+          schema: { type: string, enum: [SUCCESS, FAILURE] }
+        - name: fromDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [business_process_audit_logs 조회는 동적 predicate filter]
-      x-side-effects: [requestId meta echo, request_id audit correlation]
-      x-state-transitions: [read_only business_process_audit_logs]
-      x-required-tests: [happy, auth, validation, business]
-      x-related-requirements: [REQ-694, REQ-695, REQ-696, REQ-697, REQ-698, REQ-699, REQ-644, REQ-645, REQ-646, REQ-661]
+      x-business-rules:
+        - 행위유형·대상키·처리자·기간 filter는 값이 있을 때만 MyBatis 동적 predicate로 추가한다.
+        - 원업무 재실행·취소·로그삭제 operation을 제공하지 않는 조회 전용 감사로그다.
+      x-side-effects:
+        - business_process_audit_logs 조회 요청의 requestId는 응답 meta와 감사 추적 컨텍스트에서 확인 가능해야 한다.
+      x-required-tests:
+        - 'happy: 업무처리 로그 조회 -> meta.requestId와 business_process_audit_logs 목록 반환'
+      x-state-transitions:
+        - read_only: business_process_audit_logs
+      x-related-requirements: [REQ-644, REQ-645, REQ-661, REQ-694, REQ-695, REQ-696, REQ-697, REQ-698, REQ-699]
   /api/admin/audit/sensitive-information-access-logs:
     get:
       operationId: listSensitiveInformationAccessLogs
-      summary: 민감정보 접근 로그 조회
+      summary: 중요정보 조회로그 조회
       security:
         - SessionCookie: []
       x-roles:
         - R09
       parameters:
-        - name: X-Request-Id
-          in: header
-          schema: {type: string}
         - name: page
           in: query
-          schema: {type: integer, default: 0, minimum: 0}
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
         - name: pageSize
           in: query
-          schema:
-            type: integer
-            enum: [20, 50, 100]
-            default: 20
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
+        - name: size
+          in: query
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
         - name: filter
           in: query
-          schema: {type: string}
-        - name: accessPurpose
+          required: false
+          schema: { type: string }
+        - name: informationType
           in: query
-          schema: {type: string}
+          required: false
+          schema: { type: string, enum: [PERSONAL_EVALUATION_RESULT, SCORE_CALCULATION, PERSONAL_INFORMATION, ACCOUNT_INFORMATION] }
+        - name: viewerUserId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: accessResult
+          in: query
+          required: false
+          schema: { type: string, enum: [SUCCESS, FAILURE] }
+        - name: fromDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules: [sensitive_information_access_logs 조회는 access_purpose, target_scope, purpose_source와 동적 predicate filter]
-      x-side-effects: [requestId meta echo, request_id audit correlation]
-      x-state-transitions: [read_only sensitive_information_access_logs, access_purpose, purpose_source, target_scope]
-      x-required-tests: [happy, auth, validation, business]
-      x-related-requirements: [REQ-701, REQ-702, REQ-703, REQ-704, REQ-705, REQ-706, REQ-644, REQ-645, REQ-646, REQ-661]
+      x-business-rules:
+        - 정보유형·조회자·기간 filter는 값이 있을 때만 MyBatis 동적 predicate로 추가한다.
+        - 중요정보 조회 로그 화면과 API는 보호대상 원문값을 응답하지 않는다.
+        - 수정·삭제 operation을 제공하지 않는 조회 전용 로그다.
+      x-side-effects:
+        - 조회 요청의 requestId는 응답 meta와 감사 추적 컨텍스트에서 확인 가능해야 한다.
+        - 중요정보 조회 발생 시 sensitive_information_access_logs에 target_scope, access_purpose, purpose_source, requestId를 기록한다.
+      x-required-tests:
+        - 'happy: 정보유형·조회자·기간 조회 -> targetScope, accessPurpose, purposeSource, accessedAt, accessResult를 반환한다'
+        - 'auth: R09가 아닌 사용자 요청 -> 403 ApiError가 반환된다'
+        - 'validation: 허용되지 않은 informationType/accessResult 또는 역전된 기간 -> 400 ApiError.fields가 반환된다'
+        - 'business: 조회 로그 API/화면은 protectedPlainValue, accountNumberPlain 등 보호 원문값을 제공하지 않는다'
+        - 'side-effect: seed 및 기록 row는 requestId로 추적되고 수정·삭제 mapper/API가 없다'
+      x-state-transitions:
+        - read_only: sensitive_information_access_logs
+      x-related-requirements: [REQ-644, REQ-645, REQ-661, REQ-701, REQ-702, REQ-703, REQ-704, REQ-705, REQ-706]
   /api/admin/audit/permission-change-logs:
     get:
       operationId: listPermissionChangeLogs
@@ -4551,871 +4695,374 @@ paths:
       x-roles:
         - R09
       parameters:
-        - name: X-Request-Id
-          in: header
-          schema: {type: string}
         - name: page
           in: query
-          schema: {type: integer, default: 0, minimum: 0}
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
         - name: pageSize
           in: query
-          schema:
-            type: integer
-            enum: [20, 50, 100]
-            default: 20
-        - name: targetType
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
+        - name: size
           in: query
-          schema: {type: string, enum: [ROLE, MENU, FUNCTION, DATA_SCOPE, TEMPORARY]}
+          required: false
+          schema: {type: integer, enum: [20, 50, 100], default: 20}
         - name: filter
           in: query
-          schema: {type: string}
+          required: false
+          schema: { type: string }
+        - name: targetType
+          in: query
+          required: false
+          schema: {type: string, enum: [ROLE, MENU, FUNCTION, DATA_SCOPE, TEMPORARY]}
+        - name: targetId
+          in: query
+          required: false
+          schema: { type: string }
         - name: approverUserId
           in: query
-          schema: {type: integer, format: int64}
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: actorUserId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+        - name: fromDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-contract-notes:
-        - "schema: {type: integer, enum: [20, 50, 100], default: 20}"
-        - "schema: {type: string, enum: [ROLE, MENU, FUNCTION, DATA_SCOPE, TEMPORARY]}"
-      x-business-rules: [permission_change_history 조회는 동적 predicate filter]
-      x-side-effects: [requestId meta echo, request_id audit correlation]
-      x-state-transitions: [read_only permission_change_history]
-      x-required-tests: [happy, auth, validation, business]
+      x-business-rules:
+        - 권한유형·대상·승인자·처리자(actorUserId)·기간 filter는 값이 있을 때만 MyBatis 동적 predicate로 추가한다.
+        - 권한 부여·변경·회수 operation을 제공하지 않는 조회 전용 로그다.
+      x-side-effects:
+        - permission_change_history 조회 요청의 requestId는 응답 meta와 감사 추적 컨텍스트에서 확인 가능해야 한다.
+      x-required-tests:
+        - 'happy: 권한변경 로그 조회 -> meta.requestId와 permission_change_history 목록 반환'
+      x-state-transitions:
+        - read_only: permission_change_history
       x-related-requirements:
+        - REQ-644
+        - REQ-645
+        - REQ-661
         - REQ-707
         - REQ-708
         - REQ-709
         - REQ-711
         - REQ-712
-        - REQ-644
-        - REQ-645
-        - REQ-646
-        - REQ-661
-
-  /api/business/evaluation-organization-mappings:
+  /api/basic29-contract-boundary:
     get:
-      operationId: listEvaluationOrganizationMappings
-      summary: 평가조직 매핑 조회
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      x-related-requirements: [REQ-768]
-      x-pagination:
-        defaultSize: 20
-        allowedSizes: [20, 50, 100]
-        filters: [businessType, organizationCode, userId]
+      operationId: basic29ContractBoundary
+      summary: BASIC-29 OpenAPI path block boundary marker
       responses:
-        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 잘못된 검색조건, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-    post:
-      operationId: saveEvaluationOrganizationMapping
-      summary: 평가조직 매핑 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      x-related-requirements: [REQ-769, REQ-770]
-      x-business-rules: [기존 사용자·조직·역할·데이터 범위 참조만 허용, 별도 공통 테이블 생성 금지]
-      x-side-effects: [evaluation_organization_mappings 저장, data_change_histories 변경 이력 기록]
-      x-state-transitions: [작성중 mapping 저장 -> 활성 mapping]
-      x-required-tests:
-        - "happy: 유효한 user_id/organization_code/business_type/data_scope 저장 -> evaluation_organization_mappings 재조회에 저장값 표시"
-        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
-        - "validation: 누락 businessType -> fields.businessType 오류 반환"
-        - "business: 존재하지 않는 organization_code -> mapping 미생성"
-        - "side-effect: 저장 성공 -> data_change_histories에 target_business=evaluation_organization_mappings 기록"
-      responses:
-        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-  /api/admin/business-status-codes:
+        '200': { description: 계약 경계 마커 }
+  /api/admin/evaluation-dates:
     get:
-      operationId: listBusinessStatusCodes
-      summary: 상태코드 조회
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-771]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, definitionVersion, statusCode] }
-      responses:
-        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-    post:
-      operationId: saveBusinessStatusCode
-      summary: 상태코드 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-772, REQ-773]
-      x-business-rules: [작성중 상태정의 버전에서만 저장, 확정 기술 상태코드 수정·삭제·의미 재사용 금지]
-      x-side-effects: [business_status_codes 저장, data_change_histories 변경 이력 기록]
-      x-state-transitions: [작성중 상태정의 버전 -> 저장됨, 확정 상태정의 버전 -> 변경 거부]
-      x-required-tests:
-        - "happy: 작성중 definition_version의 display_name 저장 -> business_status_codes 재조회에 표시"
-        - "auth: 권한 없는 사용자 저장 요청 -> 403 ApiError 반환"
-        - "validation: 누락 statusCode -> fields.statusCode 오류 반환"
-        - "business: 확정 status_code 변경 요청 -> business_status_codes 기존 값 유지"
-        - "side-effect: 저장 성공 -> data_change_histories에 field_name=display_name 기록"
-      responses:
-        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '409': { description: 확정 코드 변경 금지, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-  /api/admin/business-status-transitions:
-    get:
-      operationId: listBusinessStatusTransitions
-      summary: 상태 전이 조회
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-774]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, fromStatusCode, executorRoleCode] }
-      responses:
-        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-    post:
-      operationId: saveBusinessStatusTransition
-      summary: 상태 전이 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-775, REQ-776]
-      x-business-rules: [작성중 상태정의 버전에서만 전이규칙 저장, 필수의견·필수첨부·취소가능 조건을 명시]
-      x-side-effects: [business_status_transitions 저장, data_change_histories 변경 이력 기록]
-      x-state-transitions: [작성중 전이규칙 -> 저장됨, 확정 전이규칙 -> 직접 수정 거부]
-      x-required-tests:
-        - "happy: 유효한 from/to/role/required flags 저장 -> business_status_transitions 재조회에 표시"
-        - "auth: R01 저장 요청 -> 403 ApiError 반환"
-        - "validation: 누락 toStatusCode -> fields.toStatusCode 오류 반환"
-        - "business: 확정 전이규칙 수정 요청 -> business_status_transitions 기존 값 유지"
-        - "side-effect: 저장 성공 -> data_change_histories에 target_business=business_status_transitions 기록"
-      responses:
-        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-  /api/admin/rejection-reasons:
-    get:
-      operationId: listRejectionReasons
-      summary: 반려사유 조회
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-777]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, reasonCode] }
-      responses:
-        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-    post:
-      operationId: saveRejectionReason
-      summary: 반려사유 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-778, REQ-779]
-      x-business-rules: [업무유형별 표준 반려사유만 관리, 개별 신청 반려 처리 제외]
-      x-side-effects: [rejection_reasons 저장, data_change_histories 변경 이력 기록]
-      x-state-transitions: [반려사유 작성/수정 -> 활성 반려사유]
-      x-required-tests:
-        - "happy: reason_code와 standard_message 저장 -> rejection_reasons 재조회에 표시"
-        - "auth: 권한 없는 사용자 저장 요청 -> 403 ApiError 반환"
-        - "validation: 누락 standardMessage -> fields.standardMessage 오류 반환"
-        - "business: 중복 reason_code 저장 요청 -> rejection_reasons 기존 row 유지"
-        - "side-effect: 저장 성공 -> data_change_histories에 target_business=rejection_reasons 기록"
-      responses:
-        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-  /api/admin/data-change-histories:
-    get:
-      operationId: listDataChangeHistories
-      summary: 데이터 변경 이력 조회
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-780, REQ-781, REQ-782]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [targetBusiness, targetKey, changedBy, changedAtFrom, changedAtTo, changeType] }
-      responses:
-        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-  /api/admin/deleted-business-data:
-    get:
-      operationId: listDeletedBusinessData
-      summary: 삭제자료 조회
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R09]
-      x-related-requirements: [REQ-783, REQ-784]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, originalKey, deletedBy, deletedAtFrom, deletedAtTo] }
-      responses:
-        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-  /api/admin/korus-faculty-sync-results:
-    get:
-      operationId: listKorusFacultySyncResults
-      summary: KORUS 연계 결과 조회
-      security:
-        - SessionCookie: []
-      x-roles: [R09, R04]
-      parameters:
-        - name: page
-          in: query
-          schema: { type: integer, default: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, default: 20, enum: [20, 50, 100] }
-      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements:
-        - REQ-1238
-        - REQ-1239
-        - REQ-1240
-        - REQ-1241
-        - REQ-1242
-        - REQ-1243
-        - REQ-1244
-        - REQ-1245
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/admin/korus-faculty-sync-results/{syncResultId}/retry:
-    post:
-      operationId: createKorusFacultySyncRetry
-      summary: KORUS 실패 재처리
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules:
-        - KORUS 원천 데이터는 직접 수정하지 않는다.
-        - 동일 원천 식별자 재수신은 중복 생성하지 않는다.
-      x-side-effects:
-        - korus_faculty_sync_runs와 korus_faculty_sync_results에 request_id와 처리 결과를 기록한다.
-      x-required-tests:
-        - happy: 유효한 기간으로 수동 실행 -> korus_faculty_sync_runs row와 request_id가 후속 조회된다
-        - auth: 권한 없는 R01 세션 -> HTTP 403 ApiError를 반환한다
-        - validation: targetStartDate 누락 -> fields.targetStartDate 오류를 반환한다
-        - business: 동일 appointment_id 재수신 -> korus_faculty_sync_results 중복 row 없이 변경 이력만 남는다
-        - side-effect: 실패 건 발생 -> korus_faculty_sync_results.error_message가 후속 조회된다
-      x-state-transitions:
-        - from: REQUESTED
-          to: COMPLETED_OR_FAILED
-          trigger: service transaction result
-      x-related-requirements:
-        - REQ-1238
-        - REQ-1239
-        - REQ-1240
-        - REQ-1241
-        - REQ-1242
-        - REQ-1243
-        - REQ-1244
-        - REQ-1245
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/admin/korus-faculty-sync-runs:
-    post:
-      operationId: createKorusFacultySyncRun
-      summary: KORUS 동기화 실행
-      security:
-        - SessionCookie: []
-      x-roles: [R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules:
-        - KORUS 원천 데이터는 직접 수정하지 않는다.
-        - 동일 원천 식별자 재수신은 중복 생성하지 않는다.
-      x-side-effects:
-        - korus_faculty_sync_runs와 korus_faculty_sync_results에 request_id와 처리 결과를 기록한다.
-      x-required-tests:
-        - happy: 유효한 기간으로 수동 실행 -> korus_faculty_sync_runs row와 request_id가 후속 조회된다
-        - auth: 권한 없는 R01 세션 -> HTTP 403 ApiError를 반환한다
-        - validation: targetStartDate 누락 -> fields.targetStartDate 오류를 반환한다
-        - business: 동일 appointment_id 재수신 -> korus_faculty_sync_results 중복 row 없이 변경 이력만 남는다
-        - side-effect: 실패 건 발생 -> korus_faculty_sync_results.error_message가 후속 조회된다
-      x-state-transitions:
-        - from: REQUESTED
-          to: COMPLETED_OR_FAILED
-          trigger: service transaction result
-      x-related-requirements:
-        - REQ-1238
-        - REQ-1239
-        - REQ-1240
-        - REQ-1241
-        - REQ-1242
-        - REQ-1243
-        - REQ-1244
-        - REQ-1245
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/admin/full-time-faculty-statuses:
-    get:
-      operationId: listFullTimeFacultyStatuses
-      summary: 전임교원 현황 조회
+      operationId: listEvaluationDates
+      summary: 평가일자 관리 조회
       security:
         - SessionCookie: []
       x-roles: [R03, R04, R09]
       parameters:
-        - name: page
-          in: query
-          schema: { type: integer, default: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, default: 20, enum: [20, 50, 100] }
-      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements:
-        - REQ-1251
-        - REQ-1252
-        - REQ-1253
-        - REQ-1254
-        - REQ-1255
-        - REQ-1256
-        - REQ-1257
-        - REQ-1258
-        - REQ-1259
-        - REQ-1260
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/researcher-profiles:
+      x-related-requirements: [REQ-1116, REQ-1117]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/evaluation-dates/save:
+    post:
+      operationId: saveEvaluationDate
+      summary: 평가일자 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveEvaluationDateRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1116, REQ-1117, REQ-1118, REQ-1121]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - evaluation_date_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+      x-required-tests:
+        - 'happy: 유효한 평가일자 관리 저장 요청 -> 후속 listEvaluationDates 조회에서 evaluation_date_settings 변경 row가 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환되고 evaluation_date_settings row가 변경되지 않는다'
+        - 'validation: endAt이 startAt보다 빠른 요청 -> ApiError.fields.endAt이 반환된다'
+        - 'business: 동일 적용 조건의 겹치는 활성 기간 저장 요청 -> 409 ApiError와 기존 evaluation_date_settings row no-change가 확인된다'
+  /api/admin/input-periods:
+    get:
+      operationId: listInputPeriods
+      summary: 입력기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1122, REQ-1123]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/input-periods/save:
+    post:
+      operationId: saveInputPeriod
+      summary: 입력기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveInputPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1122, REQ-1123, REQ-1124, REQ-1127]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - input_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/modification-periods:
+    get:
+      operationId: listModificationPeriods
+      summary: 수정기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1128, REQ-1129]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/modification-periods/save:
+    post:
+      operationId: saveModificationPeriod
+      summary: 수정기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveModificationPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1128, REQ-1129, REQ-1130, REQ-1131, REQ-1134]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - modification_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/department-chair-confirm-periods:
+    get:
+      operationId: listDepartmentChairConfirmPeriods
+      summary: 학과장 확인기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1135, REQ-1136]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/department-chair-confirm-periods/save:
+    post:
+      operationId: saveDepartmentChairConfirmPeriod
+      summary: 학과장 확인기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveDepartmentChairConfirmPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1135, REQ-1136, REQ-1137, REQ-1138, REQ-1141]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - department_chair_confirm_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/business-periods:
+    get:
+      operationId: listBusinessPeriods
+      summary: 평가·업적입력 기간 관리 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: organizationCode, in: query, schema: { type: string } }
+        - { name: userTypeCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1142, REQ-1143]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, areaCode, organizationCode, userTypeCode, activeYn, keyword]
+  /api/admin/business-periods/save:
+    post:
+      operationId: saveBusinessPeriod
+      summary: 평가·업적입력 기간 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R03, R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveBusinessPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1142, REQ-1143, REQ-1145, REQ-1146, REQ-1148]
+      x-business-rules:
+        - 동일 적용 조건의 활성 기간은 중복될 수 없다.
+        - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
+      x-side-effects:
+        - business_period_integrated_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+  /api/admin/researcher-profiles:
     get:
       operationId: listResearcherProfiles
-      summary: 연구자 프로필 목록
+      summary: 연구자 프로필 목록 조회
       security:
         - SessionCookie: []
-      x-roles: [R01, R04, R09]
+      x-roles: [R09]
       parameters:
-        - name: page
-          in: query
-          schema: { type: integer, default: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, default: 20, enum: [20, 50, 100] }
-      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: keyword, in: query, schema: { type: string } }
+      x-pagination: { pageParam: page, sizeParam: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      x-filtering: [keyword]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/researcher-profiles/{employeeNo}:
+      x-related-requirements: [REQ-1150, REQ-1152]
+  /api/admin/researcher-profiles/degree-deficiencies:
     get:
-      operationId: getResearcherProfile
-      summary: 연구자 프로필 상세
+      operationId: listDegreeDeficiencyTargets
+      summary: 선행학위 미충족 대상 조회
       security:
         - SessionCookie: []
-      x-roles: [R01, R04, R09]
+      x-roles: [R09]
       parameters:
-        - name: page
-          in: query
-          schema: { type: integer, default: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, default: 20, enum: [20, 50, 100] }
-      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: keyword, in: query, schema: { type: string } }
+      x-pagination: { pageParam: page, sizeParam: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      x-filtering: [keyword]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/researcher-profiles/{employeeNo}/research-fields:
-    put:
-      operationId: saveResearcherProfileResearchFields
-      summary: 연구분야 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R01, R04, R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules:
-        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
-        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
-      x-side-effects:
-        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
-      x-required-tests:
-        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
-        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
-        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
-        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
-        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
-      x-state-transitions:
-        - from: DRAFT
-          to: DRAFT
-          trigger: tab save metadata update
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/researcher-profiles/{employeeNo}/careers:
-    put:
-      operationId: saveResearcherProfileCareers
-      summary: 경력 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R01, R04, R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules:
-        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
-        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
-      x-side-effects:
-        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
-      x-required-tests:
-        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
-        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
-        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
-        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
-        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
-      x-state-transitions:
-        - from: DRAFT
-          to: DRAFT
-          trigger: tab save metadata update
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/researcher-profiles/{employeeNo}/degrees:
-    put:
-      operationId: saveResearcherProfileDegrees
-      summary: 학위 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R01, R04, R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules:
-        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
-        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
-      x-side-effects:
-        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
-      x-required-tests:
-        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
-        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
-        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
-        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
-        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
-      x-state-transitions:
-        - from: DRAFT
-          to: DRAFT
-          trigger: tab save metadata update
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/researcher-profiles/{employeeNo}/certifications:
-    put:
-      operationId: saveResearcherProfileCertifications
-      summary: 자격 저장
-      security:
-        - SessionCookie: []
-      x-roles: [R01, R04, R09]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
-        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-business-rules:
-        - KORUS 조회 전용 항목은 payload로 수정할 수 없다.
-        - 평가확정 데이터는 직접관리 정보 저장을 차단한다.
-      x-side-effects:
-        - researcher_* table 변경자와 변경일시를 기록하고 achievement_data_histories에 변경 전후 값을 남긴다.
-      x-required-tests:
-        - happy: 권한 있는 사용자가 저장 -> researcher_profiles 관련 detail table 변경값이 후속 getResearcherProfile에서 보인다
-        - auth: 권한 없는 사용자 범위 -> HTTP 403 ApiError를 반환한다
-        - validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다
-        - business: KORUS readonly field 포함 -> 기존 korus_personnel_snapshots 값이 변경되지 않는다
-        - side-effect: 저장 성공 -> achievement_data_histories row에 before_value와 after_value가 기록된다
-      x-state-transitions:
-        - from: DRAFT
-          to: DRAFT
-          trigger: tab save metadata update
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-  /api/admin/researcher-profiles/degree-prerequisite-missing:
+      x-related-requirements: [REQ-1151, REQ-1152]
+  /api/admin/researcher-profiles/faculty-search:
     get:
-      operationId: listDegreePrerequisiteMissingResearchers
-      summary: 선행학위 미충족 조회
+      operationId: listFacultySearchResults
+      summary: 교원 검색 목록 조회
       security:
         - SessionCookie: []
-      x-roles: [R04, R09]
+      x-roles: [R09]
       parameters:
-        - name: page
-          in: query
-          schema: { type: integer, default: 0 }
-        - name: size
-          in: query
-          schema: { type: integer, default: 20, enum: [20, 50, 100] }
-      x-pagination: { page: page, size: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: keyword, in: query, schema: { type: string } }
+      x-pagination: { pageParam: page, sizeParam: size, defaultSize: 20, allowedSizes: [20, 50, 100] }
+      x-filtering: [keyword]
       responses:
         '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
         '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
-      x-related-requirements:
-        - REQ-1265
-        - REQ-1266
-        - REQ-1267
-        - REQ-1268
-        - REQ-1269
-        - REQ-1270
-        - REQ-1271
-        - REQ-1272
-        - REQ-1273
-        - REQ-1274
-        - REQ-1275
-        - REQ-1276
-        - REQ-1277
-        - REQ-1186
-        - REQ-1187
-        - REQ-1188
-        - REQ-1189
-        - REQ-1190
-        - REQ-1193
-x-uncovered-requirements:
-  - canonical_id: REQ-713
-    status: non-functional
-    evidence: 동일 저장소 재사용은 OpenAPI operation 직접 매핑 대상이 아니며 architecture-runtime artifact에서 추적한다.
-  - canonical_id: REQ-714
-    status: out-of-scope
-    evidence: 중복 공통 기반 생성 금지은 OpenAPI operation 직접 매핑 대상이 아니며 out-of-scope artifact에서 추적한다.
-  - canonical_id: REQ-715
-    status: covered
-    evidence: 공통 계약 부재 시 착수 중단은 OpenAPI operation 직접 매핑 대상이 아니며 architecture-runtime artifact에서 추적한다.
-  - canonical_id: REQ-716
-    status: data-constraint
-    evidence: 증분 migration만 허용은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-717
-    status: covered
-    evidence: 기존 Principal과 데이터 범위 재사용은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-718
-    status: covered
-    evidence: 업적 인증상태 값 제한은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-719
-    status: covered
-    evidence: 업적 상태 전이 경로 제한은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-720
-    status: covered
-    evidence: 반려 전이 사유 필수은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-721
-    status: covered
-    evidence: 외부·일괄생성 업적 직접수정 금지은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-722
-    status: covered
-    evidence: KRI 연동 대상 제한은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-723
-    status: covered
-    evidence: 상태 전이 이력 기록은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-724
-    status: data-constraint
-    evidence: 업적 변경 직전 상태 보관은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-725
-    status: data-constraint
-    evidence: 이력 필수 항목은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-726
-    status: data-constraint
-    evidence: 생성·수정 메타데이터은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-727
-    status: data-constraint
-    evidence: 논리삭제 처리은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-728
-    status: data-constraint
-    evidence: 확정 시점 데이터 보존은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-729
-    status: data-constraint
-    evidence: 확정 결과 기준 조회·출력은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-730
-    status: covered
-    evidence: 역할별 기능·데이터 범위 통제은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-731
-    status: covered
-    evidence: 접근 허용 조건 결합은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-732
-    status: covered
-    evidence: 평가확정 데이터 수정·삭제 차단은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-733
-    status: screen-only
-    evidence: 무권한 기능 숨김은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-734
-    status: covered
-    evidence: 클라이언트·서버 권한 검증은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-735
-    status: data-constraint
-    evidence: 중요정보 조회 이력은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-736
-    status: data-constraint
-    evidence: 코드 필드 관리은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-737
-    status: covered
-    evidence: 사용 중 코드 삭제 금지은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-738
-    status: screen-only
-    evidence: 목록 기본 20건은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-739
-    status: screen-only
-    evidence: 목록 표시 건수 선택은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-740
-    status: screen-only
-    evidence: 목록 Excel 다운로드은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-741
-    status: screen-only
-    evidence: 필수 항목 표시은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-742
-    status: covered
-    evidence: 필수 미입력 저장 차단은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-743
-    status: screen-only
-    evidence: 삭제 전 확인은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-744
-    status: screen-only
-    evidence: 저장 전 확인은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-745
-    status: screen-only
-    evidence: 일괄처리 전 확인은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-746
-    status: screen-only
-    evidence: 삭제 결과 안내은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-747
-    status: screen-only
-    evidence: 저장 결과 안내은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-748
-    status: screen-only
-    evidence: 일괄처리 결과 안내은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-749
-    status: screen-only
-    evidence: 표준 레이아웃은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-750
-    status: screen-only
-    evidence: 표준 색상은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-751
-    status: screen-only
-    evidence: 표준 글꼴은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-752
-    status: screen-only
-    evidence: 표준 버튼은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-753
-    status: screen-only
-    evidence: 표준 아이콘은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-754
-    status: screen-only
-    evidence: 표준 용어은 OpenAPI operation 직접 매핑 대상이 아니며 ui-supporting artifact에서 추적한다.
-  - canonical_id: REQ-755
-    status: covered
-    evidence: 요청 식별자 부여은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
-  - canonical_id: REQ-756
-    status: covered
-    evidence: 연계 요청 식별자 추적은 OpenAPI operation 직접 매핑 대상이 아니며 architecture-runtime artifact에서 추적한다.
-  - canonical_id: REQ-757
-    status: covered
-    evidence: 배치 요청 식별자 추적은 OpenAPI operation 직접 매핑 대상이 아니며 architecture-runtime artifact에서 추적한다.
-  - canonical_id: REQ-758
-    status: non-functional
-    evidence: 웹 접근성 준수은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-759
-    status: data-constraint
-    evidence: 임시 데이터 삭제은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-760
-    status: data-constraint
-    evidence: 업무 데이터 논리 분리은 OpenAPI operation 직접 매핑 대상이 아니며 data-contract artifact에서 추적한다.
-  - canonical_id: REQ-761
-    status: non-functional
-    evidence: 평균 질의 3초은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-762
-    status: non-functional
-    evidence: 건별 질의 5초은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-763
-    status: non-functional
-    evidence: 페이지 3MB 이하은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-764
-    status: non-functional
-    evidence: 시큐어 코딩은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-765
-    status: non-functional
-    evidence: 개인정보 보호·구간 암호화은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-766
-    status: non-functional
-    evidence: 다중 기기·브라우저 동작은 OpenAPI operation 직접 매핑 대상이 아니며 non-functional artifact에서 추적한다.
-  - canonical_id: REQ-767
-    status: covered
-    evidence: 공통 인증 재사용은 OpenAPI operation 직접 매핑 대상이 아니며 api-contract artifact에서 추적한다.
+      x-related-requirements: [REQ-1149, REQ-1152]
+
 components:
   securitySchemes:
     SessionCookie:
@@ -5443,6 +5090,7 @@ components:
         requiredColumns: { type: array, items: { type: string } }
         columnOrder: { type: array, items: { type: string } }
         codeRuleRefs: { type: array, items: { type: string } }
+        rules: { type: array, items: { type: object, properties: { requiredColumn: { type: string }, codeRuleRef: { type: string } } } }
         fileToken: { type: string }
     ExcelUploadRequest:
       type: object
@@ -5489,6 +5137,76 @@ components:
         originalExecutionId: { type: string }
         failedItemKey: { type: string }
         retryReason: { type: string }
+    SaveEvaluationDateRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveInputPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveModificationPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveDepartmentChairConfirmPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+    SaveBusinessPeriodRequest:
+      type: object
+      required: [evaluationYear, organizationCode, startAt, endAt, baseDate, activeYn, changeReason]
+      properties:
+        settingId: { type: integer, format: int64, nullable: true }
+        evaluationYear: { type: string }
+        areaCode: { type: string, nullable: true }
+        organizationCode: { type: string }
+        userTypeCode: { type: string, nullable: true }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        baseDate: { type: string, format: date }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
     ApiResponse:
       type: object
       required:
@@ -5521,9 +5239,9 @@ components:
             message:
               type: string
             fields:
-              type: object
-              additionalProperties:
-                type: string
+              type: array
+              items:
+                $ref: '#/components/schemas/ValidationError'
         meta:
           type: object
           additionalProperties: true
@@ -5531,10 +5249,9 @@ components:
       type: object
       required: [field, message]
       properties:
-        field:
-          type: string
-        message:
-          type: string
+        field: { type: string }
+        message: { type: string }
+
     FunctionPermissionRequest:
       type: object
       required: [screenId, roleCode, functionType, permissionAllowed, changeReason]
@@ -5927,6 +5644,7 @@ components:
         - ACTIVE
         - EXPIRED
         - LOGGED_OUT
+        - TERMINATED
 x-business-rules:
   - 보호 API는 인증 세션을 요구한다
   - 권한 없는 요청은 401 또는 403으로 차단한다
@@ -6218,7 +5936,6 @@ x-uncovered-requirements:
   - {canonical_id: REQ-563, status: covered, evidence: contracts/openapi.yaml x-uncovered-requirements }
   - {canonical_id: REQ-564, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
   - {canonical_id: REQ-565, status: covered, evidence: contracts/openapi.yaml x-uncovered-requirements }
-  - {canonical_id: REQ-586, status: covered, evidence: downloadUploadTemplate 파일 다운로드 보안 계약 }
   - {canonical_id: REQ-566, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
   - {canonical_id: REQ-567, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
   - {canonical_id: REQ-568, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
@@ -6231,6 +5948,7 @@ x-uncovered-requirements:
   - {canonical_id: REQ-577, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
   - {canonical_id: REQ-578, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
   - {canonical_id: REQ-579, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
+  - {canonical_id: REQ-586, status: covered, evidence: downloadUploadTemplate }
   - {canonical_id: REQ-587, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
   - {canonical_id: REQ-588, status: data-constraint, evidence: data-model.md 공통 제약 }
   - {canonical_id: REQ-589, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }

@@ -1,0 +1,81 @@
+{
+  "change_set_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-change-set.json",
+  "change_set_sha256": "518b3e5f181a5826a616c04659d5f461e93325d5a1d01659bf7e9705c1e6823f",
+  "documents": [
+    {
+      "baseline_ref": "/shared/aiops/artifacts/speckit/design-docs/aug6/data-model.md",
+      "baseline_sha256": "385d9c0edfc1e7b6341c97b2a8dd7fc04cf456b8dfa4de338b2586b64d5eafe3",
+      "effective_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/effective-design-docs/data-model.md",
+      "effective_sha256": "0100eb924df4f5a31877a91db3fcbc2f52530e38fea1ee271d909cf0d5ea7fb0",
+      "patch_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-patches/data-model.diff",
+      "patch_sha256": "77cd2371ca6d7cf6798cd2c83b828334cd7a509a0615dd46bcf8efca30943687",
+      "path": "data-model.md",
+      "reason": "BASIC-37 연구자 조회 projection과 개발·검증 seed 계약이 기존 데이터 계약에 없어 추가 patch가 필요하다.",
+      "reviewer_decision": null,
+      "status": "changed"
+    },
+    {
+      "baseline_ref": "/shared/aiops/artifacts/speckit/design-docs/aug6/contracts/openapi.yaml",
+      "baseline_sha256": "8864c9b6a7cef2a2d44913ce53d07277ae0f36d1680e23414a1423e076a1012e",
+      "effective_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/effective-design-docs/contracts/openapi.yaml",
+      "effective_sha256": "7b3197faac3e3d639b7b084b0e38ea7720b086929448ca03fe3a0e5ce84a9065",
+      "patch_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-patches/contracts-openapi.diff",
+      "patch_sha256": "1896a1aac5515bd44381afa03a79a68bdc1dacbb7f597f187576541d129b42e4",
+      "path": "contracts/openapi.yaml",
+      "reason": "연구자 조회 API와 업로드 양식 목록 API를 추가하고 배치 결과 조회에 BASIC-37 trace를 연결해야 한다.",
+      "reviewer_decision": null,
+      "status": "changed"
+    },
+    {
+      "baseline_ref": "/shared/aiops/artifacts/speckit/design-docs/aug6/research.md",
+      "baseline_sha256": "c8ed7abea35d448b96daa94d9e72dd3487ee9fb60b4f27af7e438e2c2b667350",
+      "effective_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/effective-design-docs/research.md",
+      "effective_sha256": "c3ac005fe9deff6e97e2895d77ed1452133532bef2923e004fcc601e4f667f5b",
+      "patch_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-patches/research.diff",
+      "patch_sha256": "0e892f21d5d1870b6508d08570501e1052b7fd980670749953ecc698f54c2ac8",
+      "path": "research.md",
+      "reason": "DTO 매핑 오류 수정 전략과 header navigation 결정이 기존 연구 결정에 없어 보강한다.",
+      "reviewer_decision": null,
+      "status": "changed"
+    },
+    {
+      "baseline_ref": "/shared/aiops/artifacts/speckit/design-docs/aug6/quickstart.md",
+      "baseline_sha256": "2e62febd8b56e4d8dacaa67fa83bbd2106a4ff1405f524fc72aa18be3dde3da6",
+      "effective_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/effective-design-docs/quickstart.md",
+      "effective_sha256": "9771ac0cead6cd5efee5a7f297c8c3d432a9936a9f98bac3e9c719e42c1be5b9",
+      "patch_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-patches/quickstart.diff",
+      "patch_sha256": "207110a1b40ad3d41e25119f6818f8b42ecd81bf2d2524f245e1f024870019a6",
+      "path": "quickstart.md",
+      "reason": "BASIC-37 조회 오류와 메뉴 UI 검증 smoke가 기존 quickstart에 없어 추가한다.",
+      "reviewer_decision": null,
+      "status": "changed"
+    },
+    {
+      "baseline_ref": "/shared/aiops/artifacts/speckit/design-docs/aug6/architecture.md",
+      "baseline_sha256": "2e274254ed237f5f2c2fd313e4df4dc0a01db444fa58cf0c06c8d2e2941b3a55",
+      "effective_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/effective-design-docs/architecture.md",
+      "effective_sha256": "b115065ff8b0b8c75958f91150feda8f6967c76684a189bde514aea2cb9e2eff",
+      "patch_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-patches/architecture.diff",
+      "patch_sha256": "bcde8da820c102c8f85d10951b0e334ba9438224c5f68fde5e31600c4480b31f",
+      "path": "architecture.md",
+      "reason": "연구자 조회 module과 header menu/search shell 경계를 기존 아키텍처에 연결해야 한다.",
+      "reviewer_decision": null,
+      "status": "changed"
+    },
+    {
+      "baseline_ref": "/shared/aiops/artifacts/speckit/design-docs/aug6/ui-design.md",
+      "baseline_sha256": "0c6577ed517adbf0ac8fb188c879ca9539b98ffcb521e9f1b6ddd2a20a0b73a3",
+      "effective_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/effective-design-docs/ui-design.md",
+      "effective_sha256": "c433cc87e5b8a3e99606d5120e547eb888b19c60f72f92f1c13b4f8039971c9b",
+      "patch_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-patches/ui-design.diff",
+      "patch_sha256": "ed356664fd45ca65eb49613410747538a30ece1c0648d1354a27677fa5c6d01b",
+      "path": "ui-design.md",
+      "reason": "공통 header navigation, 메뉴 검색, 연구자 조회 화면 trace, 엑셀 UI 정렬 계약을 UI 설계에 추가해야 한다.",
+      "reviewer_decision": null,
+      "status": "changed"
+    }
+  ],
+  "impact_ref": "/shared/aiops/artifacts/speckit/runs/BASIC-37-scope-analysis-20260901T054539/design-doc-impact.json",
+  "impact_sha256": "9e4aae53aa31f0dab9e5ef894412a7f78607b202cd39be95366287d0fa4f52ac",
+  "schema_version": "approved_design_doc_change_set.v1"
+}

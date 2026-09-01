@@ -397,6 +397,24 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "교수업적평가 파일럿 > 교원 현황 > 전임교원 현황",
   },
   {
+    path: "/admin/researcher-profiles/faculty-search",
+    label: "교원 검색 목록",
+    screenId: "SCR-FACULTY-SEARCH-LIST",
+    menuPath: "연구자 프로필 관리 > 교원 검색 목록",
+  },
+  {
+    path: "/admin/researcher-profiles",
+    label: "연구자 프로필 목록",
+    screenId: "SCR-RESEARCHER-PROFILE-LIST",
+    menuPath: "연구자 프로필 관리 > 연구자 프로필 목록",
+  },
+  {
+    path: "/admin/researcher-profiles/degree-deficiencies",
+    label: "선행학위 미충족 대상",
+    screenId: "SCR-DEGREE-DEFICIENCY-TARGET-LIST",
+    menuPath: "연구자 프로필 관리 > 선행학위 미충족 대상",
+  },
+  {
     path: "/researcher-profiles",
     label: "연구자 프로필 목록",
     screenId: "SCR-RESEARCHER-PROFILE-LIST",

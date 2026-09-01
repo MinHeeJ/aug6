@@ -164,6 +164,13 @@ export function ResearcherProfileDetailPage() {
   const [changeReason, setChangeReason] = useState("연구자 프로필 탭 저장");
 
   const load = async () => {
+    if (isUnresolvedEmployeeNo(employeeNo)) {
+      setProfile(null);
+      setError("목록에서 연구자를 선택한 뒤 상세를 조회하세요.");
+      setPermissionDenied(false);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -967,6 +974,11 @@ function Pager({
       </div>
     </div>
   );
+}
+
+function isUnresolvedEmployeeNo(employeeNo: string) {
+  const trimmed = employeeNo.trim();
+  return !trimmed || /^\{[^/]+\}$/.test(trimmed);
 }
 
 function handleApiError(

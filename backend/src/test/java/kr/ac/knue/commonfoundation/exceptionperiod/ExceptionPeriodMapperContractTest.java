@@ -29,6 +29,16 @@ class ExceptionPeriodMapperContractTest {
     }
 
     @Test
+    void mapperUsesNullableLongJavaTypesForNullableAuditColumnsToPreventLoadTimeMapping500() {
+        assertThat(mapperXml)
+                .contains("<arg column=\"settingId\" javaType=\"java.lang.Long\"/>")
+                .contains("<arg column=\"teacherUserId\" javaType=\"java.lang.Long\"/>")
+                .contains("<arg column=\"createdBy\" javaType=\"java.lang.Long\"/>")
+                .contains("<arg column=\"updatedBy\" javaType=\"java.lang.Long\"/>")
+                .doesNotContain("javaType=\"long\"");
+    }
+
+    @Test
     void mapperProvidesTargetFiltersDynamicallyAndAvoidsNullBoundPredicatePattern() {
         assertThat(mapperXml)
                 .contains("<if test=\"criteria.teacherUserId != null\">")

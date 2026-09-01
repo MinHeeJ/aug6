@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { researcherProfileApi } from "../../api/apiClient";
 import {
   DegreePrerequisiteMissingPage,
   ResearcherProfileDetailPage,
@@ -94,6 +96,23 @@ describe("SCR-RESEARCHER-PROFILES", () => {
     expect(html).toContain("취득학위");
     expect(html).toContain("자격사항");
     expect(html).toContain("저장");
+  });
+
+  it("does not call detail API with unresolved employeeNo route placeholder", async () => {
+    window.history.pushState({}, "", "/researcher-profiles/{employeeNo}");
+    vi.mocked(researcherProfileApi.getProfile).mockClear();
+
+    render(<ResearcherProfileDetailPage />);
+
+    await waitFor(() =>
+      expect(researcherProfileApi.getProfile).not.toHaveBeenCalled(),
+    );
+    expect(
+      await screen.findByText("연구자 프로필 상세 오류"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("목록에서 연구자를 선택한 뒤 상세를 조회하세요."),
+    ).toBeInTheDocument();
   });
 
   it("renders degree prerequisite missing route without mutation CTA", () => {

@@ -23,6 +23,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [miniSidebar, setMiniSidebar] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activeHeaderMenuId, setActiveHeaderMenuId] = useState<number | null>(
+    null,
+  );
+  const [searchQuery, setSearchQuery] = useState("");
   const [darkMode, setDarkMode] = useState(() =>
     typeof document !== "undefined"
       ? document.documentElement.classList.contains("dark")
@@ -34,6 +38,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     () => auth.user?.menus ?? [],
     [auth.user?.menus],
   );
+  const activeHeaderMenu =
+    visibleMenus.find((menu) => menu.menuId === activeHeaderMenuId) ?? null;
+  const searchResults = useMemo(() => {
+    const keyword = searchQuery.trim().toLocaleLowerCase("ko-KR");
+    if (!keyword) return flattenMenuLeaves(visibleMenus).slice(0, 8);
+    return flattenMenuLeaves(visibleMenus)
+      .filter((item) => item.searchText.includes(keyword))
+      .slice(0, 12);
+  }, [searchQuery, visibleMenus]);
 
   const toggleTheme = () => {
     const next = !darkMode;
@@ -57,9 +70,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <aside
-        className={`menu-sidebar fixed left-0 top-0 z-[3] h-full flex-shrink-0 border-r border-ld bg-white shadow-sm transition-all duration-200 ease-in dark:border-white/10 dark:bg-dark xl:block ${
+        aria-hidden={!sidebarOpen}
+        className={`menu-sidebar fixed left-0 top-0 z-[3] h-full w-[270px] flex-shrink-0 border-r border-ld bg-white shadow-sm transition-all duration-200 ease-in dark:border-white/10 dark:bg-dark ${
           sidebarOpen ? "block" : "hidden"
-        } ${miniSidebar ? "xl:w-[90px]" : "xl:w-[270px]"} w-[270px]`}
+        }`}
         onMouseEnter={() => miniSidebar && setMiniSidebar(false)}
       >
         <div
@@ -143,11 +157,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div
-        className={`page-wrapper flex w-full transition-all duration-200 ease-in ${
-          miniSidebar ? "xl:ml-[90px]" : "xl:ml-[270px]"
-        }`}
-      >
+      <div className="page-wrapper flex w-full transition-all duration-200 ease-in">
         <div className="body-wrapper w-full bg-lightgray dark:bg-dark">
           <header className="sticky top-0 z-[2] border-b border-ld bg-white/95 px-5 py-4 shadow-sm backdrop-blur md:px-[30px] dark:border-white/10 dark:bg-dark/95">
             <div className="mx-auto flex items-center justify-between gap-4">
@@ -168,6 +178,46 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 >
                   <Menu size={20} />
                 </button>
+                <nav
+                  className="hidden min-w-0 items-center gap-1 lg:flex"
+                  data-testid="header-menu-bar"
+                  aria-label="헤더 주요 메뉴"
+                  onMouseLeave={() => setActiveHeaderMenuId(null)}
+                >
+                  {visibleMenus.map((menu) => (
+                    <div className="relative" key={menu.menuId}>
+                      <button
+                        type="button"
+                        className={`inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold ${
+                          activeHeaderMenuId === menu.menuId
+                            ? "bg-lightprimary text-primary"
+                            : "text-link hover:bg-lightprimary hover:text-primary dark:text-white/80"
+                        }`}
+                        onMouseEnter={() => setActiveHeaderMenuId(menu.menuId)}
+                        onFocus={() => setActiveHeaderMenuId(menu.menuId)}
+                      >
+                        {menu.menuName}
+                        {menu.children?.length ? (
+                          <ChevronDown size={14} />
+                        ) : null}
+                      </button>
+                    </div>
+                  ))}
+                </nav>
+                {activeHeaderMenu ? (
+                  <div
+                    className="absolute left-5 top-[68px] z-[4] hidden w-[min(900px,calc(100vw-2.5rem))] rounded-2xl border border-ld bg-white p-4 shadow-md lg:block dark:border-white/10 dark:bg-dark"
+                    onMouseEnter={() =>
+                      setActiveHeaderMenuId(activeHeaderMenu.menuId)
+                    }
+                    onMouseLeave={() => setActiveHeaderMenuId(null)}
+                  >
+                    <HeaderMegaMenu
+                      menu={activeHeaderMenu}
+                      onNavigate={() => setActiveHeaderMenuId(null)}
+                    />
+                  </div>
+                ) : null}
                 <button
                   className="hidden h-10 min-w-[240px] items-center justify-between rounded-xl border border-ld bg-white px-3 text-sm text-muted transition-colors hover:border-primary hover:text-primary md:inline-flex dark:border-white/10 dark:bg-white/5 dark:text-white/60"
                   type="button"
@@ -232,11 +282,47 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
             {searchOpen ? (
               <div className="mt-4 rounded-2xl border border-ld bg-white p-3 shadow-md dark:border-white/10 dark:bg-dark">
-                <div className="flex items-center gap-3 rounded-xl bg-lightgray px-4 py-3 text-sm text-muted dark:bg-white/5 dark:text-white/60">
+                <label className="flex items-center gap-3 rounded-xl bg-lightgray px-4 py-3 text-sm text-muted dark:bg-white/5 dark:text-white/60">
                   <Search size={18} />
-                  <span>
-                    현재 메뉴에서 화면명을 선택하거나 좌측 메뉴를 이용하세요.
-                  </span>
+                  <span className="sr-only">메뉴 검색어</span>
+                  <input
+                    data-testid="menu-search-input"
+                    className="w-full border-0 bg-transparent p-0 text-sm text-link shadow-none outline-none placeholder:text-muted focus-visible:ring-0 dark:text-white/90"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="메뉴명, 화면ID, 경로를 검색하세요"
+                    autoFocus
+                  />
+                </label>
+                <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((result) => (
+                      <a
+                        key={`${result.menu.menuId}-${result.menu.url}`}
+                        href={result.menu.url ?? "#"}
+                        className="rounded-xl border border-ld bg-white px-4 py-3 text-sm hover:border-primary hover:bg-lightprimary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+                        onClick={(event) => {
+                          if (result.menu.url) {
+                            navigateInsideApp(event, result.menu.url, () => {
+                              setSearchOpen(false);
+                              setSearchQuery("");
+                            });
+                          }
+                        }}
+                      >
+                        <span className="block font-semibold">
+                          {result.menu.menuName}
+                        </span>
+                        <span className="mt-1 block truncate text-xs text-muted dark:text-white/55">
+                          {result.path.join(" > ")}
+                        </span>
+                      </a>
+                    ))
+                  ) : (
+                    <p className="rounded-xl border border-dashed border-ld px-4 py-3 text-sm text-muted dark:border-white/10 dark:text-white/60">
+                      검색 결과가 없습니다.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -246,6 +332,78 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
+}
+
+function HeaderMegaMenu({
+  menu,
+  onNavigate,
+}: {
+  menu: MenuItem;
+  onNavigate: () => void;
+}) {
+  const columns = menu.children?.length ? menu.children : [menu];
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {columns.map((column) => (
+        <div key={column.menuId} className="min-w-0">
+          <p className="px-2 text-xs font-bold uppercase tracking-wide text-muted dark:text-white/50">
+            {column.menuName}
+          </p>
+          <div className="mt-2 space-y-1">
+            {flattenMenuLeaves([column]).map((item) => (
+              <a
+                key={item.menu.menuId}
+                href={item.menu.url ?? "#"}
+                className="block rounded-xl px-3 py-2 text-sm font-semibold text-link hover:bg-lightprimary hover:text-primary dark:text-white/80"
+                onClick={(event) => {
+                  if (item.menu.url)
+                    navigateInsideApp(event, item.menu.url, onNavigate);
+                }}
+              >
+                <span className="block truncate">{item.menu.menuName}</span>
+                <span className="mt-1 block truncate text-xs font-normal text-muted dark:text-white/50">
+                  {item.menu.screenId ?? item.menu.url}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type FlatMenuItem = {
+  menu: MenuItem;
+  path: string[];
+  searchText: string;
+};
+
+function flattenMenuLeaves(
+  menus: MenuItem[],
+  parents: string[] = [],
+): FlatMenuItem[] {
+  return menus.flatMap((menu) => {
+    const path = [...parents, menu.menuName];
+    const current =
+      menu.url != null
+        ? [
+            {
+              menu,
+              path,
+              searchText: [
+                menu.menuName,
+                menu.screenId ?? "",
+                menu.url ?? "",
+                path.join(" "),
+              ]
+                .join(" ")
+                .toLocaleLowerCase("ko-KR"),
+            },
+          ]
+        : [];
+    return [...current, ...flattenMenuLeaves(menu.children ?? [], path)];
+  });
 }
 
 function IconCircleButton({

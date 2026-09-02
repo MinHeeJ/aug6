@@ -14,7 +14,7 @@
             <arg column="externalProvisionYn" javaType="string"/>
             <arg column="informationPublicYn" javaType="string"/>
             <arg column="finalDegreeType" javaType="string"/>
-            <arg column="degreePrerequisiteMissing" javaType="boolean"/>
+            <arg column="degreePrerequisiteMissing" javaType="_boolean"/>
             <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
         </constructor>
     </resultMap>

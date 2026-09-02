@@ -25,7 +25,7 @@
         ep.setting_id as "settingId",
         ep.evaluation_year as "evaluationYear",
         ep.teacher_user_id as "teacherUserId",
-        u.name as "teacherName",
+        k.name as "teacherName",
         ep.area_code as "areaCode",
         ep.target_function_code as "targetFunctionCode",
         ep.exception_start_at as "exceptionStartAt",
@@ -42,6 +42,7 @@
     <sql id="exceptionPeriodFrom">
         from exception_period_settings ep
         left join users u on u.user_id = ep.teacher_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
     </sql>
 
     <sql id="exceptionPeriodFilters">
@@ -66,7 +67,7 @@
                     or ep.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
                     or ep.target_function_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
                     or ep.approval_reason ilike concat('%', #{criteria.normalizedKeyword}, '%')
-                    or u.name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+                    or k.name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
             </if>
         </where>
     </sql>
@@ -101,7 +102,7 @@
         returning setting_id as "settingId",
                   evaluation_year as "evaluationYear",
                   teacher_user_id as "teacherUserId",
-                  (select name from users where user_id = exception_period_settings.teacher_user_id) as "teacherName",
+                  (select k.name from users u left join korus_personnel_snapshots k on k.employee_no = u.employee_no where u.user_id = exception_period_settings.teacher_user_id) as "teacherName",
                   area_code as "areaCode",
                   target_function_code as "targetFunctionCode",
                   exception_start_at as "exceptionStartAt",
@@ -132,7 +133,7 @@
         returning setting_id as "settingId",
                   evaluation_year as "evaluationYear",
                   teacher_user_id as "teacherUserId",
-                  (select name from users where user_id = exception_period_settings.teacher_user_id) as "teacherName",
+                  (select k.name from users u left join korus_personnel_snapshots k on k.employee_no = u.employee_no where u.user_id = exception_period_settings.teacher_user_id) as "teacherName",
                   area_code as "areaCode",
                   target_function_code as "targetFunctionCode",
                   exception_start_at as "exceptionStartAt",

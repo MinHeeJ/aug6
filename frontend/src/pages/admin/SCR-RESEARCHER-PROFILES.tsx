@@ -149,9 +149,10 @@ export function ResearcherProfileListPage() {
 }
 
 export function ResearcherProfileDetailPage() {
-  const employeeNo = decodeURIComponent(
+  const rawEmployeeNo = decodeURIComponent(
     window.location.pathname.split("/").pop() ?? "",
-  );
+  ).trim();
+  const employeeNo = isResolvedEmployeeNo(rawEmployeeNo) ? rawEmployeeNo : "";
   const [profile, setProfile] = useState<ResearcherProfileDetail | null>(null);
   const [activeTab, setActiveTab] = useState<
     "fields" | "careers" | "degrees" | "certifications"
@@ -164,6 +165,13 @@ export function ResearcherProfileDetailPage() {
   const [changeReason, setChangeReason] = useState("연구자 프로필 탭 저장");
 
   const load = async () => {
+    if (!employeeNo) {
+      setProfile(null);
+      setError(null);
+      setPermissionDenied(false);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -275,6 +283,12 @@ export function ResearcherProfileDetailPage() {
         <LoadingState
           title="프로필 상세 조회 중"
           message="탭 데이터를 불러오고 있습니다."
+        />
+      ) : null}
+      {!loading && !profile && !error ? (
+        <EmptyState
+          title="연구자 선택이 필요합니다"
+          message="목록에서 실제 연구자를 선택하면 해당 교번으로 상세 정보를 조회합니다."
         />
       ) : null}
       {!loading && profile ? (
@@ -477,6 +491,11 @@ export function DegreePrerequisiteMissingPage() {
       </section>
     </section>
   );
+}
+
+function isResolvedEmployeeNo(employeeNo: string) {
+  if (!employeeNo) return false;
+  return employeeNo !== "{employeeNo}" && !/%7B|%7D/i.test(employeeNo);
 }
 
 function Header({

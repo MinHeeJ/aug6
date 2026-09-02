@@ -14,7 +14,7 @@
             <arg column="failureCount" javaType="java.lang.Integer"/>
             <arg column="excludedCount" javaType="java.lang.Integer"/>
             <arg column="elapsedMillis" javaType="java.lang.Long"/>
-            <arg column="hasLog" javaType="boolean"/>
+            <arg column="hasLog" javaType="_boolean"/>
         </constructor>
     </resultMap>
 

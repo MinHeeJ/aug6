@@ -1,5 +1,7 @@
+import { render, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { researcherProfileApi } from "../../api/apiClient";
 import {
   DegreePrerequisiteMissingPage,
   ResearcherProfileDetailPage,
@@ -94,6 +96,19 @@ describe("SCR-RESEARCHER-PROFILES", () => {
     expect(html).toContain("취득학위");
     expect(html).toContain("자격사항");
     expect(html).toContain("저장");
+  });
+
+  it("does not call placeholder detail API and shows researcher selection guidance", async () => {
+    window.history.pushState({}, "", "/researcher-profiles/%7BemployeeNo%7D");
+    vi.mocked(researcherProfileApi.getProfile).mockClear();
+
+    render(<ResearcherProfileDetailPage />);
+
+    await waitFor(() =>
+      expect(researcherProfileApi.getProfile).not.toHaveBeenCalled(),
+    );
+    expect(screen.getByText("연구자 선택이 필요합니다")).toBeTruthy();
+    expect(screen.getByText(/목록에서 실제 연구자를 선택/)).toBeTruthy();
   });
 
   it("renders degree prerequisite missing route without mutation CTA", () => {

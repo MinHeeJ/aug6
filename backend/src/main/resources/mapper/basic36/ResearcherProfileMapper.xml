@@ -19,6 +19,60 @@
         </constructor>
     </resultMap>
 
+    <resultMap id="ResearcherResearchFieldRowMap" type="kr.ac.knue.commonfoundation.basic36.ResearcherResearchFieldRow">
+        <constructor>
+            <arg column="researchFieldId" javaType="java.lang.Long"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="majorName" javaType="string"/>
+            <arg column="detailMajorName" javaType="string"/>
+            <arg column="majorSeries" javaType="string"/>
+            <arg column="changedBy" javaType="java.lang.Long"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ResearcherCareerRowMap" type="kr.ac.knue.commonfoundation.basic36.ResearcherCareerRow">
+        <constructor>
+            <arg column="careerId" javaType="java.lang.Long"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="workStartYm" javaType="string"/>
+            <arg column="workEndYm" javaType="string"/>
+            <arg column="workplace" javaType="string"/>
+            <arg column="positionName" javaType="string"/>
+            <arg column="duty" javaType="string"/>
+            <arg column="changedBy" javaType="java.lang.Long"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ResearcherDegreeRowMap" type="kr.ac.knue.commonfoundation.basic36.ResearcherDegreeRow">
+        <constructor>
+            <arg column="degreeId" javaType="java.lang.Long"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="degreeType" javaType="string"/>
+            <arg column="universityName" javaType="string"/>
+            <arg column="startYm" javaType="string"/>
+            <arg column="acquiredYm" javaType="string"/>
+            <arg column="countryName" javaType="string"/>
+            <arg column="collegeName" javaType="string"/>
+            <arg column="advisorName" javaType="string"/>
+            <arg column="changedBy" javaType="java.lang.Long"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ResearcherCertificationRowMap" type="kr.ac.knue.commonfoundation.basic36.ResearcherCertificationRow">
+        <constructor>
+            <arg column="certificationId" javaType="java.lang.Long"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="acquiredYm" javaType="string"/>
+            <arg column="certificationName" javaType="string"/>
+            <arg column="issuingOrganizationName" javaType="string"/>
+            <arg column="changedBy" javaType="java.lang.Long"/>
+            <arg column="changedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
     <sql id="profileColumns">
         k.employee_no as "employeeNo",
         k.name,
@@ -85,22 +139,22 @@
         on conflict (employee_no) do nothing
     </insert>
 
-    <select id="listResearchFields" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherResearchFieldRow">
+    <select id="listResearchFields" resultMap="ResearcherResearchFieldRowMap">
         select research_field_id as "researchFieldId", employee_no as "employeeNo", major_name as "majorName", detail_major_name as "detailMajorName", major_series as "majorSeries", changed_by as "changedBy", changed_at as "changedAt"
         from researcher_research_fields where employee_no = #{employeeNo} order by research_field_id
     </select>
 
-    <select id="listCareers" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherCareerRow">
+    <select id="listCareers" resultMap="ResearcherCareerRowMap">
         select career_id as "careerId", employee_no as "employeeNo", work_start_ym as "workStartYm", work_end_ym as "workEndYm", workplace, position_name as "positionName", duty, changed_by as "changedBy", changed_at as "changedAt"
         from researcher_careers where employee_no = #{employeeNo} order by career_id
     </select>
 
-    <select id="listDegrees" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherDegreeRow">
+    <select id="listDegrees" resultMap="ResearcherDegreeRowMap">
         select degree_id as "degreeId", employee_no as "employeeNo", degree_type as "degreeType", university_name as "universityName", start_ym as "startYm", acquired_ym as "acquiredYm", country_name as "countryName", college_name as "collegeName", advisor_name as "advisorName", changed_by as "changedBy", changed_at as "changedAt"
         from researcher_degrees where employee_no = #{employeeNo} order by degree_id
     </select>
 
-    <select id="listCertifications" resultType="kr.ac.knue.commonfoundation.basic36.ResearcherCertificationRow">
+    <select id="listCertifications" resultMap="ResearcherCertificationRowMap">
         select certification_id as "certificationId", employee_no as "employeeNo", acquired_ym as "acquiredYm", certification_name as "certificationName", issuing_organization_name as "issuingOrganizationName", changed_by as "changedBy", changed_at as "changedAt"
         from researcher_certifications where employee_no = #{employeeNo} order by certification_id
     </select>

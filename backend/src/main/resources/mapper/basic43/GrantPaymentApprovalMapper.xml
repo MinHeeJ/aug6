@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic43.GrantPaymentApprovalMapper">
+    <resultMap id="GrantPaymentApprovalRowMap" type="kr.ac.knue.commonfoundation.basic43.GrantPaymentApprovalRow">
+        <constructor>
+            <arg column="approvalId" javaType="long"/>
+            <arg column="grantApplicationId" javaType="long"/>
+            <arg column="linkedAchievementId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="approvalStatus" javaType="string"/>
+            <arg column="previousStatus" javaType="string"/>
+            <arg column="nextStatus" javaType="string"/>
+            <arg column="requestedAmountSnapshot" javaType="java.math.BigDecimal"/>
+            <arg column="paymentAmountSnapshot" javaType="java.math.BigDecimal"/>
+            <arg column="accountSnapshotRef" javaType="string"/>
+            <arg column="reasonCode" javaType="string"/>
+            <arg column="opinion" javaType="string"/>
+            <arg column="processedBy" javaType="long"/>
+            <arg column="processedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        aga.approval_id as "approvalId",
+        aga.grant_application_id as "grantApplicationId",
+        aga.linked_achievement_id as "linkedAchievementId",
+        aga.evaluation_year as "evaluationYear",
+        aga.approval_status as "approvalStatus",
+        aga.previous_status as "previousStatus",
+        aga.next_status as "nextStatus",
+        aga.requested_amount_snapshot as "requestedAmountSnapshot",
+        aga.payment_amount_snapshot as "paymentAmountSnapshot",
+        aga.account_snapshot_ref as "accountSnapshotRef",
+        aga.reason_code as "reasonCode",
+        aga.opinion as "opinion",
+        aga.processed_by as "processedBy",
+        aga.processed_at as "processedAt",
+        aga.change_reason as "changeReason"
+    </sql>
+
+    <sql id="filters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                aga.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedApprovalStatus != null">
+                and aga.approval_status = #{criteria.normalizedApprovalStatus}
+            </if>
+            <if test="criteria.normalizedApplicantName != null">
+                and cast(aga.grant_application_id as varchar) like concat('%', #{criteria.normalizedApplicantName}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="listGrantPaymentApprovals" resultMap="GrantPaymentApprovalRowMap">
+        select <include refid="columns"/>
+        from academic_grant_approvals aga
+        <include refid="filters"/>
+        order by aga.processed_at desc, aga.approval_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countGrantPaymentApprovals" resultType="long">
+        select count(*)
+        from academic_grant_approvals aga
+        <include refid="filters"/>
+    </select>
+
+    <select id="findLatestByGrantApplicationId" resultMap="GrantPaymentApprovalRowMap">
+        select <include refid="columns"/>
+        from academic_grant_approvals aga
+        where aga.grant_application_id = #{grantApplicationId}
+        order by aga.processed_at desc, aga.approval_id desc
+        limit 1
+    </select>
+
+    <select id="paymentScopeExists" resultType="int">
+        select count(*)
+        from academic_grant_approvals aga
+        where aga.grant_application_id = #{grantApplicationId}
+          and (
+            aga.processed_by = #{handlerUserId}
+            or exists (
+                select 1
+                from evaluation_organization_mappings eom
+                where eom.user_id = #{handlerUserId}
+                  and eom.business_type = 'ACADEMIC_GRANT'
+                  and eom.data_scope in ('BUSINESS','ALL')
+            )
+          )
+    </select>
+
+    <select id="transitionAllowed" resultType="int">
+        select count(*)
+        from business_status_transitions
+        where business_type = 'ACADEMIC_GRANT'
+          and definition_version = 'CONFIRMED'
+          and from_status_code = #{fromStatus}
+          and to_status_code = #{toStatus}
+          and executor_role_code = 'R09'
+    </select>
+
+    <select id="rejectionReasonExists" resultType="int">
+        select count(*)
+        from rejection_reasons
+        where reason_code = #{reasonCode}
+          and business_type = 'ACADEMIC_GRANT'
+          and active_yn = 'Y'
+    </select>
+
+    <select id="insertTransition" resultMap="GrantPaymentApprovalRowMap">
+        insert into academic_grant_approvals (grant_application_id, linked_achievement_id, evaluation_year,
+            approval_status, previous_status, next_status, requested_amount_snapshot, payment_amount_snapshot,
+            account_snapshot_ref, reason_code, opinion, processed_by, changed_by, change_reason,
+            created_by, updated_by)
+        values (#{grantApplicationId}, #{linkedAchievementId}, #{evaluationYear}, #{approvalStatus},
+            #{previousStatus}, #{nextStatus}, #{requestedAmountSnapshot}, #{paymentAmountSnapshot},
+            #{accountSnapshotRef}, #{reasonCode}, #{opinion}, #{processedBy}, #{processedBy},
+            #{changeReason}, #{processedBy}, #{processedBy})
+        returning approval_id as "approvalId",
+                  grant_application_id as "grantApplicationId",
+                  linked_achievement_id as "linkedAchievementId",
+                  evaluation_year as "evaluationYear",
+                  approval_status as "approvalStatus",
+                  previous_status as "previousStatus",
+                  next_status as "nextStatus",
+                  requested_amount_snapshot as "requestedAmountSnapshot",
+                  payment_amount_snapshot as "paymentAmountSnapshot",
+                  account_snapshot_ref as "accountSnapshotRef",
+                  reason_code as "reasonCode",
+                  opinion as "opinion",
+                  processed_by as "processedBy",
+                  processed_at as "processedAt",
+                  change_reason as "changeReason"
+    </select>
+</mapper>

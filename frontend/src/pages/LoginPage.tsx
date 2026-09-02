@@ -347,6 +347,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 계산식 관리",
   },
   {
+    path: "/admin/department-chair-confirmations",
+    label: "학과장 확인 관리",
+    screenId: "SCR-DEPARTMENT-CHAIR-CONFIRM-MGMT",
+    menuPath: "업무 운영 관리 > 확인·승인 관리 > 학과장 확인 관리",
+  },
+  {
+    path: "/admin/achievement-verifications",
+    label: "담당자 인증 관리",
+    screenId: "SCR-ACHIEVEMENT-VERIFICATION-MGMT",
+    menuPath: "업무 운영 관리 > 확인·승인 관리 > 담당자 인증 관리",
+  },
+  {
+    path: "/admin/grant-payment-approvals",
+    label: "지급승인 관리",
+    screenId: "SCR-GRANT-PAYMENT-APPROVAL-MGMT",
+    menuPath: "업무 운영 관리 > 확인·승인 관리 > 지급승인 관리",
+  },
+  {
+    path: "/admin/objection-opinions",
+    label: "이의신청 의견 관리",
+    screenId: "SCR-OBJECTION-OPINION-MGMT",
+    menuPath: "업무 운영 관리 > 의견·반려 관리 > 이의신청 의견 관리",
+  },
+  {
     path: "/admin/department-chair-confirm-periods",
     label: "학과장 확인기간 관리",
     screenId: "SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT",
@@ -487,6 +511,17 @@ export function canAccessAdminRoute(
 ): boolean {
   if (!user) {
     return false;
+  }
+  if (
+    user.roles.includes("R09") &&
+    [
+      "/admin/department-chair-confirmations",
+      "/admin/achievement-verifications",
+      "/admin/grant-payment-approvals",
+      "/admin/objection-opinions",
+    ].includes(path)
+  ) {
+    return true;
   }
   return hasMenuUrl(user.menus, path);
 }

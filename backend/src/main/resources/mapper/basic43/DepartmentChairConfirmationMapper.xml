@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic43.DepartmentChairConfirmationMapper">
+    <resultMap id="DepartmentChairConfirmationRowMap" type="kr.ac.knue.commonfoundation.basic43.DepartmentChairConfirmationRow">
+        <constructor>
+            <arg column="confirmationId" javaType="long"/>
+            <arg column="achievementId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="departmentOrganizationCode" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="confirmStatus" javaType="string"/>
+            <arg column="previousStatus" javaType="string"/>
+            <arg column="nextStatus" javaType="string"/>
+            <arg column="opinion" javaType="string"/>
+            <arg column="reasonCode" javaType="string"/>
+            <arg column="processedBy" javaType="long"/>
+            <arg column="processedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        dcc.confirmation_id as "confirmationId",
+        dcc.achievement_id as "achievementId",
+        dcc.evaluation_year as "evaluationYear",
+        dcc.department_organization_code as "departmentOrganizationCode",
+        dcc.area_code as "areaCode",
+        dcc.confirm_status as "confirmStatus",
+        dcc.previous_status as "previousStatus",
+        dcc.next_status as "nextStatus",
+        dcc.opinion as "opinion",
+        dcc.reason_code as "reasonCode",
+        dcc.processed_by as "processedBy",
+        dcc.processed_at as "processedAt",
+        dcc.change_reason as "changeReason"
+    </sql>
+
+    <sql id="filters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                dcc.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and dcc.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedCertificationStatus != null">
+                and dcc.next_status = #{criteria.normalizedCertificationStatus}
+            </if>
+            <if test="criteria.normalizedAttachmentYn != null">
+                and exists (
+                    select 1 from detail_codes dc
+                    where dc.group_id = 'ATTACHMENT_YN'
+                      and dc.code_value = #{criteria.normalizedAttachmentYn}
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listDepartmentChairConfirmTargets" resultMap="DepartmentChairConfirmationRowMap">
+        select <include refid="columns"/>
+        from department_chair_confirmations dcc
+        <include refid="filters"/>
+        order by dcc.processed_at desc, dcc.confirmation_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDepartmentChairConfirmTargets" resultType="long">
+        select count(*)
+        from department_chair_confirmations dcc
+        <include refid="filters"/>
+    </select>
+
+    <select id="findLatestByAchievementId" resultMap="DepartmentChairConfirmationRowMap">
+        select <include refid="columns"/>
+        from department_chair_confirmations dcc
+        where dcc.achievement_id = #{achievementId}
+        order by dcc.processed_at desc, dcc.confirmation_id desc
+        limit 1
+    </select>
+
+    <select id="activeDepartmentChairConfirmPeriodExists" resultType="int">
+        select count(*)
+        from department_chair_confirm_period_settings p
+        where p.active_yn = 'Y'
+          and p.evaluation_year = #{evaluationYear}
+          and p.organization_code = #{departmentOrganizationCode}
+          and CURRENT_TIMESTAMP between p.start_at and p.end_at
+          <if test="areaCode != null and areaCode != ''">
+              and (p.area_code = #{areaCode} or p.area_code is null)
+          </if>
+    </select>
+
+    <select id="transitionAllowed" resultType="int">
+        select count(*)
+        from business_status_transitions
+        where business_type = 'FACULTY_ACHIEVEMENT'
+          and definition_version = 'CONFIRMED'
+          and from_status_code = #{fromStatus}
+          and to_status_code = #{toStatus}
+          and executor_role_code = 'R09'
+    </select>
+
+    <select id="rejectionReasonExists" resultType="int">
+        select count(*)
+        from rejection_reasons
+        where reason_code = #{reasonCode}
+          and business_type = 'FACULTY_ACHIEVEMENT'
+          and active_yn = 'Y'
+    </select>
+
+    <select id="insertTransition" resultMap="DepartmentChairConfirmationRowMap">
+        insert into department_chair_confirmations (achievement_id, evaluation_year, department_organization_code, area_code,
+            confirm_status, previous_status, next_status, opinion, reason_code, processed_by, changed_by, change_reason,
+            created_by, updated_by)
+        values (#{achievementId}, #{evaluationYear}, #{departmentOrganizationCode}, #{areaCode}, #{confirmStatus},
+            #{previousStatus}, #{nextStatus}, #{opinion}, #{reasonCode}, #{processedBy}, #{processedBy}, #{changeReason},
+            #{processedBy}, #{processedBy})
+        returning confirmation_id as "confirmationId",
+                  achievement_id as "achievementId",
+                  evaluation_year as "evaluationYear",
+                  department_organization_code as "departmentOrganizationCode",
+                  area_code as "areaCode",
+                  confirm_status as "confirmStatus",
+                  previous_status as "previousStatus",
+                  next_status as "nextStatus",
+                  opinion as "opinion",
+                  reason_code as "reasonCode",
+                  processed_by as "processedBy",
+                  processed_at as "processedAt",
+                  change_reason as "changeReason"
+    </select>
+</mapper>

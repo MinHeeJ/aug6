@@ -62,6 +62,10 @@ import { AppealPeriodManagementPage } from "../pages/admin/SCR-APPEAL-PERIOD-MGM
 import { ResultViewPeriodManagementPage } from "../pages/admin/SCR-RESULT-VIEW-PERIOD-MGMT";
 import { ExceptionPeriodManagementPage } from "../pages/admin/SCR-EXCEPTION-PERIOD-MGMT";
 import { DepartmentChairConfirmPeriodManagementPage } from "../pages/admin/SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT";
+import { DepartmentChairConfirmationManagementPage } from "../pages/admin/SCR-DEPARTMENT-CHAIR-CONFIRM-MGMT";
+import { AchievementVerificationManagementPage } from "../pages/admin/SCR-ACHIEVEMENT-VERIFICATION-MGMT";
+import { GrantPaymentApprovalManagementPage } from "../pages/admin/SCR-GRANT-PAYMENT-APPROVAL-MGMT";
+import { ObjectionOpinionManagementPage } from "../pages/admin/SCR-OBJECTION-OPINION-MGMT";
 import { BusinessPeriodManagementPage } from "../pages/admin/SCR-BUSINESS-PERIOD-INTEGRATED-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
@@ -300,6 +304,14 @@ function renderAdminPage(path: string | undefined) {
       return <DepartmentChairConfirmPeriodManagementPage />;
     case "/admin/business-periods":
       return <BusinessPeriodManagementPage />;
+    case "/admin/department-chair-confirmations":
+      return <DepartmentChairConfirmationManagementPage />;
+    case "/admin/achievement-verifications":
+      return <AchievementVerificationManagementPage />;
+    case "/admin/grant-payment-approvals":
+      return <GrantPaymentApprovalManagementPage />;
+    case "/admin/objection-opinions":
+      return <ObjectionOpinionManagementPage />;
     case "/admin/business-status-transitions":
       return <BusinessStatusTransitionPage />;
     case "/admin/rejection-reasons":

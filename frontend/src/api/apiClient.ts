@@ -2327,6 +2327,213 @@ export const businessStatusTransitionApi = {
   },
 };
 
+export type DepartmentChairConfirmationTarget = {
+  confirmationId: number;
+  achievementId: number;
+  evaluationYear: string;
+  departmentOrganizationCode: string;
+  areaCode: string;
+  confirmStatus: "DEPARTMENT_CONFIRMED" | "DEPARTMENT_REJECTED";
+  previousStatus: string;
+  nextStatus: string;
+  opinion?: string | null;
+  reasonCode?: string | null;
+  processedBy: number;
+  processedAt: string;
+  changeReason?: string;
+};
+
+export type DepartmentChairConfirmationSearchResponse = {
+  targets: DepartmentChairConfirmationTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type DepartmentChairConfirmationTransitionPayload = {
+  actionType: "CONFIRM" | "REJECT";
+  reasonCode?: string;
+  opinion?: string;
+};
+
+export const departmentChairConfirmationApi = {
+  listDepartmentChairConfirmTargets(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      certificationStatus?: string;
+      attachmentYn?: SystemUseYn | "";
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.certificationStatus?.trim()) {
+      query.set("certificationStatus", params.certificationStatus.trim());
+    }
+    if (params.attachmentYn) query.set("attachmentYn", params.attachmentYn);
+    return apiRequest<DepartmentChairConfirmationSearchResponse>(
+      `/api/business/department-chair-confirmations?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveDepartmentChairConfirmTargetsTransition(
+    targetId: number,
+    payload: DepartmentChairConfirmationTransitionPayload,
+  ) {
+    return apiRequest<DepartmentChairConfirmationTarget>(
+      `/api/business/department-chair-confirmations/${encodeURIComponent(String(targetId))}/transition` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type AchievementVerificationTarget = {
+  verificationId: number;
+  achievementId: number;
+  evaluationYear: string;
+  handlerUserId?: number | null;
+  actionType: "CERTIFY" | "RETURN" | "CANCEL_CERTIFICATION";
+  previousStatus: string;
+  nextStatus: string;
+  opinion?: string | null;
+  evidenceRef?: string | null;
+  reasonCode?: string | null;
+  processedBy: number;
+  processedAt: string;
+  changeReason?: string;
+};
+
+export type AchievementVerificationSearchResponse = {
+  targets: AchievementVerificationTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type AchievementVerificationTransitionPayload = {
+  actionType: "CERTIFY" | "RETURN" | "CANCEL_CERTIFICATION";
+  reasonCode?: string;
+  opinion?: string;
+  evidenceRef?: string;
+};
+
+export const achievementVerificationApi = {
+  listAchievementVerificationTargets(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      verificationStatus?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.verificationStatus?.trim()) {
+      query.set("verificationStatus", params.verificationStatus.trim());
+    }
+    return apiRequest<AchievementVerificationSearchResponse>(
+      `/api/business/achievement-verifications?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveAchievementVerificationTargetsTransition(
+    targetId: number,
+    payload: AchievementVerificationTransitionPayload,
+  ) {
+    return apiRequest<AchievementVerificationTarget>(
+      `/api/business/achievement-verifications/${encodeURIComponent(String(targetId))}/transition` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type GrantPaymentApprovalTarget = {
+  approvalId: number;
+  grantApplicationId: number;
+  linkedAchievementId?: number | null;
+  evaluationYear: string;
+  approvalStatus: "APPROVED" | "REJECTED" | "APPROVAL_CANCELLED";
+  previousStatus: string;
+  nextStatus: string;
+  requestedAmountSnapshot: number;
+  paymentAmountSnapshot: number;
+  accountSnapshotRef: string;
+  reasonCode?: string | null;
+  opinion?: string | null;
+  processedBy: number;
+  processedAt: string;
+  changeReason?: string;
+};
+
+export type GrantPaymentApprovalSearchResponse = {
+  approvals: GrantPaymentApprovalTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type GrantPaymentApprovalTransitionPayload = {
+  actionType: "APPROVE" | "REJECT" | "CANCEL_APPROVAL";
+  reasonCode?: string;
+  opinion?: string;
+};
+
+export const grantPaymentApprovalApi = {
+  listGrantPaymentApprovals(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      approvalStatus?: string;
+      applicantName?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.approvalStatus?.trim()) {
+      query.set("approvalStatus", params.approvalStatus.trim());
+    }
+    if (params.applicantName?.trim())
+      query.set("applicantName", params.applicantName.trim());
+    return apiRequest<GrantPaymentApprovalSearchResponse>(
+      `/api/business/grant-payment-approvals?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveGrantPaymentApprovalsTransition(
+    targetId: number,
+    payload: GrantPaymentApprovalTransitionPayload,
+  ) {
+    return apiRequest<GrantPaymentApprovalTarget>(
+      `/api/business/grant-payment-approvals/${encodeURIComponent(String(targetId))}/transition` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type RejectionReason = {
   rejectionReasonId: number;
   businessType: BusinessType;
@@ -2899,6 +3106,73 @@ export const korusFacultySyncApi = {
     return apiRequest<KorusFacultySyncRun>(
       `/api/admin/korus-faculty-sync-results/${encodeURIComponent(String(resultId))}/retry` as `/api/${string}`,
       { method: "POST" },
+    );
+  },
+};
+
+export type ObjectionOpinionTarget = {
+  objectionOpinionId: number;
+  objectionId: number;
+  evaluationYear: string;
+  applicantUserId: number;
+  applicantOpinionSnapshot: string;
+  objectionContentSnapshot: string;
+  reviewerOpinion: string;
+  decisionResult: "ACCEPTED" | "REJECTED" | "NEEDS_REVIEW";
+  reasonCode?: string | null;
+  processedBy: number;
+  processedAt: string;
+  changeReason?: string;
+};
+
+export type ObjectionOpinionSearchResponse = {
+  opinions: ObjectionOpinionTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type ObjectionOpinionTransitionPayload = {
+  decisionResult: "ACCEPTED" | "REJECTED" | "NEEDS_REVIEW";
+  reviewerOpinion: string;
+  reasonCode?: string;
+};
+
+export const objectionOpinionApi = {
+  listObjectionOpinions(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      decisionResult?: string;
+      applicantName?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim()) {
+      query.set("evaluationYear", params.evaluationYear.trim());
+    }
+    if (params.decisionResult?.trim()) {
+      query.set("decisionResult", params.decisionResult.trim());
+    }
+    if (params.applicantName?.trim())
+      query.set("applicantName", params.applicantName.trim());
+    return apiRequest<ObjectionOpinionSearchResponse>(
+      `/api/business/objection-opinions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveObjectionOpinionsTransition(
+    targetId: number,
+    payload: ObjectionOpinionTransitionPayload,
+  ) {
+    return apiRequest<ObjectionOpinionTarget>(
+      `/api/business/objection-opinions/${encodeURIComponent(String(targetId))}/transition` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
     );
   },
 };

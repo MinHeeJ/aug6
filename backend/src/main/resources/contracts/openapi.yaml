@@ -5008,6 +5008,630 @@ paths:
         - 권한·데이터 범위·기간 조건을 서버 처리 시점에 검증한다.
       x-side-effects:
         - business_period_integrated_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+
+  /api/business/achievement-verifications:
+    get:
+      operationId: listAchievementVerificationTargets
+      summary: 담당자 인증대상 조회
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 20
+          - 50
+          - 100
+          default: 20
+      - name: evaluationYear
+        in: query
+        schema:
+          type: string
+      - name: areaCode
+        in: query
+        schema:
+          type: string
+      - name: verificationStatus
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1341
+      - REQ-1344
+      x-pagination:
+        pageParam: page
+        sizeParam: size
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+  /api/business/achievement-verifications/{targetId}/transition:
+    post:
+      operationId: saveAchievementVerificationTargetsTransition
+      summary: 담당자 인증 처리
+      parameters:
+      - name: targetId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessTransitionRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 충돌
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1342
+      - REQ-1343
+      - REQ-1344
+      - REQ-1346
+      - REQ-1362
+      x-business-rules:
+      - 담당 범위 안의 학과장확인 실적만 인증 또는 반려한다
+      - 인증취소는 기존 전이 규칙에 맞는 직전 검토 상태로만 복귀한다
+      x-side-effects:
+      - achievement_verifications row와 상태전이 이력을 기록한다
+      x-state-transitions:
+      - 'achievement: 학과장확인 -> 인증|인증반려'
+      - 'achievement: 인증 -> 직전 검토 상태'
+      x-required-tests:
+      - 'happy: 학과장확인 실적 인증 요청 -> achievement_verifications.next_status=인증으로 재조회된다'
+      - 'auth: 비R09 세션 요청 -> 403 ApiError가 반환된다'
+      - 'validation: 처리 근거 누락 -> fields.evidenceRef 오류가 반환된다'
+      - 'business: 인증취소가 제출 복귀를 요청 -> 409 ApiError이고 상태가 인증으로 유지된다'
+      - 'side-effect: 반려 성공 -> achievement_verifications row에 reason_code와 opinion이 남는다'
+  /api/business/department-chair-confirmations:
+    get:
+      operationId: listDepartmentChairConfirmTargets
+      summary: 학과장 확인대상 조회
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 20
+          - 50
+          - 100
+          default: 20
+      - name: evaluationYear
+        in: query
+        schema:
+          type: string
+      - name: areaCode
+        in: query
+        schema:
+          type: string
+      - name: certificationStatus
+        in: query
+        schema:
+          type: string
+      - name: attachmentYn
+        in: query
+        schema:
+          type: string
+          enum:
+          - Y
+          - N
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1336
+      - REQ-1339
+      x-pagination:
+        pageParam: page
+        sizeParam: size
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+  /api/business/department-chair-confirmations/{targetId}/transition:
+    post:
+      operationId: saveDepartmentChairConfirmTargetsTransition
+      summary: 학과장 확인 처리
+      parameters:
+      - name: targetId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessTransitionRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 충돌
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1337
+      - REQ-1338
+      - REQ-1339
+      - REQ-1362
+      x-business-rules:
+      - 학과장 확인기간 안의 소속 학과 제출 업적만 확인 또는 미승인 처리한다
+      - 미승인은 기존 반려사유와 의견이 필요하다
+      x-side-effects:
+      - department_chair_confirmations row와 상태전이 이력을 기록한다
+      x-state-transitions:
+      - 'achievement: 제출 -> 학과장확인|학과장미승인'
+      x-required-tests:
+      - 'happy: 제출 업적 확인 요청 -> department_chair_confirmations.confirm_status=학과장확인으로 재조회된다'
+      - 'auth: 비R09 세션 요청 -> 403 ApiError가 반환된다'
+      - 'validation: 미승인 의견 누락 -> fields.opinion 오류가 반환된다'
+      - 'business: 확인기간 밖 요청 -> 409 ApiError이고 achievement status가 제출로 유지된다'
+      - 'side-effect: 확인 성공 -> department_chair_confirmations history row에 processed_by와 processed_at이 남는다'
+  /api/business/grant-payment-approvals:
+    get:
+      operationId: listGrantPaymentApprovals
+      summary: 지급승인 대상 조회
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 20
+          - 50
+          - 100
+          default: 20
+      - name: evaluationYear
+        in: query
+        schema:
+          type: string
+      - name: approvalStatus
+        in: query
+        schema:
+          type: string
+      - name: applicantName
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1347
+      - REQ-1349
+      x-pagination:
+        pageParam: page
+        sizeParam: size
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+  /api/business/grant-payment-approvals/{targetId}/transition:
+    post:
+      operationId: saveGrantPaymentApprovalsTransition
+      summary: 지급승인 처리
+      parameters:
+      - name: targetId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessTransitionRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 충돌
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1348
+      - REQ-1349
+      - REQ-1351
+      - REQ-1352
+      - REQ-1362
+      x-business-rules:
+      - 승인권한과 데이터 범위를 가진 R09만 승인·반려·승인취소한다
+      - 실제 계좌이체·회계전표·예산집행은 실행하지 않는다
+      x-side-effects:
+      - academic_grant_approvals row와 처리 이력을 기록하고 금융거래 row는 생성하지 않는다
+      x-state-transitions:
+      - 'academic grant: 제출 -> 승인|반려'
+      - 'academic grant: 승인 -> 승인취소'
+      x-required-tests:
+      - 'happy: 제출 신청 승인 요청 -> academic_grant_approvals.approval_status=승인으로 재조회된다'
+      - 'auth: 비R09 세션 요청 -> 403 ApiError가 반환된다'
+      - 'validation: 반려 reasonCode 누락 -> fields.reasonCode 오류가 반환된다'
+      - 'business: 데이터 범위 밖 신청 처리 -> 403 ApiError이고 approval_status가 제출로 유지된다'
+      - 'side-effect: 승인 성공 -> academic_grant_approvals row에 processed_by가 남고 금융거래 row는 생성되지 않는다'
+  /api/business/objection-opinions:
+    get:
+      operationId: listObjectionOpinions
+      summary: 이의신청 의견 조회
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 20
+          - 50
+          - 100
+          default: 20
+      - name: evaluationYear
+        in: query
+        schema:
+          type: string
+      - name: decisionResult
+        in: query
+        schema:
+          type: string
+      - name: applicantName
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1353
+      - REQ-1355
+      x-pagination:
+        pageParam: page
+        sizeParam: size
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+  /api/business/objection-opinions/{targetId}/transition:
+    post:
+      operationId: saveObjectionOpinionsTransition
+      summary: 이의신청 의견 처리
+      parameters:
+      - name: targetId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectionOpinionRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 충돌
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R09
+      x-related-requirements:
+      - REQ-1354
+      - REQ-1355
+      - REQ-1356
+      - REQ-1359
+      - REQ-1362
+      x-business-rules:
+      - 검토자 의견과 처리결과는 해당 이의신청 건에만 연결한다
+      - 의견 처리는 평가확정 취소·정정·재계산·재확정을 실행하지 않는다
+      x-side-effects:
+      - objection_opinions row와 처리일시를 기록하고 평가점수 row는 변경하지 않는다
+      x-state-transitions:
+      - 'objection: 제출|검토중 -> 인용|기각|반영완료'
+      x-required-tests:
+      - 'happy: 검토자 의견 저장 요청 -> objection_opinions.reviewer_opinion과 decision_result가 재조회된다'
+      - 'auth: 비R09 세션 요청 -> 403 ApiError가 반환된다'
+      - 'validation: reviewerOpinion 누락 -> fields.reviewerOpinion 오류가 반환된다'
+      - 'business: 다른 objectionId 연결 요청 -> 409 ApiError이고 기존 objection_opinions row가 유지된다'
+      - 'side-effect: 기각 성공 -> objection_opinions.processed_at이 남고 evaluation score row는 변경되지 않는다'
+    BusinessTransitionRequest:
+      type: object
+      required:
+      - actionType
+      properties:
+        actionType:
+          type: string
+        reasonCode:
+          type: string
+        opinion:
+          type: string
+        evidenceRef:
+          type: string
+    ObjectionOpinionRequest:
+      type: object
+      required:
+      - decisionResult
+      - reviewerOpinion
+      properties:
+        decisionResult:
+          type: string
+        reviewerOpinion:
+          type: string
+        reasonCode:
+          type: string
+    ApiResponse:
+      type: object
+      required:
+      - success
+      - meta
+      properties:
+        success:
+          type: boolean
+        data:
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+    ApiError:
+      type: object
+      required:
+      - success
+      - meta
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        fields:
+          type: object
+          additionalProperties: true
+        meta:
+          type: object
+          additionalProperties: true
+
 components:
   securitySchemes:
     SessionCookie:
@@ -5016,6 +5640,31 @@ components:
       name: SESSION
       description: HttpOnly SameSite=Lax session cookie
   schemas:
+    BusinessTransitionRequest:
+      type: object
+      required:
+      - actionType
+      properties:
+        actionType:
+          type: string
+        reasonCode:
+          type: string
+        opinion:
+          type: string
+        evidenceRef:
+          type: string
+    ObjectionOpinionRequest:
+      type: object
+      required:
+      - decisionResult
+      - reviewerOpinion
+      properties:
+        decisionResult:
+          type: string
+        reviewerOpinion:
+          type: string
+        reasonCode:
+          type: string
     SessionTerminateRequest:
       type: object
       required: [reason]

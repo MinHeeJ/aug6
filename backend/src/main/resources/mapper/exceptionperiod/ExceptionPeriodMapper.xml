@@ -3,9 +3,9 @@
 <mapper namespace="kr.ac.knue.commonfoundation.exceptionperiod.ExceptionPeriodMapper">
     <resultMap id="ExceptionPeriodRowMap" type="kr.ac.knue.commonfoundation.exceptionperiod.ExceptionPeriodRow">
         <constructor>
-            <arg column="settingId" javaType="long"/>
+            <arg column="settingId" javaType="java.lang.Long"/>
             <arg column="evaluationYear" javaType="string"/>
-            <arg column="teacherUserId" javaType="long"/>
+            <arg column="teacherUserId" javaType="java.lang.Long"/>
             <arg column="teacherName" javaType="string"/>
             <arg column="areaCode" javaType="string"/>
             <arg column="targetFunctionCode" javaType="string"/>
@@ -13,8 +13,8 @@
             <arg column="exceptionEndAt" javaType="java.time.LocalDateTime"/>
             <arg column="approvalReason" javaType="string"/>
             <arg column="activeYn" javaType="string"/>
-            <arg column="createdBy" javaType="long"/>
-            <arg column="updatedBy" javaType="long"/>
+            <arg column="createdBy" javaType="java.lang.Long"/>
+            <arg column="updatedBy" javaType="java.lang.Long"/>
             <arg column="createdAt" javaType="java.time.LocalDateTime"/>
             <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
             <arg column="changeReason" javaType="string"/>

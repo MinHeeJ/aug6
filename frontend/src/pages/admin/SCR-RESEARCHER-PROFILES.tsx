@@ -988,6 +988,11 @@ function Pager({
   );
 }
 
+function isUnresolvedEmployeeNo(employeeNo: string) {
+  const trimmed = employeeNo.trim();
+  return !trimmed || /^\{[^/]+\}$/.test(trimmed);
+}
+
 function handleApiError(
   caught: unknown,
   setPermissionDenied: (value: boolean) => void,

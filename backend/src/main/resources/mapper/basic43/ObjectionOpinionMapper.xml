@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic43.ObjectionOpinionMapper">
+    <resultMap id="ObjectionOpinionRowMap" type="kr.ac.knue.commonfoundation.basic43.ObjectionOpinionRow">
+        <constructor>
+            <arg column="objectionOpinionId" javaType="long"/>
+            <arg column="objectionId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="applicantUserId" javaType="long"/>
+            <arg column="applicantOpinionSnapshot" javaType="string"/>
+            <arg column="objectionContentSnapshot" javaType="string"/>
+            <arg column="reviewerOpinion" javaType="string"/>
+            <arg column="decisionResult" javaType="string"/>
+            <arg column="reasonCode" javaType="string"/>
+            <arg column="processedBy" javaType="long"/>
+            <arg column="processedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="changeReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        oo.objection_opinion_id as "objectionOpinionId",
+        oo.objection_id as "objectionId",
+        oo.evaluation_year as "evaluationYear",
+        oo.applicant_user_id as "applicantUserId",
+        oo.applicant_opinion_snapshot as "applicantOpinionSnapshot",
+        oo.objection_content_snapshot as "objectionContentSnapshot",
+        oo.reviewer_opinion as "reviewerOpinion",
+        oo.decision_result as "decisionResult",
+        oo.reason_code as "reasonCode",
+        oo.processed_by as "processedBy",
+        oo.processed_at as "processedAt",
+        oo.change_reason as "changeReason"
+    </sql>
+
+    <sql id="filters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                oo.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedDecisionResult != null">
+                and oo.decision_result = #{criteria.normalizedDecisionResult}
+            </if>
+            <if test="criteria.normalizedApplicantName != null">
+                and (
+                    cast(oo.objection_id as varchar) like concat('%', #{criteria.normalizedApplicantName}, '%')
+                    or cast(oo.applicant_user_id as varchar) like concat('%', #{criteria.normalizedApplicantName}, '%')
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="listObjectionOpinions" resultMap="ObjectionOpinionRowMap">
+        select <include refid="columns"/>
+        from objection_opinions oo
+        <include refid="filters"/>
+        order by oo.processed_at desc, oo.objection_opinion_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countObjectionOpinions" resultType="long">
+        select count(*)
+        from objection_opinions oo
+        <include refid="filters"/>
+    </select>
+
+    <select id="findLatestByObjectionId" resultMap="ObjectionOpinionRowMap">
+        select <include refid="columns"/>
+        from objection_opinions oo
+        where oo.objection_id = #{objectionId}
+        order by oo.processed_at desc, oo.objection_opinion_id desc
+        limit 1
+    </select>
+
+    <select id="objectionScopeExists" resultType="int">
+        select count(*)
+        from objection_opinions oo
+        where oo.objection_id = #{objectionId}
+          and (
+            oo.processed_by = #{handlerUserId}
+            or exists (
+                select 1
+                from evaluation_organization_mappings eom
+                where eom.user_id = #{handlerUserId}
+                  and eom.business_type = 'OBJECTION'
+                  and eom.data_scope in ('BUSINESS','ALL')
+            )
+          )
+    </select>
+
+    <select id="rejectionReasonExists" resultType="int">
+        select count(*)
+        from rejection_reasons
+        where reason_code = #{reasonCode}
+          and business_type = 'OBJECTION'
+          and active_yn = 'Y'
+    </select>
+
+    <select id="insertTransition" resultMap="ObjectionOpinionRowMap">
+        insert into objection_opinions (objection_id, evaluation_year, applicant_user_id,
+            applicant_opinion_snapshot, objection_content_snapshot, reviewer_opinion,
+            decision_result, reason_code, processed_by, changed_by, change_reason,
+            created_by, updated_by)
+        values (#{objectionId}, #{evaluationYear}, #{applicantUserId}, #{applicantOpinionSnapshot},
+            #{objectionContentSnapshot}, #{reviewerOpinion}, #{decisionResult}, #{reasonCode},
+            #{processedBy}, #{processedBy}, #{changeReason}, #{processedBy}, #{processedBy})
+        returning objection_opinion_id as "objectionOpinionId",
+                  objection_id as "objectionId",
+                  evaluation_year as "evaluationYear",
+                  applicant_user_id as "applicantUserId",
+                  applicant_opinion_snapshot as "applicantOpinionSnapshot",
+                  objection_content_snapshot as "objectionContentSnapshot",
+                  reviewer_opinion as "reviewerOpinion",
+                  decision_result as "decisionResult",
+                  reason_code as "reasonCode",
+                  processed_by as "processedBy",
+                  processed_at as "processedAt",
+                  change_reason as "changeReason"
+    </select>
+</mapper>

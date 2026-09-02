@@ -7,6 +7,8 @@ coverage/
 .cache/
 *.log
 *.local
+__pycache__/
+*.pyc
 
 # Playwright verifier artifacts
 test-results/

@@ -401,6 +401,18 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "업무 운영 관리 > 일괄처리 관리 > 처리 결과 조회",
   },
   {
+    path: "/admin/evaluation-snapshots",
+    label: "시점 데이터 관리",
+    screenId: "SCR-EVAL-SNAPSHOT-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 시점 데이터 관리",
+  },
+  {
+    path: "/admin/score-calculation-histories",
+    label: "점수 산출 이력",
+    screenId: "SCR-SCORE-CALC-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 점수 산출 이력",
+  },
+  {
     path: "/admin/department-chair-confirm-periods",
     label: "학과장 확인기간 관리",
     screenId: "SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT",
@@ -498,6 +510,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-ACHIEVEMENT-DATA-AS-OF",
     menuPath: "교수업적평가 파일럿 > 업적 데이터 이력 > 기준시점 조회",
   },
+  {
+    path: "/admin/evaluation-snapshots",
+    label: "시점 데이터 관리",
+    screenId: "SCR-EVAL-SNAPSHOT-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 시점 데이터 관리",
+  },
+  {
+    path: "/admin/score-calculation-histories",
+    label: "점수 산출 이력",
+    screenId: "SCR-SCORE-CALC-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 점수 산출 이력",
+  },
+  {
+    path: "/admin/score-adjustment-histories",
+    label: "점수 조정 이력",
+    screenId: "SCR-SCORE-ADJUSTMENT-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 점수 조정 이력",
+  },
+  {
+    path: "/admin/score-recalculation-histories",
+    label: "재계산 이력",
+    screenId: "SCR-SCORE-RECALCULATION-HISTORY",
+    menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 재계산 이력",
+  },
 ];
 
 export type LoginValidationErrors = Partial<
@@ -553,6 +589,10 @@ export function canAccessAdminRoute(
       "/admin/evaluation-material-deletions",
       "/admin/score-recalculations",
       "/admin/final-evaluation-confirmations",
+      "/admin/evaluation-snapshots",
+      "/admin/score-calculation-histories",
+      "/admin/score-adjustment-histories",
+      "/admin/score-recalculation-histories",
     ].includes(path)
   ) {
     return true;

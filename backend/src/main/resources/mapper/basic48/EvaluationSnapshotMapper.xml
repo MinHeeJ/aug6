@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic48.EvaluationSnapshotMapper">
+    <resultMap id="EvaluationSnapshotRowMap" type="kr.ac.knue.commonfoundation.basic48.EvaluationSnapshotRow">
+        <constructor>
+            <arg column="snapshotId" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="finalizationPoint" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="ruleSnapshotRef" javaType="string"/>
+            <arg column="materialSnapshotRef" javaType="string"/>
+            <arg column="preservedResultRef" javaType="string"/>
+            <arg column="snapshotStatus" javaType="string"/>
+            <arg column="capturedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="requestId" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="EvaluationSnapshotDetailMap" type="kr.ac.knue.commonfoundation.basic48.EvaluationSnapshotDetail">
+        <constructor>
+            <arg column="snapshotId" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="finalizationPoint" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="ruleSnapshotRef" javaType="string"/>
+            <arg column="materialSnapshotRef" javaType="string"/>
+            <arg column="preservedResultRef" javaType="string"/>
+            <arg column="snapshotStatus" javaType="string"/>
+            <arg column="ruleSnapshotJson" javaType="string"/>
+            <arg column="materialSnapshotJson" javaType="string"/>
+            <arg column="preservedResultJson" javaType="string"/>
+            <arg column="capturedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="readOnlyNotice" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="snapshotSelect">
+        select s.snapshot_id as "snapshotId",
+               s.evaluation_year as "evaluationYear",
+               s.finalization_point as "finalizationPoint",
+               s.organization_code as "organizationCode",
+               s.target_user_id as "targetUserId",
+               s.rule_snapshot_ref as "ruleSnapshotRef",
+               s.material_snapshot_ref as "materialSnapshotRef",
+               s.preserved_result_ref as "preservedResultRef",
+               s.snapshot_status as "snapshotStatus",
+               s.captured_at as "capturedAt",
+               s.request_id as "requestId"
+        from biz_eval_snapshots s
+    </sql>
+
+    <sql id="snapshotWhere">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                s.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedFinalizationPoint != null">
+                and s.finalization_point = #{criteria.normalizedFinalizationPoint}
+            </if>
+            <if test="criteria.organizationScope and criteria.normalizedOrganizationCode != null">
+                and s.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listEvaluationSnapshots" resultMap="EvaluationSnapshotRowMap">
+        <include refid="snapshotSelect"/>
+        <include refid="snapshotWhere"/>
+        order by s.evaluation_year desc, s.finalization_point desc, s.snapshot_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countEvaluationSnapshots" resultType="long">
+        select count(*) from biz_eval_snapshots s
+        <include refid="snapshotWhere"/>
+    </select>
+
+    <select id="findEvaluationSnapshotDetail" resultMap="EvaluationSnapshotDetailMap">
+        select s.snapshot_id as "snapshotId",
+               s.evaluation_year as "evaluationYear",
+               s.finalization_point as "finalizationPoint",
+               s.organization_code as "organizationCode",
+               s.target_user_id as "targetUserId",
+               s.rule_snapshot_ref as "ruleSnapshotRef",
+               s.material_snapshot_ref as "materialSnapshotRef",
+               s.preserved_result_ref as "preservedResultRef",
+               s.snapshot_status as "snapshotStatus",
+               s.rule_snapshot_json::text as "ruleSnapshotJson",
+               s.material_snapshot_json::text as "materialSnapshotJson",
+               s.preserved_result_json::text as "preservedResultJson",
+               s.captured_at as "capturedAt",
+               s.request_id as "requestId",
+               '현재 기준정보·평가자료 변경 및 신규 확정 실행은 제공하지 않는 조회 전용 snapshot입니다.' as "readOnlyNotice"
+        from biz_eval_snapshots s
+        where s.snapshot_id = #{snapshotId}
+        <if test="dataScope != null and dataScope.toString() == 'ORGANIZATION' and organizationCode != null and organizationCode != ''">
+            and s.organization_code = #{organizationCode}
+        </if>
+        limit 1
+    </select>
+
+    <select id="countEvaluationMaterialsForReadonlyGuard" resultType="long">
+        select count(*) from evaluation_materials
+    </select>
+
+    <select id="countEvaluationRuleSetsForReadonlyGuard" resultType="long">
+        select count(*) from evaluation_rule_sets
+    </select>
+
+    <insert id="insertReadAudit">
+        insert into business_process_audit_logs (action_type, target_key, before_state, after_state, actor_user_id, result_status, request_id, created_at)
+        values ('BATCH', #{targetKey}, null, cast(#{afterStateJson} as jsonb), #{actorUserId}, 'SUCCESS', #{requestId}, CURRENT_TIMESTAMP)
+    </insert>
+</mapper>

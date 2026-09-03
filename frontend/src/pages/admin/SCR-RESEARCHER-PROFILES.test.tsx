@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { researcherProfileApi } from "../../api/apiClient";
 import {

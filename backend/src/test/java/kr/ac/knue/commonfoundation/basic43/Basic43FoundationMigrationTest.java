@@ -26,7 +26,7 @@ class Basic43FoundationMigrationTest {
             "created_by",
             "updated_at",
             "updated_by");
-    private static final Pattern BASIC43_MIGRATION_NAME = Pattern.compile("V44__basic43_.*\\.sql");
+    private static final Pattern BASIC43_MIGRATION_NAME = Pattern.compile("V44_1__basic43_confirmation_verification_approval_objection_foundation\\.sql");
 
     @Test
     void basic43AddsExactlyOneIncrementalMigrationAfterBasic40WithoutRewritingBaselineForReq1280() throws Exception {
@@ -40,7 +40,7 @@ class Basic43FoundationMigrationTest {
                 .contains("V43__basic40_exception_period_settings.sql")
                 .anySatisfy(name -> assertThat(name).matches(BASIC43_MIGRATION_NAME));
         assertThat(migrationNames)
-                .filteredOn(name -> name.toLowerCase().contains("basic43"))
+                .filteredOn(name -> BASIC43_MIGRATION_NAME.matcher(name).matches())
                 .hasSize(1)
                 .allSatisfy(name -> assertThat(name).matches(BASIC43_MIGRATION_NAME));
     }

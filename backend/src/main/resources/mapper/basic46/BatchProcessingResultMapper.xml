@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic46.BatchProcessingResultMapper">
+    <resultMap id="BatchProcessingResultRowMap" type="kr.ac.knue.commonfoundation.basic46.BatchProcessingResultRow">
+        <constructor>
+            <arg column="batchId" javaType="string"/>
+            <arg column="batchType" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetConditionSummary" javaType="string"/>
+            <arg column="totalCount" javaType="integer"/>
+            <arg column="successCount" javaType="integer"/>
+            <arg column="failureCount" javaType="integer"/>
+            <arg column="excludedCount" javaType="integer"/>
+            <arg column="jobStatus" javaType="string"/>
+            <arg column="requestedBy" javaType="java.lang.Long"/>
+            <arg column="requestedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="requestId" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="BatchProcessingResultErrorRowMap" type="kr.ac.knue.commonfoundation.basic46.BatchProcessingResultErrorRow">
+        <constructor>
+            <arg column="batchJobItemId" javaType="java.lang.Long"/>
+            <arg column="batchId" javaType="string"/>
+            <arg column="targetRef" javaType="string"/>
+            <arg column="resultStatus" javaType="string"/>
+            <arg column="errorCode" javaType="string"/>
+            <arg column="errorMessage" javaType="string"/>
+            <arg column="excludedReason" javaType="string"/>
+            <arg column="processedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="resultBase">
+        select job.batch_job_id as "batchId",
+               case
+                   when job.batch_type = 'SCORE_RECALCULATION' then 'RECALCULATION'
+                   when job.batch_type in ('FINALIZATION','FINALIZATION_CANCEL') then 'CONFIRMATION'
+                   else job.batch_type
+               end as "batchType",
+               job.evaluation_year as "evaluationYear",
+               job.area_code as "areaCode",
+               job.organization_code as "organizationCode",
+               job.target_user_id as "targetUserId",
+               concat_ws(' / ',
+                   '평가연도 ' || job.evaluation_year,
+                   case when job.area_code is not null then '영역 ' || job.area_code end,
+                   case when job.organization_code is not null then '조직 ' || job.organization_code end,
+                   case when job.target_user_id is not null then '대상자 ' || job.target_user_id end,
+                   case when job.target_condition_json ->> 'formulaVersion' is not null then '산식버전 ' || job.target_condition_json ->> 'formulaVersion' end,
+                   case when job.target_condition_json ->> 'previewToken' is not null then '미리보기 ' || job.target_condition_json ->> 'previewToken' end,
+                   case when job.target_condition_json ->> 'transition' is not null then '전이 ' || job.target_condition_json ->> 'transition' end
+               ) as "targetConditionSummary",
+               job.total_count as "totalCount",
+               job.success_count as "successCount",
+               job.failure_count as "failureCount",
+               job.excluded_count as "excludedCount",
+               job.job_status as "jobStatus",
+               job.requested_by as "requestedBy",
+               job.requested_at as "requestedAt",
+               job.request_id as "requestId"
+        from evaluation_batch_jobs job
+    </sql>
+
+    <sql id="resultFilters">
+        <where>
+            <if test="criteria.normalizedBatchType != null">
+                job.batch_type in
+                <foreach collection="criteria.dbBatchTypes" item="dbBatchType" open="(" separator="," close=")">
+                    #{dbBatchType}
+                </foreach>
+            </if>
+            <if test="criteria.normalizedTargetCondition != null">
+                and (
+                    job.target_condition_json::text ilike concat('%', #{criteria.normalizedTargetCondition}, '%')
+                    or job.evaluation_year ilike concat('%', #{criteria.normalizedTargetCondition}, '%')
+                    or coalesce(job.area_code, '') ilike concat('%', #{criteria.normalizedTargetCondition}, '%')
+                    or coalesce(job.organization_code, '') ilike concat('%', #{criteria.normalizedTargetCondition}, '%')
+                    or coalesce(job.target_user_id::text, '') ilike concat('%', #{criteria.normalizedTargetCondition}, '%')
+                )
+            </if>
+            <if test="criteria.normalizedBatchId != null">
+                and job.batch_job_id = #{criteria.normalizedBatchId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listBatchProcessingResults" resultMap="BatchProcessingResultRowMap">
+        <include refid="resultBase"/>
+        <include refid="resultFilters"/>
+        order by job.requested_at desc, job.batch_job_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countBatchProcessingResults" resultType="long">
+        select count(*)
+        from evaluation_batch_jobs job
+        <include refid="resultFilters"/>
+    </select>
+
+    <select id="listBatchProcessingResultErrors" resultMap="BatchProcessingResultErrorRowMap">
+        select item.batch_job_item_id as "batchJobItemId",
+               item.batch_job_id as "batchId",
+               item.target_ref as "targetRef",
+               item.result_status as "resultStatus",
+               item.error_code as "errorCode",
+               item.error_message as "errorMessage",
+               item.excluded_reason as "excludedReason",
+               item.processed_at as "processedAt"
+        from evaluation_batch_job_items item
+        where item.batch_job_id = #{batchId}
+          and item.result_status in ('FAILURE', 'EXCLUDED')
+        order by case item.result_status when 'FAILURE' then 0 else 1 end,
+                 item.processed_at desc,
+                 item.batch_job_item_id desc
+    </select>
+</mapper>

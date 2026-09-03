@@ -1,0 +1,54 @@
+package kr.ac.knue.commonfoundation.basic46;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import kr.ac.knue.commonfoundation.auth.CurrentUser;
+import kr.ac.knue.commonfoundation.common.api.ApiResponse;
+import kr.ac.knue.commonfoundation.common.api.ForbiddenException;
+import kr.ac.knue.commonfoundation.common.api.UnauthenticatedException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class ScoreRecalculationController {
+    private final ScoreRecalculationService service;
+
+    public ScoreRecalculationController(ScoreRecalculationService service) {
+        this.service = service;
+    }
+
+    @GetMapping("/api/business/score-recalculations")
+    public ApiResponse<ScoreRecalculationSearchResponse> listScoreRecalculations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String evaluationYear,
+            @RequestParam(required = false) String areaCode,
+            @RequestParam(required = false) Long targetUserId,
+            HttpServletRequest servletRequest) {
+        requireR09(servletRequest);
+        return ApiResponse.ok(service.list(new ScoreRecalculationSearchCriteria(page, size, evaluationYear, areaCode, targetUserId)));
+    }
+
+    @PostMapping("/api/business/score-recalculations")
+    public ApiResponse<ScoreRecalculationResult> createScoreRecalculation(
+            @Valid @RequestBody ScoreRecalculationRequest request,
+            HttpServletRequest servletRequest) {
+        CurrentUser user = requireR09(servletRequest);
+        ScoreRecalculationResult result = service.create(request, user.userId());
+        return ApiResponse.ok(result, result.requestId());
+    }
+
+    private CurrentUser requireR09(HttpServletRequest request) {
+        Object user = request.getAttribute("currentUser");
+        if (user instanceof CurrentUser currentUser) {
+            if (currentUser.roles().contains("R09")) {
+                return currentUser;
+            }
+            throw new ForbiddenException();
+        }
+        throw new UnauthenticatedException();
+    }
+}

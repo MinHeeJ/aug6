@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic46.EvaluationMaterialGenerationMapper">
+    <resultMap id="EvaluationMaterialGenerationTargetMap" type="kr.ac.knue.commonfoundation.basic46.EvaluationMaterialGenerationTarget">
+        <constructor>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceStatus" javaType="string"/>
+            <arg column="generationStatus" javaType="string"/>
+            <arg column="generationBatchId" javaType="string"/>
+            <arg column="lastProcessedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="excludedReason" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="candidateFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                dcc.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and dcc.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedOrganizationCode != null">
+                and dcc.department_organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+            <if test="criteria.targetUserId != null">
+                and av.handler_user_id = #{criteria.targetUserId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listGenerationTargets" resultMap="EvaluationMaterialGenerationTargetMap">
+        select av.achievement_id as "sourceAchievementId",
+               dcc.evaluation_year as "evaluationYear",
+               dcc.area_code as "areaCode",
+               dcc.department_organization_code as "organizationCode",
+               av.handler_user_id as "targetUserId",
+               av.next_status as "sourceStatus",
+               case
+                   when em.evaluation_material_id is not null then 'GENERATED'
+                   when av.next_status in ('CERTIFIED','EVALUATION_CONFIRMED') then 'READY'
+                   else 'EXCLUDED'
+               end as "generationStatus",
+               em.generation_batch_id as "generationBatchId",
+               coalesce(em.created_at, av.processed_at) as "lastProcessedAt",
+               case when av.next_status not in ('CERTIFIED','EVALUATION_CONFIRMED') then '인증 이상 상태가 아닌 원천 실적 제외' else null end as "excludedReason"
+        from achievement_verifications av
+        join department_chair_confirmations dcc on dcc.achievement_id = av.achievement_id
+        left join evaluation_materials em on em.source_achievement_id = av.achievement_id
+             and em.evaluation_year = dcc.evaluation_year
+             and em.area_code = dcc.area_code
+             and em.target_user_id = av.handler_user_id
+             and em.deleted_yn = 'N'
+        <include refid="candidateFilters"/>
+        order by coalesce(em.created_at, av.processed_at) desc, av.achievement_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countGenerationTargets" resultType="long">
+        select count(*)
+        from achievement_verifications av
+        join department_chair_confirmations dcc on dcc.achievement_id = av.achievement_id
+        left join evaluation_materials em on em.source_achievement_id = av.achievement_id
+             and em.evaluation_year = dcc.evaluation_year
+             and em.area_code = dcc.area_code
+             and em.target_user_id = av.handler_user_id
+             and em.deleted_yn = 'N'
+        <include refid="candidateFilters"/>
+    </select>
+
+    <select id="listSourceCandidates" resultMap="EvaluationMaterialGenerationTargetMap">
+        select av.achievement_id as "sourceAchievementId",
+               dcc.evaluation_year as "evaluationYear",
+               dcc.area_code as "areaCode",
+               dcc.department_organization_code as "organizationCode",
+               av.handler_user_id as "targetUserId",
+               av.next_status as "sourceStatus",
+               'READY' as "generationStatus",
+               null as "generationBatchId",
+               av.processed_at as "lastProcessedAt",
+               null as "excludedReason"
+        from achievement_verifications av
+        join department_chair_confirmations dcc on dcc.achievement_id = av.achievement_id
+        where dcc.evaluation_year = #{request.evaluationYear}
+          and dcc.area_code = #{request.areaCode}
+        <if test="request.organizationCode != null and request.organizationCode != ''">
+          and dcc.department_organization_code = #{request.organizationCode}
+        </if>
+        <if test="request.targetUserId != null">
+          and av.handler_user_id = #{request.targetUserId}
+        </if>
+        order by av.achievement_id
+    </select>
+
+    <select id="existingMaterialCount" resultType="int">
+        select count(*)
+        from evaluation_materials
+        where source_achievement_id = #{sourceAchievementId}
+          and evaluation_year = #{evaluationYear}
+          and area_code = #{areaCode}
+          and target_user_id = #{targetUserId}
+          and deleted_yn = 'N'
+    </select>
+
+    <insert id="insertBatchJob">
+        insert into evaluation_batch_jobs (batch_job_id, batch_type, evaluation_year, area_code, organization_code,
+            target_user_id, target_condition_json, total_count, success_count, failure_count, excluded_count,
+            job_status, requested_by, request_id, created_by, updated_by)
+        values (#{batchJobId}, 'GENERATION', #{request.evaluationYear}, #{request.areaCode},
+            nullif(#{request.organizationCode}, ''), #{request.targetUserId},
+            jsonb_build_object('evaluationYear', #{request.evaluationYear}, 'areaCode', #{request.areaCode},
+                'organizationCode', nullif(#{request.organizationCode}, ''), 'targetUserId', #{request.targetUserId},
+                'reason', #{request.reason}),
+            #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, 'COMPLETED', #{requestedBy},
+            #{requestId}, #{requestedBy}, #{requestedBy})
+    </insert>
+
+    <insert id="insertBatchJobItem">
+        insert into evaluation_batch_job_items (batch_job_id, target_ref, result_status, error_code, error_message,
+            excluded_reason, request_id, created_by, updated_by)
+        values (#{batchJobId}, #{targetRef}, #{resultStatus}, #{errorCode}, #{errorMessage}, #{excludedReason},
+            #{requestId}, #{createdBy}, #{createdBy})
+    </insert>
+
+    <update id="updateBatchJobCounts">
+        update evaluation_batch_jobs
+        set success_count = #{successCount},
+            failure_count = #{failureCount},
+            excluded_count = #{excludedCount},
+            updated_by = #{updatedBy},
+            updated_at = now()
+        where batch_job_id = #{batchJobId}
+    </update>
+
+    <insert id="insertEvaluationMaterial">
+        insert into evaluation_materials (evaluation_year, area_code, organization_code, target_user_id,
+            source_achievement_id, source_status, generation_batch_id, material_status, base_score, calculated_score,
+            score_basis_ref, deleted_yn, request_id, created_by, updated_by)
+        select #{candidate.evaluationYear}, #{candidate.areaCode}, #{candidate.organizationCode}, #{candidate.targetUserId},
+               #{candidate.sourceAchievementId}, #{candidate.sourceStatus}, #{batchJobId}, 'CERTIFIED', 0, 0,
+               concat('B46-GENERATION:', #{batchJobId}, ':', #{candidate.sourceAchievementId}), 'N', #{requestId}, #{createdBy}, #{createdBy}
+        where not exists (
+            select 1 from evaluation_materials existing
+            where existing.source_achievement_id = #{candidate.sourceAchievementId}
+              and existing.evaluation_year = #{candidate.evaluationYear}
+              and existing.area_code = #{candidate.areaCode}
+              and existing.target_user_id = #{candidate.targetUserId}
+              and existing.deleted_yn = 'N'
+        )
+    </insert>
+</mapper>

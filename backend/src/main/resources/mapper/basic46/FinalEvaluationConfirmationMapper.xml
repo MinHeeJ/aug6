@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic46.FinalEvaluationConfirmationMapper">
+    <resultMap id="FinalEvaluationConfirmationRowMap" type="kr.ac.knue.commonfoundation.basic46.FinalEvaluationConfirmationRow">
+        <constructor>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="finalScore" javaType="java.math.BigDecimal"/>
+            <arg column="latestRecalculationBatchId" javaType="string"/>
+            <arg column="latestRecalculationStatus" javaType="string"/>
+            <arg column="finalStatus" javaType="string"/>
+            <arg column="confirmedBy" javaType="java.lang.Long"/>
+            <arg column="confirmedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="canceledBy" javaType="java.lang.Long"/>
+            <arg column="canceledAt" javaType="java.time.LocalDateTime"/>
+            <arg column="cancelReason" javaType="string"/>
+            <arg column="snapshotRef" javaType="string"/>
+            <arg column="materialCount" javaType="integer"/>
+            <arg column="confirmedMaterialCount" javaType="integer"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="confirmationBase">
+        select base.target_user_id as "targetUserId",
+               base.evaluation_year as "evaluationYear",
+               base.final_score as "finalScore",
+               latest_recalc.recalculation_batch_id as "latestRecalculationBatchId",
+               case
+                   when latest_recalc.recalculation_batch_id is null then 'MISSING'
+                   when coalesce(batch.failure_count, 0) > 0 then 'FAILURE'
+                   when coalesce(batch.success_count, 0) > 0 then 'SUCCESS'
+                   else 'MISSING'
+               end as "latestRecalculationStatus",
+               coalesce(latest_final.display_status, case when base.confirmed_material_count = base.material_count then 'EVALUATION_CONFIRMED' else 'CERTIFIED' end) as "finalStatus",
+               latest_final.confirmed_by as "confirmedBy",
+               latest_final.confirmed_at as "confirmedAt",
+               latest_final.canceled_by as "canceledBy",
+               latest_final.canceled_at as "canceledAt",
+               latest_final.cancel_reason as "cancelReason",
+               latest_final.snapshot_ref as "snapshotRef",
+               base.material_count as "materialCount",
+               base.confirmed_material_count as "confirmedMaterialCount"
+        from (
+            select em.target_user_id,
+                   em.evaluation_year,
+                   sum(em.calculated_score) as final_score,
+                   count(*)::int as material_count,
+                   sum(case when em.material_status = 'EVALUATION_CONFIRMED' then 1 else 0 end)::int as confirmed_material_count
+            from evaluation_materials em
+            where em.deleted_yn = 'N'
+            group by em.target_user_id, em.evaluation_year
+        ) base
+        left join lateral (
+            select scg.recalculation_batch_id,
+                   scg.created_at
+            from score_calculation_generations scg
+            join evaluation_materials em2 on em2.evaluation_material_id = scg.evaluation_material_id
+            where em2.target_user_id = base.target_user_id
+              and em2.evaluation_year = base.evaluation_year
+            order by scg.created_at desc, scg.generation_no desc
+            limit 1
+        ) latest_recalc on true
+        left join evaluation_batch_jobs batch on batch.batch_job_id = latest_recalc.recalculation_batch_id
+        left join lateral (
+            select ef.final_status,
+                   case when ef.final_status = 'CANCELLED' then 'CERTIFIED' else ef.final_status end as display_status,
+                   ef.confirmed_by,
+                   ef.confirmed_at,
+                   ef.canceled_by,
+                   ef.canceled_at,
+                   ef.cancel_reason,
+                   ef.snapshot_ref,
+                   ef.created_at
+            from evaluation_finalizations ef
+            where ef.target_user_id = base.target_user_id
+              and ef.evaluation_year = base.evaluation_year
+            order by ef.created_at desc, ef.finalization_id desc
+            limit 1
+        ) latest_final on true
+    </sql>
+
+    <sql id="confirmationFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                q."evaluationYear" = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.targetUserId != null">
+                and q."targetUserId" = #{criteria.targetUserId}
+            </if>
+            <if test="criteria.normalizedFinalStatus != null">
+                and q."finalStatus" = #{criteria.normalizedFinalStatus}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listFinalEvaluationConfirmations" resultMap="FinalEvaluationConfirmationRowMap">
+        select * from (
+            <include refid="confirmationBase"/>
+        ) q
+        <include refid="confirmationFilters"/>
+        order by q."evaluationYear" desc, q."targetUserId"
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countFinalEvaluationConfirmations" resultType="long">
+        select count(*) from (
+            <include refid="confirmationBase"/>
+        ) q
+        <include refid="confirmationFilters"/>
+    </select>
+
+    <select id="findLatestEvaluationYearForTarget" resultType="string">
+        select em.evaluation_year
+        from evaluation_materials em
+        where em.target_user_id = #{targetUserId}
+          and em.deleted_yn = 'N'
+        order by em.evaluation_year desc
+        limit 1
+    </select>
+
+    <select id="findConfirmationCandidate" resultMap="FinalEvaluationConfirmationRowMap">
+        select * from (
+            <include refid="confirmationBase"/>
+        ) q
+        where q."targetUserId" = #{targetUserId}
+          and q."evaluationYear" = #{evaluationYear}
+        limit 1
+    </select>
+
+    <insert id="insertFinalizationBatchJob">
+        insert into evaluation_batch_jobs (batch_job_id, batch_type, evaluation_year, target_user_id,
+            target_condition_json, total_count, success_count, failure_count, excluded_count, job_status,
+            requested_by, request_id, created_by, updated_by)
+        values (#{batchJobId}, #{batchType}, #{evaluationYear}, #{targetUserId},
+            jsonb_build_object('evaluationYear', #{evaluationYear}, 'targetUserId', #{targetUserId}, 'reason', #{reason}),
+            #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, 'COMPLETED',
+            #{requestedBy}, #{requestId}, #{requestedBy}, #{requestedBy})
+    </insert>
+
+    <insert id="insertBatchJobItem">
+        insert into evaluation_batch_job_items (batch_job_id, target_ref, result_status, error_code, error_message,
+            excluded_reason, request_id, created_by, updated_by)
+        values (#{batchJobId}, #{targetRef}, #{resultStatus}, #{errorCode}, #{errorMessage}, #{excludedReason},
+            #{requestId}, #{createdBy}, #{createdBy})
+    </insert>
+
+    <update id="updateMaterialsStatus">
+        update evaluation_materials
+        set material_status = #{toStatus},
+            source_status = #{toStatus},
+            request_id = #{requestId},
+            updated_by = #{updatedBy},
+            updated_at = now()
+        where target_user_id = #{targetUserId}
+          and evaluation_year = #{evaluationYear}
+          and deleted_yn = 'N'
+          and material_status = #{fromStatus}
+    </update>
+
+    <insert id="insertFinalization">
+        insert into evaluation_finalizations (target_user_id, evaluation_year, final_status, confirmed_by, confirmed_at,
+            canceled_by, canceled_at, cancel_reason, snapshot_ref, snapshot_json, finalization_batch_id, request_id,
+            created_by, updated_by)
+        values (#{targetUserId}, #{evaluationYear}, #{finalStatus}, #{confirmedBy},
+            case when #{finalStatus} = 'EVALUATION_CONFIRMED' then now() else null end,
+            #{canceledBy}, case when #{finalStatus} = 'CANCELLED' then now() else null end, #{cancelReason}, #{snapshotRef},
+            cast(#{snapshotJson} as jsonb), #{batchJobId}, #{requestId}, #{createdBy}, #{createdBy})
+    </insert>
+</mapper>

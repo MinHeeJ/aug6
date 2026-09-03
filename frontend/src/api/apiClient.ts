@@ -854,6 +854,406 @@ export const menuExecutionApi = {
 
 export type PageSize = 20 | 50 | 100;
 
+export type EvaluationMaterialGenerationTarget = {
+  sourceAchievementId: number;
+  evaluationYear: string;
+  areaCode: string;
+  organizationCode: string;
+  targetUserId: number;
+  sourceStatus: string;
+  generationStatus: string;
+  generationBatchId?: string | null;
+  lastProcessedAt?: string | null;
+  excludedReason?: string | null;
+};
+
+export type EvaluationMaterialGenerationSearchResponse = {
+  targets: EvaluationMaterialGenerationTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationMaterialGenerationPayload = {
+  evaluationYear: string;
+  areaCode: string;
+  organizationCode?: string;
+  targetUserId?: number;
+  reason: string;
+};
+
+export type EvaluationMaterialGenerationResult = {
+  generationBatchId: string;
+  evaluationYear: string;
+  areaCode: string;
+  organizationCode?: string | null;
+  targetUserId?: number | null;
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  excludedCount: number;
+  requestId: string;
+};
+
+export const evaluationMaterialGenerationApi = {
+  listEvaluationMaterialGenerations(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      organizationCode?: string;
+      targetUserId?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    ) {
+      query.set("targetUserId", String(params.targetUserId));
+    }
+    return apiRequest<EvaluationMaterialGenerationSearchResponse>(
+      `/api/business/evaluation-material-generations?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  createEvaluationMaterialGeneration(
+    payload: EvaluationMaterialGenerationPayload,
+  ) {
+    return apiRequest<EvaluationMaterialGenerationResult>(
+      "/api/business/evaluation-material-generations",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type EvaluationMaterialDeletionTarget = {
+  evaluationMaterialId: number;
+  evaluationYear: string;
+  areaCode: string;
+  organizationCode: string;
+  targetUserId: number;
+  sourceAchievementId: number;
+  generationBatchId: string;
+  finalStatus: string;
+  canDelete: boolean;
+  excludedReason?: string | null;
+  createdAt?: string | null;
+};
+
+export type EvaluationMaterialDeletionPreviewResponse = {
+  targets: EvaluationMaterialDeletionTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+  deletableCount: number;
+  previewToken: string;
+};
+
+export type EvaluationMaterialDeletionPayload = {
+  evaluationYear: string;
+  areaCode: string;
+  generationBatchId: string;
+  deletionReason: string;
+  previewToken: string;
+};
+
+export type EvaluationMaterialDeletionResult = {
+  deletionBatchId: string;
+  evaluationYear: string;
+  areaCode: string;
+  generationBatchId: string;
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  excludedCount: number;
+  requestId: string;
+};
+
+export const evaluationMaterialDeletionApi = {
+  previewEvaluationMaterialDeletion(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      generationBatchId?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.generationBatchId?.trim())
+      query.set("generationBatchId", params.generationBatchId.trim());
+    return apiRequest<EvaluationMaterialDeletionPreviewResponse>(
+      `/api/business/evaluation-material-deletions/preview?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  createEvaluationMaterialDeletion(payload: EvaluationMaterialDeletionPayload) {
+    return apiRequest<EvaluationMaterialDeletionResult>(
+      "/api/business/evaluation-material-deletions",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type ScoreRecalculationRow = {
+  evaluationMaterialId: number;
+  evaluationYear: string;
+  areaCode: string;
+  organizationCode: string;
+  targetUserId: number;
+  sourceAchievementId: number;
+  materialStatus: string;
+  previousScore: number;
+  recalculatedScore: number;
+  formulaVersionId?: number | null;
+  generationNo?: number | null;
+  recalculationBatchId?: string | null;
+  selectionReason?: string | null;
+  excludedReason?: string | null;
+  calculatedAt?: string | null;
+};
+
+export type ScoreRecalculationSearchResponse = {
+  recalculations: ScoreRecalculationRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type ScoreRecalculationPayload = {
+  evaluationYear: string;
+  areaCode: string;
+  targetUserId?: number;
+  formulaVersionId: string;
+  selectionReason: string;
+};
+
+export type ScoreRecalculationResult = {
+  recalculationBatchId: string;
+  evaluationYear: string;
+  areaCode: string;
+  targetUserId?: number | null;
+  formulaVersionId: string;
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  excludedCount: number;
+  requestId: string;
+};
+
+export const scoreRecalculationApi = {
+  listScoreRecalculations(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      targetUserId?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    ) {
+      query.set("targetUserId", String(params.targetUserId));
+    }
+    return apiRequest<ScoreRecalculationSearchResponse>(
+      `/api/business/score-recalculations?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  createScoreRecalculation(payload: ScoreRecalculationPayload) {
+    return apiRequest<ScoreRecalculationResult>(
+      "/api/business/score-recalculations",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type FinalEvaluationStatus = "CERTIFIED" | "EVALUATION_CONFIRMED";
+export type FinalEvaluationActionType = "CONFIRM" | "CANCEL";
+
+export type FinalEvaluationConfirmationRow = {
+  targetUserId: number;
+  evaluationYear: string;
+  finalScore: number;
+  latestRecalculationBatchId?: string | null;
+  latestRecalculationStatus: string;
+  finalStatus: FinalEvaluationStatus;
+  confirmedBy?: number | null;
+  confirmedAt?: string | null;
+  canceledBy?: number | null;
+  canceledAt?: string | null;
+  cancelReason?: string | null;
+  snapshotRef?: string | null;
+  materialCount: number;
+  confirmedMaterialCount: number;
+};
+
+export type FinalEvaluationConfirmationSearchResponse = {
+  confirmations: FinalEvaluationConfirmationRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type FinalEvaluationTransitionPayload = {
+  actionType: FinalEvaluationActionType;
+  evaluationYear?: string;
+  cancelReason?: string;
+  reason?: string;
+};
+
+export type FinalEvaluationTransitionResult = {
+  finalizationBatchId: string;
+  targetUserId: number;
+  evaluationYear: string;
+  actionType: FinalEvaluationActionType;
+  finalStatus: FinalEvaluationStatus;
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  excludedCount: number;
+  snapshotRef: string;
+  requestId: string;
+};
+
+export const finalEvaluationConfirmationApi = {
+  listFinalEvaluationConfirmations(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      targetUserId?: number;
+      finalStatus?: FinalEvaluationStatus | "";
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    ) {
+      query.set("targetUserId", String(params.targetUserId));
+    }
+    if (params.finalStatus) query.set("finalStatus", params.finalStatus);
+    return apiRequest<FinalEvaluationConfirmationSearchResponse>(
+      `/api/business/final-evaluation-confirmations?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveFinalEvaluationConfirmationTransition(
+    targetId: number,
+    payload: FinalEvaluationTransitionPayload,
+  ) {
+    return apiRequest<FinalEvaluationTransitionResult>(
+      `/api/business/final-evaluation-confirmations/${encodeURIComponent(String(targetId))}/transition` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type BatchProcessingJobType =
+  | "GENERATION"
+  | "DELETION"
+  | "RECALCULATION"
+  | "CONFIRMATION";
+
+export type BatchProcessingResultRow = {
+  batchId: string;
+  batchType: BatchProcessingJobType;
+  evaluationYear: string;
+  areaCode?: string | null;
+  organizationCode?: string | null;
+  targetUserId?: number | null;
+  targetConditionSummary: string;
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  excludedCount: number;
+  jobStatus: string;
+  requestedBy: number;
+  requestedAt: string;
+  requestId: string;
+};
+
+export type BatchProcessingResultErrorRow = {
+  batchJobItemId: number;
+  batchId: string;
+  targetRef: string;
+  resultStatus: "FAILURE" | "EXCLUDED";
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  excludedReason?: string | null;
+  processedAt: string;
+};
+
+export type BatchProcessingResultSearchResponse = {
+  results: BatchProcessingResultRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export const batchProcessingResultApi = {
+  listBatchProcessingResults(
+    params: {
+      page?: number;
+      size?: PageSize;
+      batchType?: BatchProcessingJobType | "";
+      targetCondition?: string;
+      batchId?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.batchType) query.set("batchType", params.batchType);
+    if (params.targetCondition?.trim())
+      query.set("targetCondition", params.targetCondition.trim());
+    if (params.batchId?.trim()) query.set("batchId", params.batchId.trim());
+    return apiRequest<BatchProcessingResultSearchResponse>(
+      `/api/business/batch-processing-results?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  listBatchProcessingResultErrors(batchId: string) {
+    return apiRequest<BatchProcessingResultErrorRow[]>(
+      `/api/business/batch-processing-results/${encodeURIComponent(batchId)}/errors` as `/api/${string}`,
+    );
+  },
+};
+
 export type BusinessType =
   | "FACULTY_ACHIEVEMENT"
   | "ACADEMIC_GRANT"

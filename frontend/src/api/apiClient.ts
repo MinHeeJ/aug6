@@ -3359,3 +3359,350 @@ export const researcherProfileApi = {
     );
   },
 };
+
+export type EvaluationMaterialGenerationTarget = {
+  sourceAchievementId: number;
+  evaluationYear: string;
+  areaCode: string;
+  organizationCode: string;
+  targetUserId: number;
+  sourceStatus: string;
+  achievementType: string;
+  achievementTitle: string;
+  generationStatus: string;
+};
+
+export type EvaluationMaterialGenerationPreviewResponse = {
+  targets: EvaluationMaterialGenerationTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+  targetCount: number;
+};
+
+export type EvaluationMaterialGenerationResult = {
+  batchId: string;
+  requestId: string;
+  targetCount: number;
+  createdCount: number;
+  excludedCount: number;
+};
+
+export type EvaluationMaterialDeletionTarget = {
+  evaluationMaterialId: number;
+  evaluationYear: string;
+  areaCode: string;
+  targetUserId: number;
+  sourceAchievementId: number;
+  generationBatchId: string;
+  materialStatus: string;
+  materialOrigin: string;
+  achievementTitle: string;
+};
+
+export type EvaluationMaterialDeletionPreviewResponse = {
+  targets: EvaluationMaterialDeletionTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+  targetCount: number;
+};
+
+export type EvaluationMaterialDeletionResult = {
+  batchId: string;
+  requestId: string;
+  targetCount: number;
+  deletedCount: number;
+  excludedCount: number;
+};
+
+export type ScoreRecalculationTarget = {
+  evaluationMaterialId: number;
+  evaluationYear: string;
+  areaCode: string;
+  targetUserId: number;
+  sourceAchievementId: number;
+  generationBatchId: string;
+  formulaVersionId: number;
+  ruleVersionId: number;
+  formulaCode: string;
+  beforeScore: number;
+  afterScore: number;
+  nextGenerationNo: number;
+  materialStatus: string;
+  achievementTitle: string;
+};
+
+export type ScoreRecalculationPreviewResponse = {
+  targets: ScoreRecalculationTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+  targetCount: number;
+};
+
+export type ScoreRecalculationResult = {
+  batchId: string;
+  requestId: string;
+  targetCount: number;
+  recalculatedCount: number;
+  excludedCount: number;
+};
+
+export type FinalEvaluationConfirmationTarget = {
+  targetId: number;
+  evaluationYear: string;
+  areaCode: string;
+  organizationName: string;
+  targetName: string;
+  confirmationStatus: "인증" | "평가확정" | "확정취소" | string;
+  confirmedBy?: number | null;
+  confirmedByName?: string | null;
+  confirmedAt?: string | null;
+  canceledBy?: number | null;
+  canceledByName?: string | null;
+  canceledAt?: string | null;
+  cancelReason?: string | null;
+  materialCount: number;
+  totalScore: number;
+};
+
+export type FinalEvaluationConfirmationListResponse = {
+  confirmations: FinalEvaluationConfirmationTarget[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type FinalEvaluationConfirmationResult = {
+  batchId: string;
+  requestId: string;
+  targetId: number;
+  previousStatus: string;
+  nextStatus: string;
+  changedMaterialCount: number;
+};
+
+export type EvaluationBatchResultRow = {
+  batchId: string;
+  jobType:
+    | "GENERATION"
+    | "DELETION"
+    | "RECALCULATION"
+    | "CONFIRMATION"
+    | string;
+  jobTypeName: string;
+  requestStatus: string;
+  targetCondition: string;
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  excludedCount: number;
+  requestId: string;
+  requestedAt?: string | null;
+  completedAt?: string | null;
+};
+
+export type EvaluationBatchResultListResponse = {
+  results: EvaluationBatchResultRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationBatchResultErrorRow = {
+  batchId: string;
+  targetKey: string;
+  targetName?: string | null;
+  errorCode: string;
+  message: string;
+  detail?: string | null;
+};
+
+export type EvaluationBatchResultErrorListResponse = {
+  batchId: string;
+  errors: EvaluationBatchResultErrorRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type EvaluationBatchActionRequest = {
+  evaluationYear: string;
+  areaCode?: string;
+  organizationCode?: string;
+  targetUserId?: string;
+  generationBatchId?: string;
+  deleteReason?: string;
+  formulaVersionId?: string;
+  actionType?: string;
+  cancelReason?: string;
+};
+
+export const evaluationMaterialGenerationApi = {
+  preview(
+    params: EvaluationBatchActionRequest & { page?: number; size?: PageSize },
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    if (params.targetUserId?.trim())
+      query.set("targetUserId", params.targetUserId.trim());
+    return apiRequest<EvaluationMaterialGenerationPreviewResponse>(
+      `/api/business/evaluation-material-generations/preview?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  create(payload: EvaluationBatchActionRequest) {
+    return apiRequest<EvaluationMaterialGenerationResult>(
+      "/api/business/evaluation-material-generations",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export const evaluationMaterialDeletionApi = {
+  preview(
+    params: EvaluationBatchActionRequest & { page?: number; size?: PageSize },
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.generationBatchId?.trim())
+      query.set("generationBatchId", params.generationBatchId.trim());
+    return apiRequest<EvaluationMaterialDeletionPreviewResponse>(
+      `/api/business/evaluation-material-deletions/preview?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  delete(payload: EvaluationBatchActionRequest) {
+    return apiRequest<EvaluationMaterialDeletionResult>(
+      "/api/business/evaluation-material-deletions",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export const scoreRecalculationApi = {
+  preview(
+    params: EvaluationBatchActionRequest & { page?: number; size?: PageSize },
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.targetUserId?.trim())
+      query.set("targetUserId", params.targetUserId.trim());
+    if (params.formulaVersionId?.trim())
+      query.set("formulaVersionId", params.formulaVersionId.trim());
+    return apiRequest<ScoreRecalculationPreviewResponse>(
+      `/api/business/score-recalculations/preview?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  recalculate(payload: EvaluationBatchActionRequest) {
+    return apiRequest<ScoreRecalculationResult>(
+      "/api/business/score-recalculations",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export const finalEvaluationConfirmationApi = {
+  list(
+    params: EvaluationBatchActionRequest & {
+      page?: number;
+      size?: PageSize;
+      confirmationStatus?: string;
+    },
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.targetUserId?.trim())
+      query.set("targetUserId", params.targetUserId.trim());
+    if (params.confirmationStatus?.trim())
+      query.set("confirmationStatus", params.confirmationStatus.trim());
+    return apiRequest<FinalEvaluationConfirmationListResponse>(
+      `/api/business/final-evaluation-confirmations?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  confirm(
+    targetId: number,
+    payload: Pick<EvaluationBatchActionRequest, "evaluationYear">,
+  ) {
+    return apiRequest<FinalEvaluationConfirmationResult>(
+      `/api/business/final-evaluation-confirmations/${encodeURIComponent(String(targetId))}/confirm` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  cancel(
+    targetId: number,
+    payload: Pick<
+      EvaluationBatchActionRequest,
+      "evaluationYear" | "cancelReason"
+    >,
+  ) {
+    return apiRequest<FinalEvaluationConfirmationResult>(
+      `/api/business/final-evaluation-confirmations/${encodeURIComponent(String(targetId))}/cancel` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export const evaluationBatchResultApi = {
+  list(
+    params: {
+      page?: number;
+      size?: PageSize;
+      batchId?: string;
+      jobType?: string;
+      targetCondition?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.batchId?.trim()) query.set("batchId", params.batchId.trim());
+    if (params.jobType?.trim()) query.set("jobType", params.jobType.trim());
+    if (params.targetCondition?.trim()) {
+      query.set("targetCondition", params.targetCondition.trim());
+    }
+    return apiRequest<EvaluationBatchResultListResponse>(
+      `/api/business/evaluation-batch-results?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  errors(batchId: string, params: { page?: number; size?: PageSize } = {}) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    return apiRequest<EvaluationBatchResultErrorListResponse>(
+      `/api/business/evaluation-batch-results/${encodeURIComponent(batchId)}/errors?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};

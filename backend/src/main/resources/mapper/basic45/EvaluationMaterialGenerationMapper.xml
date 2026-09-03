@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic45.EvaluationMaterialGenerationMapper">
+    <resultMap id="EvaluationMaterialGenerationTargetMap" type="kr.ac.knue.commonfoundation.basic45.EvaluationMaterialGenerationTarget">
+        <constructor>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceStatus" javaType="string"/>
+            <arg column="achievementType" javaType="string"/>
+            <arg column="achievementTitle" javaType="string"/>
+            <arg column="generationStatus" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="certifiedSourceProjection">
+        select av.achievement_id as "sourceAchievementId",
+               av.evaluation_year as "evaluationYear",
+               dcc.area_code as "areaCode",
+               dcc.department_organization_code as "organizationCode",
+               av.processed_by as "targetUserId",
+               case when av.next_status in ('CERTIFIED', '인증') then '인증' else av.next_status end as "sourceStatus",
+               'FACULTY_ACHIEVEMENT' as "achievementType",
+               concat('업적 ', av.achievement_id) as "achievementTitle",
+               case when exists (
+                    select 1 from evaluation_materials em
+                    where em.source_achievement_id = av.achievement_id
+                      and em.evaluation_year = av.evaluation_year
+                      and em.area_code = dcc.area_code
+                      and em.target_user_id = av.processed_by
+                      and em.deleted_yn = 'N'
+               ) then '생성완료' else '미생성' end as "generationStatus"
+        from achievement_verifications av
+        join department_chair_confirmations dcc on dcc.achievement_id = av.achievement_id
+        where av.next_status in ('CERTIFIED', '인증')
+          and not exists (
+              select 1 from achievement_verifications newer
+              where newer.achievement_id = av.achievement_id
+                and (newer.processed_at, newer.verification_id) &gt; (av.processed_at, av.verification_id)
+          )
+          and not exists (
+              select 1 from evaluation_materials em
+              where em.source_achievement_id = av.achievement_id
+                and em.evaluation_year = av.evaluation_year
+                and em.area_code = dcc.area_code
+                and em.target_user_id = av.processed_by
+                and em.deleted_yn = 'N'
+          )
+          <if test="criteria.normalizedEvaluationYear != null">
+              and av.evaluation_year = #{criteria.normalizedEvaluationYear}
+          </if>
+          <if test="criteria.normalizedAreaCode != null">
+              and dcc.area_code = #{criteria.normalizedAreaCode}
+          </if>
+          <if test="criteria.normalizedOrganizationCode != null">
+              and dcc.department_organization_code = #{criteria.normalizedOrganizationCode}
+          </if>
+          <if test="criteria.normalizedTargetUserId != null">
+              and av.processed_by = #{criteria.normalizedTargetUserId}
+          </if>
+    </sql>
+
+    <select id="listGenerationTargets" resultMap="EvaluationMaterialGenerationTargetMap">
+        <include refid="certifiedSourceProjection"/>
+        order by "evaluationYear" desc, "areaCode", "sourceAchievementId"
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countGenerationTargets" resultType="long">
+        select count(*)
+        from (
+            <include refid="certifiedSourceProjection"/>
+        ) source_targets
+    </select>
+
+    <select id="nextGenerationSequence" resultType="long">
+        select count(*) + 1
+        from evaluation_batch_requests
+        where job_type = 'GENERATION'
+    </select>
+
+    <insert id="insertBatchRequest">
+        insert into evaluation_batch_requests (batch_id, job_type, target_condition_json, request_user_id, request_status, request_id)
+        values (#{batchId}, #{jobType}, #{targetConditionJson}::jsonb, #{requestUserId}, 'COMPLETED', #{requestId})
+    </insert>
+
+    <insert id="insertEvaluationMaterial">
+        insert into evaluation_materials (evaluation_year, area_code, target_user_id, source_achievement_id, generation_batch_id,
+            material_status, material_origin, material_snapshot_json, calculated_score, request_id, created_by, updated_by)
+        select #{target.evaluationYear}, #{target.areaCode}, #{target.targetUserId}, #{target.sourceAchievementId}, #{batchId},
+               '인증', 'BATCH_GENERATED',
+               jsonb_build_object(
+                   'sourceAchievementId', #{target.sourceAchievementId},
+                   'sourceStatus', #{target.sourceStatus},
+                   'achievementType', #{target.achievementType},
+                   'achievementTitle', #{target.achievementTitle}
+               ),
+               0, #{requestId}, #{requestUserId}, #{requestUserId}
+        where not exists (
+            select 1 from evaluation_materials em
+            where em.source_achievement_id = #{target.sourceAchievementId}
+              and em.evaluation_year = #{target.evaluationYear}
+              and em.area_code = #{target.areaCode}
+              and em.target_user_id = #{target.targetUserId}
+              and em.deleted_yn = 'N'
+        )
+    </insert>
+
+    <insert id="insertBatchResult">
+        insert into evaluation_batch_results (batch_id, job_type, total_count, success_count, failure_count, excluded_count, error_detail_json, request_id)
+        values (#{batchId}, #{jobType}, #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, '[]'::jsonb, #{requestId})
+        on conflict (batch_id) do update set
+            total_count = excluded.total_count,
+            success_count = excluded.success_count,
+            failure_count = excluded.failure_count,
+            excluded_count = excluded.excluded_count,
+            error_detail_json = excluded.error_detail_json,
+            request_id = excluded.request_id
+    </insert>
+</mapper>

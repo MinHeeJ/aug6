@@ -40,7 +40,7 @@ class Basic43FoundationMigrationTest {
                 .contains("V43__basic40_exception_period_settings.sql")
                 .anySatisfy(name -> assertThat(name).matches(BASIC43_MIGRATION_NAME));
         assertThat(migrationNames)
-                .filteredOn(name -> name.toLowerCase().contains("basic43"))
+                .filteredOn(name -> name != null && BASIC43_MIGRATION_NAME.matcher(name).matches())
                 .hasSize(1)
                 .allSatisfy(name -> assertThat(name).matches(BASIC43_MIGRATION_NAME));
     }

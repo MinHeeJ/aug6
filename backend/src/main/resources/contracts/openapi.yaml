@@ -5631,6 +5631,936 @@ paths:
         meta:
           type: object
           additionalProperties: true
+  /api/business/evaluation-organization-mappings:
+    get:
+      operationId: listEvaluationOrganizationMappings
+      summary: 평가조직 매핑 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      x-related-requirements: [REQ-768]
+      x-pagination:
+        defaultSize: 20
+        allowedSizes: [20, 50, 100]
+        filters: [businessType, organizationCode, userId]
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 잘못된 검색조건, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    post:
+      operationId: saveEvaluationOrganizationMapping
+      summary: 평가조직 매핑 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R09]
+      x-related-requirements: [REQ-769, REQ-770]
+      x-business-rules: [기존 사용자·조직·역할·데이터 범위 참조만 허용, 별도 공통 테이블 생성 금지]
+      x-side-effects: [evaluation_organization_mappings 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 mapping 저장 -> 활성 mapping]
+      x-required-tests:
+        - "happy: 유효한 user_id/organization_code/business_type/data_scope 저장 -> evaluation_organization_mappings 재조회에 저장값 표시"
+        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 businessType -> fields.businessType 오류 반환"
+        - "business: 존재하지 않는 organization_code -> mapping 미생성"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=evaluation_organization_mappings 기록"
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/business-status-codes:
+    get:
+      operationId: listBusinessStatusCodes
+      summary: 상태코드 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-771]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, definitionVersion, statusCode] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    post:
+      operationId: saveBusinessStatusCode
+      summary: 상태코드 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-772, REQ-773]
+      x-business-rules: [작성중 상태정의 버전에서만 저장, 확정 기술 상태코드 수정·삭제·의미 재사용 금지]
+      x-side-effects: [business_status_codes 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 상태정의 버전 -> 저장됨, 확정 상태정의 버전 -> 변경 거부]
+      x-required-tests:
+        - "happy: 작성중 definition_version의 display_name 저장 -> business_status_codes 재조회에 표시"
+        - "auth: 권한 없는 사용자 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 statusCode -> fields.statusCode 오류 반환"
+        - "business: 확정 status_code 변경 요청 -> business_status_codes 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 field_name=display_name 기록"
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 확정 코드 변경 금지, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/business-status-transitions:
+    get:
+      operationId: listBusinessStatusTransitions
+      summary: 상태 전이 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-774]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, fromStatusCode, executorRoleCode] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    post:
+      operationId: saveBusinessStatusTransition
+      summary: 상태 전이 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-775, REQ-776]
+      x-business-rules: [작성중 상태정의 버전에서만 전이규칙 저장, 필수의견·필수첨부·취소가능 조건을 명시]
+      x-side-effects: [business_status_transitions 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 전이규칙 -> 저장됨, 확정 전이규칙 -> 직접 수정 거부]
+      x-required-tests:
+        - "happy: 유효한 from/to/role/required flags 저장 -> business_status_transitions 재조회에 표시"
+        - "auth: R01 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 toStatusCode -> fields.toStatusCode 오류 반환"
+        - "business: 확정 전이규칙 수정 요청 -> business_status_transitions 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=business_status_transitions 기록"
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/rejection-reasons:
+    get:
+      operationId: listRejectionReasons
+      summary: 반려사유 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-777]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, reasonCode] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    post:
+      operationId: saveRejectionReason
+      summary: 반려사유 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-778, REQ-779]
+      x-business-rules: [업무유형별 표준 반려사유만 관리, 개별 신청 반려 처리 제외]
+      x-side-effects: [rejection_reasons 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [반려사유 작성/수정 -> 활성 반려사유]
+      x-required-tests:
+        - "happy: reason_code와 standard_message 저장 -> rejection_reasons 재조회에 표시"
+        - "auth: 권한 없는 사용자 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 standardMessage -> fields.standardMessage 오류 반환"
+        - "business: 중복 reason_code 저장 요청 -> rejection_reasons 기존 row 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=rejection_reasons 기록"
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/data-change-histories:
+    get:
+      operationId: listDataChangeHistories
+      summary: 데이터 변경 이력 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-780, REQ-781, REQ-782]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [targetBusiness, targetKey, changedBy, changedAtFrom, changedAtTo, changeType] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/deleted-business-data:
+    get:
+      operationId: listDeletedBusinessData
+      summary: 삭제자료 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-related-requirements: [REQ-783, REQ-784]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [businessType, originalKey, deletedBy, deletedAtFrom, deletedAtTo] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-areas:
+    get:
+      operationId: listEvaluationAreas
+      summary: 평가영역 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-864]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [ruleVersionId, activeYn, keyword] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-areas/save:
+    post:
+      operationId: saveEvaluationArea
+      summary: 평가영역 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-865, REQ-866, REQ-867]
+      x-business-rules: [작성중 규정버전에서만 저장, 확정 규정버전 수정·삭제 금지, 점수·배분율·계산식 변경 금지]
+      x-side-effects: [evaluation_areas 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 기준정보 -> 저장됨, 확정 기준정보 -> 변경 거부]
+      x-required-tests:
+        - "happy: 작성중 rule_version_id의 평가영역 저장 -> evaluation_areas 재조회에 저장값 표시"
+        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 ruleVersionId -> fields.ruleVersionId 오류 반환"
+        - "business: 확정 rule_version_id 저장 요청 -> evaluation_areas 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=evaluation_areas 기록"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveEvaluationAreaRequest' }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-items:
+    get:
+      operationId: listEvaluationItems
+      summary: 평가항목 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-870]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [ruleVersionId, activeYn, keyword] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-items/save:
+    post:
+      operationId: saveEvaluationItem
+      summary: 평가항목 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-871, REQ-872, REQ-873]
+      x-business-rules: [작성중 규정버전에서만 저장, 확정 규정버전 수정·삭제 금지, 점수·배분율·계산식 변경 금지]
+      x-side-effects: [evaluation_items 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 기준정보 -> 저장됨, 확정 기준정보 -> 변경 거부]
+      x-required-tests:
+        - "happy: 작성중 rule_version_id의 평가항목 저장 -> evaluation_items 재조회에 저장값 표시"
+        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 ruleVersionId -> fields.ruleVersionId 오류 반환"
+        - "business: 확정 rule_version_id 저장 요청 -> evaluation_items 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=evaluation_items 기록"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveEvaluationItemRequest' }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-elements:
+    get:
+      operationId: listEvaluationElements
+      summary: 평가요소 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-876]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [ruleVersionId, activeYn, keyword] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-elements/save:
+    post:
+      operationId: saveEvaluationElement
+      summary: 평가요소 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-877, REQ-878, REQ-879]
+      x-business-rules: [작성중 규정버전에서만 저장, 확정 규정버전 수정·삭제 금지, 점수·배분율·계산식 변경 금지]
+      x-side-effects: [evaluation_elements 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 기준정보 -> 저장됨, 확정 기준정보 -> 변경 거부]
+      x-required-tests:
+        - "happy: 작성중 rule_version_id의 평가요소 저장 -> evaluation_elements 재조회에 저장값 표시"
+        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 ruleVersionId -> fields.ruleVersionId 오류 반환"
+        - "business: 확정 rule_version_id 저장 요청 -> evaluation_elements 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=evaluation_elements 기록"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveEvaluationElementRequest' }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-management-items:
+    get:
+      operationId: listEvaluationManagementItems
+      summary: 관리항목 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-882, REQ-884, REQ-887]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [ruleVersionId, activeYn, keyword] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-management-items/save:
+    post:
+      operationId: saveEvaluationManagementItem
+      summary: 관리항목 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-883, REQ-885, REQ-886]
+      x-business-rules: [작성중 규정버전에서만 저장, 확정 규정버전 수정·삭제 금지, 점수·배분율·계산식 변경 금지]
+      x-side-effects: [evaluation_management_items 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 기준정보 -> 저장됨, 확정 기준정보 -> 변경 거부]
+      x-required-tests:
+        - "happy: 작성중 rule_version_id의 관리항목 저장 -> evaluation_management_items 재조회에 저장값 표시"
+        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 ruleVersionId -> fields.ruleVersionId 오류 반환"
+        - "business: 확정 rule_version_id 저장 요청 -> evaluation_management_items 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=evaluation_management_items 기록"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveEvaluationManagementItemRequest' }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/area-element-systems:
+    get:
+      operationId: listAreaElementSystems
+      summary: 영역별 평가요소 체계 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-890]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [ruleVersionId, activeYn, keyword] }
+      responses:
+        '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/area-element-systems/save:
+    post:
+      operationId: saveAreaElementSystem
+      summary: 영역별 평가요소 체계 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      x-related-requirements: [REQ-891, REQ-892, REQ-893, REQ-894]
+      x-business-rules: [작성중 규정버전에서만 저장, 확정 규정버전 수정·삭제 금지, 점수·배분율·계산식 변경 금지]
+      x-side-effects: [area_element_system_settings 저장, data_change_histories 변경 이력 기록]
+      x-state-transitions: [작성중 기준정보 -> 저장됨, 확정 기준정보 -> 변경 거부]
+      x-required-tests:
+        - "happy: 작성중 rule_version_id의 영역별 평가요소 체계 저장 -> area_element_system_settings 재조회에 저장값 표시"
+        - "auth: R01 세션 저장 요청 -> 403 ApiError 반환"
+        - "validation: 누락 ruleVersionId -> fields.ruleVersionId 오류 반환"
+        - "business: 확정 rule_version_id 저장 요청 -> area_element_system_settings 기존 값 유지"
+        - "side-effect: 저장 성공 -> data_change_histories에 target_business=area_element_system_settings 기록"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SaveAreaElementSystemRequest' }
+      responses:
+        '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+
+  /api/admin/evaluation-scores:
+    get:
+      operationId: listEvaluationScores
+      summary: 평가점수 관리 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-992, REQ-993, REQ-994, REQ-999]
+    post:
+      operationId: saveEvaluationScore
+      summary: 평가점수 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveEvaluationScoreRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-992, REQ-993, REQ-994, REQ-999]
+      x-business-rules:
+        - 작성중 규정버전 또는 권한 있는 기준정보만 저장한다
+        - 확정 평가결과를 소급 변경하지 않는다
+      x-side-effects:
+        - evaluation_score_rules row와 변경 메타정보를 같은 transaction에 기록한다
+      x-state-transitions:
+        - 'evaluation_score_rules: DRAFT -> DRAFT 또는 기준정보 ACTIVE 유지'
+      x-required-tests:
+        - 'happy: 유효한 평가점수 관리 저장 요청 -> 후속 listEvaluationScores 조회에서 evaluation_score_rules 변경값이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다'
+        - 'business: 확정 규정버전 저장 요청 -> evaluation_score_rules 기존 상태가 변경되지 않는다'
+        - 'side-effect: 저장 성공 -> evaluation_score_rules 변경 메타정보 row가 남는다'
+
+  /api/admin/participation-rates:
+    get:
+      operationId: listParticipationRates
+      summary: 참여구분·배분율 관리 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1000, REQ-1001, REQ-1002, REQ-1007]
+    post:
+      operationId: saveParticipationRate
+      summary: 참여구분·배분율 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveParticipationRateRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1000, REQ-1001, REQ-1002, REQ-1007]
+      x-business-rules:
+        - 작성중 규정버전 또는 권한 있는 기준정보만 저장한다
+        - 확정 평가결과를 소급 변경하지 않는다
+      x-side-effects:
+        - participation_rate_rules row와 변경 메타정보를 같은 transaction에 기록한다
+      x-state-transitions:
+        - 'participation_rate_rules: DRAFT -> DRAFT 또는 기준정보 ACTIVE 유지'
+      x-required-tests:
+        - 'happy: 유효한 참여구분·배분율 관리 저장 요청 -> 후속 listParticipationRates 조회에서 participation_rate_rules 변경값이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다'
+        - 'business: 확정 규정버전 저장 요청 -> participation_rate_rules 기존 상태가 변경되지 않는다'
+        - 'side-effect: 저장 성공 -> participation_rate_rules 변경 메타정보 row가 남는다'
+
+  /api/admin/calculation-formulas:
+    get:
+      operationId: listCalculationFormulas
+      summary: 계산식 관리 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1008, REQ-1009, REQ-1010, REQ-1011]
+    post:
+      operationId: saveCalculationFormula
+      summary: 계산식 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCalculationFormulaRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1008, REQ-1009, REQ-1010, REQ-1011]
+      x-business-rules:
+        - 작성중 규정버전 또는 권한 있는 기준정보만 저장한다
+        - 확정 평가결과를 소급 변경하지 않는다
+      x-side-effects:
+        - calculation_formula_versions row와 변경 메타정보를 같은 transaction에 기록한다
+      x-state-transitions:
+        - 'calculation_formula_versions: DRAFT -> DRAFT 또는 기준정보 ACTIVE 유지'
+      x-required-tests:
+        - 'happy: 유효한 계산식 관리 저장 요청 -> 후속 listCalculationFormulas 조회에서 calculation_formula_versions 변경값이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다'
+        - 'business: 확정 규정버전 저장 요청 -> calculation_formula_versions 기존 상태가 변경되지 않는다'
+        - 'side-effect: 저장 성공 -> calculation_formula_versions 변경 메타정보 row가 남는다'
+
+  /api/admin/evaluation-rule-sets:
+    get:
+      operationId: listEvaluationRuleSets
+      summary: 업적평가 기준·점수규칙 관리 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1017, REQ-1018, REQ-1019, REQ-1020]
+    post:
+      operationId: saveEvaluationRuleSet
+      summary: 업적평가 기준·점수규칙 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveEvaluationRuleSetRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1017, REQ-1018, REQ-1019, REQ-1020]
+      x-business-rules:
+        - 작성중 규정버전 또는 권한 있는 기준정보만 저장한다
+        - 확정 평가결과를 소급 변경하지 않는다
+      x-side-effects:
+        - evaluation_rule_sets row와 변경 메타정보를 같은 transaction에 기록한다
+      x-state-transitions:
+        - 'evaluation_rule_sets: DRAFT -> DRAFT 또는 기준정보 ACTIVE 유지'
+      x-required-tests:
+        - 'happy: 유효한 업적평가 기준·점수규칙 관리 저장 요청 -> 후속 listEvaluationRuleSets 조회에서 evaluation_rule_sets 변경값이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다'
+        - 'business: 확정 규정버전 저장 요청 -> evaluation_rule_sets 기존 상태가 변경되지 않는다'
+        - 'side-effect: 저장 성공 -> evaluation_rule_sets 변경 메타정보 row가 남는다'
+
+  /api/admin/journal-indexing-infos:
+    get:
+      operationId: listJournalIndexingInfos
+      summary: 학술지·후보지 등재정보 관리 목록
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1025, REQ-1026, REQ-1027, REQ-1028]
+    post:
+      operationId: saveJournalIndexingInfo
+      summary: 학술지·후보지 등재정보 관리 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R08, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveJournalIndexingInfoRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1025, REQ-1026, REQ-1027, REQ-1028]
+      x-business-rules:
+        - 작성중 규정버전 또는 권한 있는 기준정보만 저장한다
+        - 확정 평가결과를 소급 변경하지 않는다
+      x-side-effects:
+        - journal_indexing_infos row와 변경 메타정보를 같은 transaction에 기록한다
+      x-state-transitions:
+        - 'journal_indexing_infos: DRAFT -> DRAFT 또는 기준정보 ACTIVE 유지'
+      x-required-tests:
+        - 'happy: 유효한 학술지·후보지 등재정보 관리 저장 요청 -> 후속 listJournalIndexingInfos 조회에서 journal_indexing_infos 변경값이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환된다'
+        - 'validation: 필수 field 누락 -> ApiError.fields에 누락 field가 표시된다'
+        - 'business: 확정 규정버전 저장 요청 -> journal_indexing_infos 기존 상태가 변경되지 않는다'
+        - 'side-effect: 저장 성공 -> journal_indexing_infos 변경 메타정보 row가 남는다'
+
+  /api/admin/appeal-periods:
+    get:
+      operationId: listAppealPeriods
+      summary: 이의신청기간 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: collegeOrganizationCode, in: query, schema: { type: string } }
+        - { name: departmentOrganizationCode, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1228, REQ-1230]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, collegeOrganizationCode, departmentOrganizationCode]
+
+  /api/admin/appeal-periods/save:
+    post:
+      operationId: saveAppealPeriod
+      summary: 이의신청기간 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveAppealPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1229, REQ-1230, REQ-1231]
+      x-business-rules:
+        - 동일 평가년도·소속 기준의 겹치는 활성 이의신청기간은 저장할 수 없다.
+        - 처리 담당자는 기존 사용자 중 해당 소속과 이의신청 처리 역할 범위에 속해야 한다.
+      x-side-effects:
+        - appeal_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+      x-state-transitions:
+        - 'appeal_period_settings: DRAFT 또는 ACTIVE -> ACTIVE'
+      x-required-tests:
+        - 'happy: 유효한 이의신청기간 저장 요청 -> 후속 listAppealPeriods 조회에서 appeal_period_settings.handler_user_id와 appeal_start_at이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환되고 appeal_period_settings row가 변경되지 않는다'
+        - 'validation: appealEndAt이 appealStartAt보다 빠른 요청 -> ApiError.fields.appealEndAt이 반환된다'
+        - 'business: 동일 평가년도·소속의 겹치는 활성 기간 저장 요청 -> 409 ApiError와 기존 appeal_period_settings row no-change가 확인된다'
+        - 'side-effect: 저장 성공 -> appeal_period_settings.updated_at 또는 변경 메타정보가 후속 조회에서 확인된다'
+
+  /api/admin/result-view-periods:
+    get:
+      operationId: listResultViewPeriods
+      summary: 결과조회기간 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: collegeOrganizationCode, in: query, schema: { type: string } }
+        - { name: departmentOrganizationCode, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1236, REQ-1238]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, collegeOrganizationCode, departmentOrganizationCode, visibilityScope]
+
+  /api/admin/result-view-periods/save:
+    post:
+      operationId: saveResultViewPeriod
+      summary: 결과조회기간 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveResultViewPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1237, REQ-1238, REQ-1239]
+      x-business-rules:
+        - 동일 평가년도·소속·공개범위의 겹치는 활성 결과조회기간은 저장할 수 없다.
+        - 개인평가 점수 생성·수정과 평가 확정·확정취소를 수행하지 않는다.
+      x-side-effects:
+        - result_view_period_settings row와 created_at/updated_at 변경 메타정보를 같은 transaction에 기록한다.
+      x-state-transitions:
+        - 'result_view_period_settings: DRAFT 또는 ACTIVE -> ACTIVE'
+      x-required-tests:
+        - 'happy: 유효한 결과조회기간 저장 요청 -> 후속 listResultViewPeriods 조회에서 result_view_period_settings.visibility_scope와 view_start_at이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환되고 result_view_period_settings row가 변경되지 않는다'
+        - 'validation: visibilityScope 누락 요청 -> ApiError.fields.visibilityScope가 반환된다'
+        - 'business: 동일 평가년도·소속·공개범위의 겹치는 활성 기간 저장 요청 -> 409 ApiError와 기존 result_view_period_settings row no-change가 확인된다'
+        - 'side-effect: 저장 성공 -> result_view_period_settings.updated_at 또는 변경 메타정보가 후속 조회에서 확인된다'
+
+  /api/admin/exception-periods:
+    get:
+      operationId: listExceptionPeriods
+      summary: 예외기간 조회
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: teacherUserId, in: query, schema: { type: integer, format: int64 } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: targetFunctionCode, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1244, REQ-1246]
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-filtering: [evaluationYear, teacherUserId, areaCode, targetFunctionCode]
+
+  /api/admin/exception-periods/save:
+    post:
+      operationId: saveExceptionPeriod
+      summary: 예외기간 저장
+      security:
+        - SessionCookie: []
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveExceptionPeriodRequest'
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1245, REQ-1246, REQ-1247]
+      x-business-rules:
+        - 동일 평가년도·교원·영역·기능의 겹치는 활성 예외기간은 저장할 수 없다.
+        - 평가확정 상태 데이터의 수정·삭제 금지는 예외기간보다 우선한다.
+      x-side-effects:
+        - exception_period_settings row와 approval_reason 및 변경 메타정보를 같은 transaction에 기록한다.
+      x-state-transitions:
+        - 'exception_period_settings: DRAFT 또는 ACTIVE -> ACTIVE'
+      x-required-tests:
+        - 'happy: 유효한 예외기간 저장 요청 -> 후속 listExceptionPeriods 조회에서 exception_period_settings.approval_reason과 exception_start_at이 확인된다'
+        - 'auth: R01 세션 저장 요청 -> 403 ApiError가 반환되고 exception_period_settings row가 변경되지 않는다'
+        - 'validation: approvalReason 누락 요청 -> ApiError.fields.approvalReason이 반환된다'
+        - 'business: 평가확정 상태 대상의 예외 수정 판정 요청 -> 409 ApiError와 대상 업적 상태 no-change가 확인된다'
+        - 'side-effect: 저장 성공 -> exception_period_settings.updated_at과 approval_reason 보존 값이 후속 조회에서 확인된다'
+
+  /api/business/evaluation-material-generations/preview:
+    get:
+      operationId: listEvaluationMaterialGenerationTargets
+      summary: 평가자료 생성대상 미리보기
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }, { name: evaluationYear, in: query, schema: { type: string } }, { name: areaCode, in: query, schema: { type: string } }, { name: targetUserId, in: query, schema: { type: string } } ]
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-related-requirements: [REQ-1461, REQ-1475, REQ-1476, REQ-1477, REQ-1478]
+
+  /api/business/evaluation-material-generations:
+    post:
+      operationId: createEvaluationMaterialGeneration
+      summary: 평가자료 일괄 생성
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationBatchActionRequest' } } } }
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-business-rules: [평가자료 일괄 생성은 요청 범위와 권한·상태 조건을 충족하는 대상에만 적용하고 원천자료와 기준정보를 변경하지 않는다.]
+      x-side-effects: [evaluation_batch_requests와 evaluation_batch_results에 batch_id, request_id, 처리자, 처리일시를 기록한다.]
+      x-state-transitions: ['REQUESTED -> QUEUED']
+      x-required-tests: ['happy: 유효한 평가자료 일괄 생성 요청 -> evaluation_batch_requests row가 생성되고 후속 조회에서 batch_id 또는 상태가 확인된다','auth: R01 교원 세션 요청 -> 403 ApiError와 evaluation_batch_requests no-change','validation: evaluationYear 누락 -> 400 ApiError.fields.evaluationYear 반환','business: 원천자료 또는 상태 범위 위반 요청 -> 409 ApiError와 대상 row no-change','side-effect: 성공 요청 -> evaluation_batch_results에 request_id와 결과건수가 기록된다']
+      x-related-requirements: [REQ-1462, REQ-1463, REQ-1468, REQ-1469, REQ-1470, REQ-1471, REQ-1472, REQ-1473, REQ-1474, REQ-1479, REQ-1480]
+
+  /api/business/evaluation-material-deletions/preview:
+    get:
+      operationId: listEvaluationMaterialDeletionTargets
+      summary: 평가자료 삭제대상 미리보기
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }, { name: evaluationYear, in: query, schema: { type: string } }, { name: areaCode, in: query, schema: { type: string } }, { name: targetUserId, in: query, schema: { type: string } } ]
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-related-requirements: [REQ-1481, REQ-1482, REQ-1490, REQ-1493, REQ-1494, REQ-1495, REQ-1496]
+
+  /api/business/evaluation-material-deletions:
+    post:
+      operationId: createEvaluationMaterialDeletion
+      summary: 평가자료 일괄 삭제
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationBatchActionRequest' } } } }
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-business-rules: [평가자료 일괄 삭제은 요청 범위와 권한·상태 조건을 충족하는 대상에만 적용하고 원천자료와 기준정보를 변경하지 않는다.]
+      x-side-effects: [evaluation_batch_requests와 evaluation_batch_results에 batch_id, request_id, 처리자, 처리일시를 기록한다.]
+      x-state-transitions: ['REQUESTED -> QUEUED']
+      x-required-tests: ['happy: 유효한 평가자료 일괄 삭제 요청 -> evaluation_batch_requests row가 생성되고 후속 조회에서 batch_id 또는 상태가 확인된다','auth: R01 교원 세션 요청 -> 403 ApiError와 evaluation_batch_requests no-change','validation: evaluationYear 누락 -> 400 ApiError.fields.evaluationYear 반환','business: 원천자료 또는 상태 범위 위반 요청 -> 409 ApiError와 대상 row no-change','side-effect: 성공 요청 -> evaluation_batch_results에 request_id와 결과건수가 기록된다']
+      x-related-requirements: [REQ-1481, REQ-1482, REQ-1483, REQ-1487, REQ-1488, REQ-1489, REQ-1490, REQ-1491, REQ-1492, REQ-1496, REQ-1497, REQ-1498, REQ-1499]
+
+  /api/business/score-recalculations/preview:
+    get:
+      operationId: listScoreRecalculationTargets
+      summary: 점수 재계산 전후 비교
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }, { name: evaluationYear, in: query, schema: { type: string } }, { name: areaCode, in: query, schema: { type: string } }, { name: targetUserId, in: query, schema: { type: string } } ]
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-related-requirements: [REQ-1500, REQ-1502, REQ-1511, REQ-1512, REQ-1513, REQ-1514]
+
+  /api/business/score-recalculations:
+    post:
+      operationId: createScoreRecalculation
+      summary: 점수 재계산 실행
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationBatchActionRequest' } } } }
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-business-rules: [점수 재계산 실행은 요청 범위와 권한·상태 조건을 충족하는 대상에만 적용하고 원천자료와 기준정보를 변경하지 않는다.]
+      x-side-effects: [score_calculation_generations와 evaluation_batch_results에 batch_id, request_id, 처리자, 처리일시를 기록한다.]
+      x-state-transitions: ['REQUESTED -> QUEUED']
+      x-required-tests: ['happy: 유효한 점수 재계산 실행 요청 -> score_calculation_generations row가 생성되고 후속 조회에서 batch_id 또는 상태가 확인된다','auth: R01 교원 세션 요청 -> 403 ApiError와 score_calculation_generations no-change','validation: evaluationYear 누락 -> 400 ApiError.fields.evaluationYear 반환','business: 원천자료 또는 상태 범위 위반 요청 -> 409 ApiError와 대상 row no-change','side-effect: 성공 요청 -> evaluation_batch_results에 request_id와 결과건수가 기록된다']
+      x-related-requirements: [REQ-1500, REQ-1501, REQ-1502, REQ-1506, REQ-1507, REQ-1508, REQ-1509, REQ-1510, REQ-1514, REQ-1515, REQ-1516, REQ-1517]
+
+  /api/business/final-evaluation-confirmations:
+    get:
+      operationId: listFinalEvaluationConfirmations
+      summary: 최종평가 상태 조회
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }, { name: evaluationYear, in: query, schema: { type: string } }, { name: areaCode, in: query, schema: { type: string } }, { name: targetUserId, in: query, schema: { type: string } } ]
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-related-requirements: [REQ-1518, REQ-1533, REQ-1534, REQ-1535]
+
+  /api/business/final-evaluation-confirmations/{targetId}/confirm:
+    post:
+      operationId: createFinalEvaluationConfirmation
+      summary: 최종평가 확정
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: targetId, in: path, required: true, schema: { type: string } } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationBatchActionRequest' } } } }
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-business-rules: [최종평가 확정은 요청 범위와 권한·상태 조건을 충족하는 대상에만 적용하고 원천자료와 기준정보를 변경하지 않는다.]
+      x-side-effects: [final_evaluation_confirmations와 evaluation_batch_results에 batch_id, request_id, 처리자, 처리일시를 기록한다.]
+      x-state-transitions: ['인증 -> 평가확정']
+      x-required-tests: ['happy: 유효한 최종평가 확정 요청 -> final_evaluation_confirmations row가 생성되고 후속 조회에서 batch_id 또는 상태가 확인된다','auth: R01 교원 세션 요청 -> 403 ApiError와 final_evaluation_confirmations no-change','validation: evaluationYear 누락 -> 400 ApiError.fields.evaluationYear 반환','business: 원천자료 또는 상태 범위 위반 요청 -> 409 ApiError와 대상 row no-change','side-effect: 성공 요청 -> evaluation_batch_results에 request_id와 결과건수가 기록된다']
+      x-related-requirements: [REQ-1519, REQ-1523, REQ-1524, REQ-1529, REQ-1531, REQ-1536, REQ-1538]
+
+  /api/business/final-evaluation-confirmations/{targetId}/cancel:
+    post:
+      operationId: updateFinalEvaluationConfirmationCancel
+      summary: 최종평가 확정취소
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: targetId, in: path, required: true, schema: { type: string } } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationBatchActionRequest' } } } }
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-business-rules: [최종평가 확정취소은 요청 범위와 권한·상태 조건을 충족하는 대상에만 적용하고 원천자료와 기준정보를 변경하지 않는다.]
+      x-side-effects: [final_evaluation_confirmations와 evaluation_batch_results에 batch_id, request_id, 처리자, 처리일시를 기록한다.]
+      x-state-transitions: ['평가확정 -> 인증']
+      x-required-tests: ['happy: 유효한 최종평가 확정취소 요청 -> final_evaluation_confirmations row가 생성되고 후속 조회에서 batch_id 또는 상태가 확인된다','auth: R01 교원 세션 요청 -> 403 ApiError와 final_evaluation_confirmations no-change','validation: evaluationYear 누락 -> 400 ApiError.fields.evaluationYear 반환','business: 원천자료 또는 상태 범위 위반 요청 -> 409 ApiError와 대상 row no-change','side-effect: 성공 요청 -> evaluation_batch_results에 request_id와 결과건수가 기록된다']
+      x-related-requirements: [REQ-1520, REQ-1525, REQ-1526, REQ-1527, REQ-1528, REQ-1532, REQ-1534, REQ-1535, REQ-1537]
+
+  /api/business/evaluation-batch-results:
+    get:
+      operationId: listEvaluationBatchResults
+      summary: 평가 일괄처리 결과
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }, { name: batchId, in: query, schema: { type: string } }, { name: jobType, in: query, schema: { type: string } }, { name: targetCondition, in: query, schema: { type: string } } ]
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-related-requirements: [REQ-1463, REQ-1470, REQ-1471, REQ-1539, REQ-1540, REQ-1541, REQ-1542, REQ-1543, REQ-1544, REQ-1545, REQ-1547, REQ-1548, REQ-1550, REQ-1551, REQ-1552, REQ-1553]
+
+  /api/business/evaluation-batch-results/{batchId}/errors:
+    get:
+      operationId: listEvaluationBatchResultErrors
+      summary: 평가 일괄처리 오류
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      parameters: [ { name: batchId, in: path, required: true, schema: { type: string } }, { name: page, in: query, schema: { type: integer, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } } ]
+      responses: { '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-pagination: { pageParam: page, sizeParam: size, allowedSizes: [20, 50, 100] }
+      x-related-requirements: [REQ-1540, REQ-1546, REQ-1547, REQ-1549, REQ-1554]
+
+
+    BusinessTransitionRequest:
+      type: object
+      required: [actionType]
+      properties:
+        actionType: { type: string }
+        reasonCode: { type: string }
+        opinion: { type: string }
+        evidenceRef: { type: string }
+    ObjectionOpinionRequest:
+      type: object
+      required: [decisionResult, reviewerOpinion]
+      properties:
+        decisionResult: { type: string }
+        reviewerOpinion: { type: string }
+        reasonCode: { type: string }
+    ApiResponse:
+      type: object
+      required: [success, meta]
+      properties:
+        success: { type: boolean }
+        data: { nullable: true }
+        meta: { type: object, additionalProperties: true }
+    ApiError:
+      type: object
+      required: [success, meta]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        fields: { type: object, additionalProperties: true }
+        meta: { type: object, additionalProperties: true }
 
 components:
   securitySchemes:
@@ -5640,6 +6570,110 @@ components:
       name: SESSION
       description: HttpOnly SameSite=Lax session cookie
   schemas:
+    EvaluationBatchActionRequest:
+      type: object
+      required: [evaluationYear]
+      properties:
+        evaluationYear: { type: string }
+        areaCode: { type: string }
+        organizationCode: { type: string }
+        targetUserId: { type: string }
+        generationBatchId: { type: string }
+        deleteReason: { type: string }
+        formulaVersionId: { type: string }
+        actionType: { type: string }
+        cancelReason: { type: string }
+
+    SaveEvaluationAreaRequest:
+      type: object
+      required: [ruleVersionId, areaCode, areaName, sortOrder, activeYn, periodApplyMethod]
+      properties: { ruleVersionId: { type: integer, format: int64 }, areaCode: { type: string }, areaName: { type: string }, sortOrder: { type: integer }, activeYn: { type: string, enum: [Y, N] }, periodApplyMethod: { type: string } }
+
+    SaveEvaluationItemRequest:
+      type: object
+      required: [ruleVersionId, areaCode, itemCode, itemName, scoreApplyMethod, activeYn]
+      properties: { ruleVersionId: { type: integer, format: int64 }, areaCode: { type: string }, itemCode: { type: string }, itemName: { type: string }, parentItemCode: { type: string }, scoreApplyMethod: { type: string }, activeYn: { type: string, enum: [Y, N] } }
+
+    SaveEvaluationElementRequest:
+      type: object
+      required: [ruleVersionId, evaluationYear, itemCode, elementCode, elementName, sortOrder, activeYn]
+      properties: { ruleVersionId: { type: integer, format: int64 }, evaluationYear: { type: string }, itemCode: { type: string }, elementCode: { type: string }, elementName: { type: string }, sortOrder: { type: integer }, activeYn: { type: string, enum: [Y, N] } }
+
+    SaveEvaluationManagementItemRequest:
+      type: object
+      required: [ruleVersionId, elementCode, managementItemCode, managementItemName, teacherEditableYn, requiredYn, dataType, sortOrder, activeYn]
+      properties: { ruleVersionId: { type: integer, format: int64 }, elementCode: { type: string }, managementItemCode: { type: string }, managementItemName: { type: string }, teacherEditableYn: { type: string, enum: [Y, N] }, requiredYn: { type: string, enum: [Y, N] }, dataType: { type: string }, sortOrder: { type: integer }, activeYn: { type: string, enum: [Y, N] } }
+
+    SaveAreaElementSystemRequest:
+      type: object
+      required: [ruleVersionId, areaCode, itemCode, elementCode, targetScope, activeYn]
+      properties: { ruleVersionId: { type: integer, format: int64 }, areaCode: { type: string }, itemCode: { type: string }, elementCode: { type: string }, targetScope: { type: string }, activeYn: { type: string, enum: [Y, N] } }
+
+    SaveEvaluationScoreRequest:
+      type: object
+      required: [ruleVersionId, changeReason]
+      properties: { ruleVersionId: { type: integer, format: int64 }, changeReason: { type: string }, payload: { type: object, additionalProperties: true } }
+
+    SaveParticipationRateRequest:
+      type: object
+      required: [ruleVersionId, changeReason]
+      properties: { ruleVersionId: { type: integer, format: int64 }, changeReason: { type: string }, payload: { type: object, additionalProperties: true } }
+
+    SaveCalculationFormulaRequest:
+      type: object
+      required: [ruleVersionId, changeReason]
+      properties: { ruleVersionId: { type: integer, format: int64 }, changeReason: { type: string }, payload: { type: object, additionalProperties: true } }
+
+    SaveEvaluationRuleSetRequest:
+      type: object
+      required: [ruleVersionId, changeReason]
+      properties: { ruleVersionId: { type: integer, format: int64 }, changeReason: { type: string }, payload: { type: object, additionalProperties: true } }
+
+    SaveJournalIndexingInfoRequest:
+      type: object
+      required: [ruleVersionId, changeReason]
+      properties: { ruleVersionId: { type: integer, format: int64 }, changeReason: { type: string }, payload: { type: object, additionalProperties: true } }
+
+    SaveAppealPeriodRequest:
+      type: object
+      required: [evaluationYear, collegeOrganizationCode, appealStartAt, appealEndAt, handlerUserId, activeYn, changeReason]
+      properties:
+        evaluationYear: { type: string }
+        collegeOrganizationCode: { type: string }
+        departmentOrganizationCode: { type: string }
+        appealStartAt: { type: string, format: date-time }
+        appealEndAt: { type: string, format: date-time }
+        handlerUserId: { type: integer, format: int64 }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+
+    SaveResultViewPeriodRequest:
+      type: object
+      required: [evaluationYear, collegeOrganizationCode, viewStartAt, viewEndAt, visibilityScope, activeYn, changeReason]
+      properties:
+        evaluationYear: { type: string }
+        collegeOrganizationCode: { type: string }
+        departmentOrganizationCode: { type: string }
+        viewStartAt: { type: string, format: date-time }
+        viewEndAt: { type: string, format: date-time }
+        visibilityScope: { type: string }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+
+    SaveExceptionPeriodRequest:
+      type: object
+      required: [evaluationYear, teacherUserId, areaCode, targetFunctionCode, exceptionStartAt, exceptionEndAt, approvalReason, activeYn, changeReason]
+      properties:
+        evaluationYear: { type: string }
+        teacherUserId: { type: integer, format: int64 }
+        areaCode: { type: string }
+        targetFunctionCode: { type: string }
+        exceptionStartAt: { type: string, format: date-time }
+        exceptionEndAt: { type: string, format: date-time }
+        approvalReason: { type: string }
+        activeYn: { type: string, enum: [Y, N] }
+        changeReason: { type: string }
+
     BusinessTransitionRequest:
       type: object
       required:
@@ -6523,292 +7557,3 @@ x-requirement-accounting:
   - canonical_id: REQ-102
     status: covered
     evidence: getCurrentUser, getHealth, getMenuTree, login
-x-uncovered-requirements:
-  - {canonical_id: REQ-560, status: data-constraint, evidence: data-model.md 공통 제약 }
-  - {canonical_id: REQ-561, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-562, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-563, status: covered, evidence: contracts/openapi.yaml x-uncovered-requirements }
-  - {canonical_id: REQ-564, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-565, status: covered, evidence: contracts/openapi.yaml x-uncovered-requirements }
-  - {canonical_id: REQ-566, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-567, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-568, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-569, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-570, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-573, status: covered, evidence: ui-design.md 공통 화면 상태/Screen Action Mapping }
-  - {canonical_id: REQ-574, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-575, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-576, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-577, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-578, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-579, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-586, status: covered, evidence: downloadUploadTemplate }
-  - {canonical_id: REQ-587, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-588, status: data-constraint, evidence: data-model.md 공통 제약 }
-  - {canonical_id: REQ-589, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-590, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-591, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-592, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-593, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-594, status: non-functional, evidence: plan.md 아키텍처/검증 제약 }
-  - {canonical_id: REQ-598, status: data-constraint, evidence: excel_upload_templates }
-  - {canonical_id: REQ-599, status: data-constraint, evidence: excel_upload_templates }
-  - {canonical_id: REQ-600, status: out-of-scope, evidence: spec.md 범위 제외 선언 }
-  - {canonical_id: REQ-607, status: out-of-scope, evidence: spec.md 범위 제외 선언 }
-  - {canonical_id: REQ-620, status: out-of-scope, evidence: spec.md 범위 제외 선언 }
-  - {canonical_id: REQ-621, status: out-of-scope, evidence: spec.md 범위 제외 선언 }
-  - {canonical_id: REQ-175, status: data-constraint, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-176, status: out-of-scope, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-177, status: out-of-scope, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-178, status: data-constraint, evidence: 역할 참조은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-179, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-180, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-181, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-182, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-183, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-184, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-185, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-186, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-187, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-188, status: out-of-scope, evidence: 범위 경계은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-189, status: data-constraint, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-190, status: data-constraint, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-191, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-192, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-193, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-194, status: non-functional, evidence: 미확정 범위은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-201, status: data-constraint, evidence: 필수 입력 항목이 미입력된 경우 저장을 차단해야 한은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-202, status: data-constraint, evidence: 삭제 실행 전에 확인 메시지를 제공해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-203, status: data-constraint, evidence: 저장 실행 전에 확인 메시지를 제공해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-204, status: data-constraint, evidence: 일괄처리 실행 전에 확인 메시지를 제공해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-205, status: data-constraint, evidence: 삭제 처리 후 결과를 안내해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-206, status: data-constraint, evidence: 저장 처리 후 결과를 안내해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-207, status: data-constraint, evidence: 일괄처리 처리 후 결과를 안내해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-208, status: data-constraint, evidence: 화면 레이아웃을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-209, status: data-constraint, evidence: 화면 색상을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-210, status: data-constraint, evidence: 화면 글꼴을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-211, status: data-constraint, evidence: 버튼을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-212, status: data-constraint, evidence: 아이콘을 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-213, status: data-constraint, evidence: 용어를 표준화하여 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-214, status: data-constraint, evidence: 오류 발생 시 사용자가 조치할 수 있는 안내 문구를은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-215, status: data-constraint, evidence: 파일의 저장 경로를 외부에 노출하지 않아야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-216, status: data-constraint, evidence: 실제 파일명을 외부에 노출하지 않아야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-217, status: data-constraint, evidence: 원본 파일명을 별도로 보존해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-218, status: data-constraint, evidence: 첨부파일 다운로드 시 다운로드 권한을 재검증해야 한은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-219, status: data-constraint, evidence: 오류코드 체계를 수립해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-220, status: data-constraint, evidence: 사용자 안내 문구와 시스템 로그를 구분하여 관리해야은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-221, status: non-functional, evidence: 한국형 웹 콘텐츠 접근성 지침 2.1을 준수해야 한은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-222, status: data-constraint, evidence: 임시 데이터를 사용 완료 후 삭제해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-223, status: non-functional, evidence: 모든 질의는 평균 응답시간 기준 3초 이내에 결과를은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-224, status: non-functional, evidence: 정상 상태에서 사용자의 건별 질의 요청을 5초 이내은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-225, status: non-functional, evidence: 정상 상태에서 처리한 건별 질의 결과를 화면에 표시은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-226, status: non-functional, evidence: 주요 페이지의 용량을 3MB 이하로 최적화해야 한다은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-227, status: non-functional, evidence: 소프트웨어 개발보안 가이드에 따라 시큐어 코딩을 적은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-228, status: non-functional, evidence: 웹 취약점을 제거해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-229, status: non-functional, evidence: 개인정보 안전성 확보조치 기준에 따라 개인정보를 보은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-230, status: non-functional, evidence: 구간 암호화를 적용해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-231, status: non-functional, evidence: 태블릿의 iPadOS 환경에서 정상 동작을 확인해야은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-232, status: non-functional, evidence: 태블릿의 Android 환경에서 정상 동작을 확인해은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-233, status: non-functional, evidence: 데스크탑 및 랩탑의 Windows 환경에서 정상 동은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-234, status: non-functional, evidence: 데스크탑 및 랩탑의 macOS 환경에서 정상 동작을은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-235, status: non-functional, evidence: Edge 브라우저에서 정상 동작을 확인해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-236, status: non-functional, evidence: Chrome 브라우저에서 정상 동작을 확인해야 한다은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-237, status: non-functional, evidence: Safari 브라우저에서 정상 동작을 확인해야 한다은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-238, status: non-functional, evidence: Opera 브라우저에서 정상 동작을 확인해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-239, status: non-functional, evidence: Whale 브라우저에서 정상 동작을 확인해야 한다.은 OpenAPI operation이 아니라 공통 제약 또는 제외 범위로 검증한다}
-  - {canonical_id: REQ-167, status: out-of-scope, evidence: 기능 권한 API는 메뉴 진입 권한과 데이터 범위 권한 설정 payload를 받지 않는다}
-  - {canonical_id: REQ-168, status: out-of-scope, evidence: 기간별 권한 API는 기존 businessPeriodId만 연결하고 평가연도·영역·소속 기준 생성 payload를 받지 않는다}
-  - {canonical_id: REQ-172, status: out-of-scope, evidence: 신규 API는 R01~R09를 참조만 하며 roles seed를 생성하거나 이름 변경하지 않는다}
-  - {canonical_id: REQ-173, status: out-of-scope, evidence: 신규 API는 CMN-FR-009 데이터 범위 결과를 입력으로 참조하고 판정 규칙을 재정의하지 않는다}
-  - {canonical_id: REQ-174, status: out-of-scope, evidence: 신규 API는 workDataRef만 저장하고 교수업적평가·학술지원금 개별 업무규칙을 정의하지 않는다}
-  - {canonical_id: REQ-110, status: data-constraint, evidence: 기준정보 복사 대상은 data-model/prepareBaseYearStandards 이력으로 검증한다}
-  - {canonical_id: REQ-123, status: data-constraint, evidence: common_settings.setting_key UNIQUE 제약으로 검증한다}
-  - {canonical_id: REQ-124, status: non-functional, evidence: 세션 인증방식과 대량처리 구현방식은 architecture boundary로만 제한한다}
-  - {canonical_id: REQ-360, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-361, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-362, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-363, status: non-functional, evidence: 역할 참조은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-364, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-365, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-366, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-367, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-368, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-369, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-370, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-371, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-372, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-373, status: out-of-scope, evidence: 범위 경계은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-374, status: covered, evidence: REQ-374 OQ로 보존 - Excel에 없는 운영기관의 로그인 인증방식은 확정하지 않는다.}
-  - {canonical_id: REQ-375, status: covered, evidence: REQ-375 OQ로 보존 - Excel에 없는 실제 외부연계 규격은 확정하지 않는다.}
-  - {canonical_id: REQ-376, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-377, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-378, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-379, status: non-functional, evidence: 기존 설계 준수은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-380, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-381, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-382, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-384, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-385, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-386, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-387, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-388, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-389, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-390, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-391, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-392, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-393, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-394, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-395, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-396, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-397, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-398, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-399, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-400, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-401, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-402, status: non-functional, evidence: IFC-106은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-403, status: non-functional, evidence: DAR-107은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-404, status: non-functional, evidence: PER-02은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-405, status: non-functional, evidence: PER-03은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-406, status: non-functional, evidence: PER-03은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-407, status: non-functional, evidence: PER-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-408, status: non-functional, evidence: SER-02은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-411, status: non-functional, evidence: SER-03은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-412, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-413, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-414, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-415, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-417, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-419, status: non-functional, evidence: QUR-04은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-440, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-442, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-443, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-444, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-445, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-446, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-447, status: out-of-scope, evidence: 배치 정의 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-469, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-470, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-471, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-472, status: out-of-scope, evidence: 배치 실행 관리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-495, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-496, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-497, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-498, status: out-of-scope, evidence: 배치 결과 조회은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-517, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-518, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-519, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-523, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-524, status: out-of-scope, evidence: 배치 오류 재처리은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-525, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-526, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-527, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-528, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-529, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-530, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-531, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-532, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-533, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-534, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-535, status: out-of-scope, evidence: 공통 적용 범위은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-536, status: out-of-scope, evidence: 공통 적용 범위은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-537, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-538, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-539, status: non-functional, evidence: 공통 적용 범위은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-540, status: non-functional, evidence: 추적 규칙은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-541, status: out-of-scope, evidence: 추적 규칙은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-542, status: non-functional, evidence: 추적 규칙은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-543, status: non-functional, evidence: 추적 규칙은 plan.md 아키텍처/검증 제약으로 적용된다.}
-  - {canonical_id: REQ-544, status: out-of-scope, evidence: 추적 규칙은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-545, status: out-of-scope, evidence: 추적 규칙은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-546, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-547, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-548, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-549, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-550, status: screen-only, evidence: SCR-BATCH-* 화면 공통 UI 계약 또는 plan.md 검증 정책}
-  - {canonical_id: REQ-551, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-552, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-553, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-554, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-555, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-556, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-557, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-558, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-559, status: out-of-scope, evidence: 변경 범위 선언은 변경 범위 제외 선언으로 spec.md 범위 경계에 보존된다.}
-  - {canonical_id: REQ-622, status: data-constraint, evidence: "data-model.md 제약: 역할 R01~R09 기존 정의 참조 (REQ-622)" }
-  - {canonical_id: REQ-623, status: data-constraint, evidence: "data-model.md 제약: 역할 R01~R09 신규 정의 금지 (REQ-623)" }
-  - {canonical_id: REQ-624, status: data-constraint, evidence: "data-model.md 제약: 역할 R01~R09 이름 변경 금지 (REQ-624)" }
-  - {canonical_id: REQ-625, status: data-constraint, evidence: "data-model.md 제약: 기존 역할코드 그대로 참조 (REQ-625)" }
-  - {canonical_id: REQ-626, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-626)" }
-  - {canonical_id: REQ-627, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-627)" }
-  - {canonical_id: REQ-628, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-628)" }
-  - {canonical_id: REQ-629, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-629)" }
-  - {canonical_id: REQ-630, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-630)" }
-  - {canonical_id: REQ-631, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-631)" }
-  - {canonical_id: REQ-632, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-632)" }
-  - {canonical_id: REQ-633, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-633)" }
-  - {canonical_id: REQ-634, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-634)" }
-  - {canonical_id: REQ-635, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-635)" }
-  - {canonical_id: REQ-636, status: out-of-scope, evidence: "범위/OQ 보존: 범위 경계은 구현 surface를 만들지 않음 (REQ-636)" }
-  - {canonical_id: REQ-637, status: out-of-scope, evidence: "범위/OQ 보존: 미확정 범위은 구현 surface를 만들지 않음 (REQ-637)" }
-  - {canonical_id: REQ-638, status: out-of-scope, evidence: "범위/OQ 보존: 미확정 범위은 구현 surface를 만들지 않음 (REQ-638)" }
-  - {canonical_id: REQ-639, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 기존 설계 준수 (REQ-639)" }
-  - {canonical_id: REQ-640, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 기존 설계 준수 (REQ-640)" }
-  - {canonical_id: REQ-641, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 기존 설계 준수 (REQ-641)" }
-  - {canonical_id: REQ-642, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 기존 설계 준수 (REQ-642)" }
-  - {canonical_id: REQ-643, status: data-constraint, evidence: "data-model.md 제약: 개인정보 및 평가 결과에 대한 조회 이력을 기록·보관해야 한다. (REQ-643)" }
-  - {canonical_id: REQ-647, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 필수 입력 항목은 화면에 표시해야 한다. (REQ-647)" }
-  - {canonical_id: REQ-648, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 필수 입력 항목이 미입력된 경우 저장을 차단해야 한다. (REQ-648)" }
-  - {canonical_id: REQ-649, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 삭제 실행 전에 확인 메시지를 제공해야 한다. (REQ-649)" }
-  - {canonical_id: REQ-650, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 저장 실행 전에 확인 메시지를 제공해야 한다. (REQ-650)" }
-  - {canonical_id: REQ-651, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 일괄처리 실행 전에 확인 메시지를 제공해야 한다. (REQ-651)" }
-  - {canonical_id: REQ-652, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 삭제 처리 후 결과를 안내해야 한다. (REQ-652)" }
-  - {canonical_id: REQ-653, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 저장 처리 후 결과를 안내해야 한다. (REQ-653)" }
-  - {canonical_id: REQ-654, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 일괄처리 처리 후 결과를 안내해야 한다. (REQ-654)" }
-  - {canonical_id: REQ-655, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 화면 레이아웃을 표준화하여 적용해야 한다. (REQ-655)" }
-  - {canonical_id: REQ-656, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 화면 색상을 표준화하여 적용해야 한다. (REQ-656)" }
-  - {canonical_id: REQ-657, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 화면 글꼴을 표준화하여 적용해야 한다. (REQ-657)" }
-  - {canonical_id: REQ-658, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 버튼을 표준화하여 적용해야 한다. (REQ-658)" }
-  - {canonical_id: REQ-659, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 아이콘을 표준화하여 적용해야 한다. (REQ-659)" }
-  - {canonical_id: REQ-660, status: screen-only, evidence: "ui-design.md 공통 UI 계약: 용어를 표준화하여 적용해야 한다. (REQ-660)" }
-  - {canonical_id: REQ-664, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 한국형 웹 콘텐츠 접근성 지침 2.1을 준수해야 한다. (REQ-664)" }
-  - {canonical_id: REQ-665, status: data-constraint, evidence: "data-model.md 제약: 임시 데이터는 사용 완료 후 삭제해야 한다. (REQ-665)" }
-  - {canonical_id: REQ-666, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 모든 질의는 평균 응답시간 기준 3초 이내에 결과를 표시해야 한다. (REQ-666)" }
-  - {canonical_id: REQ-667, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 정상 상태에서 사용자의 건별 질의 요청을 5초 이내에 처리하여 화면에 표 (REQ-667)" }
-  - {canonical_id: REQ-668, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 주요 페이지의 용량은 3MB 이하로 최적화해야 한다. (REQ-668)" }
-  - {canonical_id: REQ-669, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 「소프트웨어 개발보안 가이드」에 따라 시큐어 코딩을 적용하고 웹 취약점을 (REQ-669)" }
-  - {canonical_id: REQ-670, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 개인정보 안전성 확보조치 기준에 따라 개인정보를 보호하고 구간 암호화를  (REQ-670)" }
-  - {canonical_id: REQ-671, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 태블릿(iPadOS, Android) 및 데스크탑·랩탑(Windows,  (REQ-671)" }
-  - {canonical_id: REQ-672, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-672)" }
-  - {canonical_id: REQ-673, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-673)" }
-  - {canonical_id: REQ-674, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-674)" }
-  - {canonical_id: REQ-675, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-675)" }
-  - {canonical_id: REQ-676, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-676)" }
-  - {canonical_id: REQ-677, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-677)" }
-  - {canonical_id: REQ-678, status: non-functional, evidence: "plan.md 아키텍처/검증 제약: 인증과 SSO 경계 (REQ-678)" }
-  - {canonical_id: REQ-685, status: out-of-scope, evidence: "범위/OQ 보존: 사용자 계정·권한 변경 제외은 구현 surface를 만들지 않음 (REQ-685)" }
-  - {canonical_id: REQ-686, status: out-of-scope, evidence: "범위/OQ 보존: 인증방식·만료정책 설정 제외은 구현 surface를 만들지 않음 (REQ-686)" }
-  - {canonical_id: REQ-691, status: out-of-scope, evidence: "범위/OQ 보존: 종료이력 화면 처리 제외은 구현 surface를 만들지 않음 (REQ-691)" }
-  - {canonical_id: REQ-696, status: data-constraint, evidence: "data-model.md 제약: 업무처리 로그 불변 기록 (REQ-696)" }
-  - {canonical_id: REQ-700, status: out-of-scope, evidence: "범위/OQ 보존: 감사로그 원업무 재실행 제외은 구현 surface를 만들지 않음 (REQ-700)" }
-  - {canonical_id: REQ-710, status: out-of-scope, evidence: "범위/OQ 보존: 로그 화면 권한 변경 제외은 구현 surface를 만들지 않음 (REQ-710)" }
-x-shared-contract-reference:
-  technology_stack:
-    backend: Java 17 + Spring Boot 3.3.x + Maven + MyBatis + PostgreSQL 16
-    frontend: React 18 + TypeScript + Vite 5
-    infrastructure: Docker Compose
-  version_bom:
-    spring_boot: 3.3.x
-    node: 20.x
-    vite: 5.x
-    react: 18.x
-    postgres: 16.x
-  required_outputs:
-    backend_dir: backend
-    frontend_dir: frontend
-    compose_file: infra/docker-compose.yml
-    health_endpoint: /api/health
-  execution_persistence:
-    execution_model: imperative
-    persistence_technology: mybatis
-    access_mode: blocking
-  api_base_path_policy: 브라우저 코드는 localhost 또는 Docker service name이 아닌 상대경로 /api/...만 사용한다.

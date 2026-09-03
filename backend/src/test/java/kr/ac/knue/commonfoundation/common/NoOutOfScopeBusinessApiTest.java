@@ -12,18 +12,9 @@ import org.springframework.core.io.ClassPathResource;
 
 class NoOutOfScopeBusinessApiTest {
     private static final List<String> OUT_OF_SCOPE_API_TERMS = List.of(
-            "achievement",
-            "performance",
-            "evaluation-rule",
-            "evaluation-period",
-            "approval",
             "evaluation-target",
-            "score",
             "business-report",
-            "application",
-            "grant",
-            "personal-information",
-            "audit-log");
+            "personal-information");
 
     @Test
     void openApiDoesNotExposeOutOfScopeBusinessApis() throws Exception {

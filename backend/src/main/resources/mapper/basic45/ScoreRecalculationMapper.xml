@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic45.ScoreRecalculationMapper">
+    <resultMap id="ScoreRecalculationTargetMap" type="kr.ac.knue.commonfoundation.basic45.ScoreRecalculationTarget">
+        <constructor>
+            <arg column="evaluationMaterialId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="generationBatchId" javaType="string"/>
+            <arg column="formulaVersionId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="formulaCode" javaType="string"/>
+            <arg column="beforeScore" javaType="java.math.BigDecimal"/>
+            <arg column="afterScore" javaType="java.math.BigDecimal"/>
+            <arg column="nextGenerationNo" javaType="int"/>
+            <arg column="materialStatus" javaType="string"/>
+            <arg column="achievementTitle" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="recalculationTargetProjection">
+        select em.evaluation_material_id as "evaluationMaterialId",
+               em.evaluation_year as "evaluationYear",
+               em.area_code as "areaCode",
+               em.target_user_id as "targetUserId",
+               em.source_achievement_id as "sourceAchievementId",
+               em.generation_batch_id as "generationBatchId",
+               cfv.formula_version_id as "formulaVersionId",
+               cfv.rule_version_id as "ruleVersionId",
+               cfv.formula_code as "formulaCode",
+               em.calculated_score as "beforeScore",
+               greatest(
+                   coalesce(cfv.lower_bound_score, -999999),
+                   least(
+                       coalesce(cfv.upper_bound_score, 999999),
+                       coalesce(score_source.base_score, em.calculated_score)
+                   )
+               )::numeric(10,2) as "afterScore",
+               coalesce((
+                   select max(scg.generation_no) + 1
+                   from score_calculation_generations scg
+                   where scg.evaluation_material_id = em.evaluation_material_id
+               ), 1) as "nextGenerationNo",
+               em.material_status as "materialStatus",
+               coalesce(em.material_snapshot_json -&gt;&gt; 'achievementTitle', concat('평가자료 ', em.evaluation_material_id)) as "achievementTitle"
+        from evaluation_materials em
+        join calculation_formula_versions cfv on cfv.active_yn = 'Y'
+        left join lateral (
+            select esr.base_score
+            from evaluation_score_rules esr
+            join evaluation_management_items emi on emi.management_item_id = esr.management_item_id
+            join evaluation_elements ee on ee.element_id = emi.element_id
+            join evaluation_items ei on ei.item_id = ee.item_id
+            join evaluation_areas ea on ea.area_id = ei.area_id
+            where esr.rule_version_id = cfv.rule_version_id
+              and esr.evaluation_year = em.evaluation_year
+              and ea.area_code = em.area_code
+              and esr.active_yn = 'Y'
+            order by esr.score_rule_id
+            limit 1
+        ) score_source on true
+        where em.deleted_yn = 'N'
+          and em.material_status = '인증'
+          <if test="criteria.normalizedEvaluationYear != null">
+              and em.evaluation_year = #{criteria.normalizedEvaluationYear}
+          </if>
+          <if test="criteria.normalizedAreaCode != null">
+              and em.area_code = #{criteria.normalizedAreaCode}
+          </if>
+          <if test="criteria.normalizedTargetUserId != null">
+              and em.target_user_id = #{criteria.normalizedTargetUserId}
+          </if>
+          <if test="criteria.normalizedFormulaVersionId != null">
+              and cfv.formula_version_id = #{criteria.normalizedFormulaVersionId}
+          </if>
+    </sql>
+
+    <select id="listRecalculationTargets" resultMap="ScoreRecalculationTargetMap">
+        <include refid="recalculationTargetProjection"/>
+        order by "evaluationYear" desc, "areaCode", "targetUserId", "evaluationMaterialId"
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countRecalculationTargets" resultType="long">
+        select count(*)
+        from (
+            <include refid="recalculationTargetProjection"/>
+        ) recalculation_targets
+    </select>
+
+    <select id="nextRecalculationSequence" resultType="long">
+        select count(*) + 1
+        from evaluation_batch_requests
+        where job_type = 'RECALCULATION'
+    </select>
+
+    <insert id="insertBatchRequest">
+        insert into evaluation_batch_requests (batch_id, job_type, target_condition_json, request_user_id, request_status, request_id)
+        values (#{batchId}, #{jobType}, #{targetConditionJson}::jsonb, #{requestUserId}, 'COMPLETED', #{requestId})
+    </insert>
+
+    <insert id="insertScoreCalculationGeneration">
+        insert into score_calculation_generations (evaluation_material_id, formula_version_id, generation_no, before_score,
+            after_score, calculated_score, rule_version_id, calculation_basis_json, recalculation_batch_id, request_id, calculated_by)
+        values (#{target.evaluationMaterialId}, #{target.formulaVersionId}, #{target.nextGenerationNo}, #{target.beforeScore},
+            #{target.afterScore}, #{target.afterScore}, #{target.ruleVersionId},
+            jsonb_build_object(
+                'sourceAchievementId', #{target.sourceAchievementId},
+                'formulaVersionId', #{target.formulaVersionId},
+                'formulaCode', #{target.formulaCode},
+                'beforeScore', #{target.beforeScore},
+                'afterScore', #{target.afterScore},
+                'basis', 'evaluation_score_rules base_score with formula bounds'
+            ),
+            #{batchId}, #{requestId}, #{requestUserId})
+    </insert>
+
+    <update id="updateEvaluationMaterialScore">
+        update evaluation_materials
+        set calculated_score = #{target.afterScore},
+            request_id = #{requestId},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{requestUserId}
+        where evaluation_material_id = #{target.evaluationMaterialId}
+          and deleted_yn = 'N'
+          and material_status = '인증'
+    </update>
+
+    <insert id="insertBatchResult">
+        insert into evaluation_batch_results (batch_id, job_type, total_count, success_count, failure_count, excluded_count, error_detail_json, request_id)
+        values (#{batchId}, #{jobType}, #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, '[]'::jsonb, #{requestId})
+        on conflict (batch_id) do update set
+            total_count = excluded.total_count,
+            success_count = excluded.success_count,
+            failure_count = excluded.failure_count,
+            excluded_count = excluded.excluded_count,
+            error_detail_json = excluded.error_detail_json,
+            request_id = excluded.request_id
+    </insert>
+</mapper>

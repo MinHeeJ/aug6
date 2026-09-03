@@ -10,10 +10,10 @@
             <arg column="organizationCode" javaType="string"/>
             <arg column="targetUserId" javaType="java.lang.Long"/>
             <arg column="targetConditionSummary" javaType="string"/>
-            <arg column="totalCount" javaType="integer"/>
-            <arg column="successCount" javaType="integer"/>
-            <arg column="failureCount" javaType="integer"/>
-            <arg column="excludedCount" javaType="integer"/>
+            <arg column="totalCount" javaType="_int"/>
+            <arg column="successCount" javaType="_int"/>
+            <arg column="failureCount" javaType="_int"/>
+            <arg column="excludedCount" javaType="_int"/>
             <arg column="jobStatus" javaType="string"/>
             <arg column="requestedBy" javaType="java.lang.Long"/>
             <arg column="requestedAt" javaType="java.time.LocalDateTime"/>
@@ -50,9 +50,9 @@
                    case when job.area_code is not null then '영역 ' || job.area_code end,
                    case when job.organization_code is not null then '조직 ' || job.organization_code end,
                    case when job.target_user_id is not null then '대상자 ' || job.target_user_id end,
-                   case when job.target_condition_json ->> 'formulaVersion' is not null then '산식버전 ' || job.target_condition_json ->> 'formulaVersion' end,
-                   case when job.target_condition_json ->> 'previewToken' is not null then '미리보기 ' || job.target_condition_json ->> 'previewToken' end,
-                   case when job.target_condition_json ->> 'transition' is not null then '전이 ' || job.target_condition_json ->> 'transition' end
+                   case when job.target_condition_json ->> 'formulaVersion' is not null then 'Formula version ' || (job.target_condition_json ->> 'formulaVersion') end,
+                   case when job.target_condition_json ->> 'previewToken' is not null then 'Preview ' || (job.target_condition_json ->> 'previewToken') end,
+                   case when job.target_condition_json ->> 'transition' is not null then 'Transition ' || (job.target_condition_json ->> 'transition') end
                ) as "targetConditionSummary",
                job.total_count as "totalCount",
                job.success_count as "successCount",

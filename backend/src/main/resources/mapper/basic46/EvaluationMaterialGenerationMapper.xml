@@ -113,7 +113,7 @@
         values (#{batchJobId}, 'GENERATION', #{request.evaluationYear}, #{request.areaCode},
             nullif(#{request.organizationCode}, ''), #{request.targetUserId},
             jsonb_build_object('evaluationYear', #{request.evaluationYear}, 'areaCode', #{request.areaCode},
-                'organizationCode', nullif(#{request.organizationCode}, ''), 'targetUserId', #{request.targetUserId},
+                'organizationCode', nullif(#{request.organizationCode}, ''), 'targetUserId', #{request.targetUserId, jdbcType=BIGINT},
                 'reason', #{request.reason}),
             #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, 'COMPLETED', #{requestedBy},
             #{requestId}, #{requestedBy}, #{requestedBy})

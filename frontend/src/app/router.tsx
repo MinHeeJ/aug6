@@ -66,6 +66,11 @@ import { DepartmentChairConfirmationManagementPage } from "../pages/admin/SCR-DE
 import { AchievementVerificationManagementPage } from "../pages/admin/SCR-ACHIEVEMENT-VERIFICATION-MGMT";
 import { GrantPaymentApprovalManagementPage } from "../pages/admin/SCR-GRANT-PAYMENT-APPROVAL-MGMT";
 import { ObjectionOpinionManagementPage } from "../pages/admin/SCR-OBJECTION-OPINION-MGMT";
+import { EvaluationMaterialGenerationPage } from "../pages/admin/SCR-EVAL-MATERIAL-GENERATION";
+import { EvaluationMaterialDeletionPage } from "../pages/admin/SCR-EVAL-MATERIAL-DELETION";
+import { ScoreRecalculationPage } from "../pages/admin/SCR-SCORE-RECALCULATION";
+import { FinalEvaluationConfirmationPage } from "../pages/admin/SCR-FINAL-EVAL-CONFIRMATION";
+import { BatchProcessingResultPage } from "../pages/admin/SCR-EVAL-BATCH-RESULT";
 import { BusinessPeriodManagementPage } from "../pages/admin/SCR-BUSINESS-PERIOD-INTEGRATED-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
@@ -312,6 +317,16 @@ function renderAdminPage(path: string | undefined) {
       return <GrantPaymentApprovalManagementPage />;
     case "/admin/objection-opinions":
       return <ObjectionOpinionManagementPage />;
+    case "/admin/evaluation-material-generations":
+      return <EvaluationMaterialGenerationPage />;
+    case "/admin/evaluation-material-deletions":
+      return <EvaluationMaterialDeletionPage />;
+    case "/admin/score-recalculations":
+      return <ScoreRecalculationPage />;
+    case "/admin/final-evaluation-confirmations":
+      return <FinalEvaluationConfirmationPage />;
+    case "/admin/batch-processing-results":
+      return <BatchProcessingResultPage />;
     case "/admin/business-status-transitions":
       return <BusinessStatusTransitionPage />;
     case "/admin/rejection-reasons":

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic46.ScoreRecalculationMapper">
+    <resultMap id="ScoreRecalculationRowMap" type="kr.ac.knue.commonfoundation.basic46.ScoreRecalculationRow">
+        <constructor>
+            <arg column="evaluationMaterialId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="materialStatus" javaType="string"/>
+            <arg column="previousScore" javaType="java.math.BigDecimal"/>
+            <arg column="recalculatedScore" javaType="java.math.BigDecimal"/>
+            <arg column="formulaVersionId" javaType="java.lang.Long"/>
+            <arg column="generationNo" javaType="java.lang.Integer"/>
+            <arg column="recalculationBatchId" javaType="string"/>
+            <arg column="selectionReason" javaType="string"/>
+            <arg column="excludedReason" javaType="string"/>
+            <arg column="calculatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ScoreRecalculationCandidateMap" type="kr.ac.knue.commonfoundation.basic46.ScoreRecalculationCandidate">
+        <constructor>
+            <arg column="evaluationMaterialId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="materialStatus" javaType="string"/>
+            <arg column="deletedYn" javaType="string"/>
+            <arg column="baseScore" javaType="java.math.BigDecimal"/>
+            <arg column="currentScore" javaType="java.math.BigDecimal"/>
+            <arg column="participationType" javaType="string"/>
+            <arg column="distributionRate" javaType="java.math.BigDecimal"/>
+            <arg column="capAppliedYn" javaType="string"/>
+            <arg column="nextGenerationNo" javaType="integer"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ScoreFormulaSnapshotMap" type="kr.ac.knue.commonfoundation.basic46.ScoreFormulaSnapshot">
+        <constructor>
+            <arg column="formulaVersionId" javaType="long"/>
+            <arg column="calculationType" javaType="string"/>
+            <arg column="lowerBoundScore" javaType="java.math.BigDecimal"/>
+            <arg column="upperBoundScore" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="recalculationFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                em.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and em.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.targetUserId != null">
+                and em.target_user_id = #{criteria.targetUserId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listScoreRecalculations" resultMap="ScoreRecalculationRowMap">
+        select em.evaluation_material_id as "evaluationMaterialId",
+               em.evaluation_year as "evaluationYear",
+               em.area_code as "areaCode",
+               em.organization_code as "organizationCode",
+               em.target_user_id as "targetUserId",
+               em.source_achievement_id as "sourceAchievementId",
+               em.material_status as "materialStatus",
+               coalesce(latest.previous_score, em.calculated_score) as "previousScore",
+               coalesce(latest.recalculated_score, em.calculated_score) as "recalculatedScore",
+               latest.formula_version_id as "formulaVersionId",
+               latest.generation_no as "generationNo",
+               latest.recalculation_batch_id as "recalculationBatchId",
+               latest.selection_reason as "selectionReason",
+               case
+                   when em.deleted_yn = 'Y' then '삭제 표시 평가자료는 재계산 대상에서 제외됩니다.'
+                   when em.material_status = 'EVALUATION_CONFIRMED' then '평가확정 자료는 확정취소 후 재계산할 수 있습니다.'
+                   else null
+               end as "excludedReason",
+               latest.created_at as "calculatedAt"
+        from evaluation_materials em
+        left join lateral (
+            select scg.previous_score,
+                   scg.recalculated_score,
+                   scg.formula_version_id,
+                   scg.generation_no,
+                   scg.recalculation_batch_id,
+                   scg.selection_reason,
+                   scg.created_at
+            from score_calculation_generations scg
+            where scg.evaluation_material_id = em.evaluation_material_id
+            order by scg.generation_no desc
+            limit 1
+        ) latest on true
+        <include refid="recalculationFilters"/>
+        order by coalesce(latest.created_at, em.updated_at, em.created_at) desc, em.evaluation_material_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countScoreRecalculations" resultType="long">
+        select count(*)
+        from evaluation_materials em
+        <include refid="recalculationFilters"/>
+    </select>
+
+    <select id="listRecalculationCandidates" resultMap="ScoreRecalculationCandidateMap">
+        select em.evaluation_material_id as "evaluationMaterialId",
+               em.evaluation_year as "evaluationYear",
+               em.area_code as "areaCode",
+               em.organization_code as "organizationCode",
+               em.target_user_id as "targetUserId",
+               em.source_achievement_id as "sourceAchievementId",
+               em.material_status as "materialStatus",
+               em.deleted_yn as "deletedYn",
+               em.base_score as "baseScore",
+               em.calculated_score as "currentScore",
+               coalesce(latest.participation_type, 'SOLE_AUTHOR') as "participationType",
+               coalesce(latest.distribution_rate, 1.0000) as "distributionRate",
+               coalesce(latest.cap_applied_yn, 'N') as "capAppliedYn",
+               coalesce(latest.generation_no, 0) + 1 as "nextGenerationNo"
+        from evaluation_materials em
+        left join lateral (
+            select scg.participation_type,
+                   scg.distribution_rate,
+                   scg.cap_applied_yn,
+                   scg.generation_no
+            from score_calculation_generations scg
+            where scg.evaluation_material_id = em.evaluation_material_id
+            order by scg.generation_no desc
+            limit 1
+        ) latest on true
+        where em.evaluation_year = #{request.evaluationYear}
+          and em.area_code = #{request.areaCode}
+        <if test="request.targetUserId != null">
+          and em.target_user_id = #{request.targetUserId}
+        </if>
+        order by em.evaluation_material_id
+    </select>
+
+    <select id="findFormulaSnapshot" resultMap="ScoreFormulaSnapshotMap">
+        select formula_version_id as "formulaVersionId",
+               calculation_type as "calculationType",
+               lower_bound_score as "lowerBoundScore",
+               upper_bound_score as "upperBoundScore"
+        from calculation_formula_versions
+        where formula_version_id = #{formulaVersionId}
+          and evaluation_year = #{evaluationYear}
+          and active_yn = 'Y'
+        limit 1
+    </select>
+
+    <insert id="insertRecalculationBatchJob">
+        insert into evaluation_batch_jobs (batch_job_id, batch_type, evaluation_year, area_code, organization_code,
+            target_user_id, target_condition_json, total_count, success_count, failure_count, excluded_count,
+            job_status, requested_by, request_id, created_by, updated_by)
+        values (#{batchJobId}, 'SCORE_RECALCULATION', #{request.evaluationYear}, #{request.areaCode}, null,
+            #{request.targetUserId},
+            jsonb_build_object('evaluationYear', #{request.evaluationYear}, 'areaCode', #{request.areaCode},
+                'targetUserId', #{request.targetUserId}, 'formulaVersionId', #{parsedFormulaVersionId},
+                'selectionReason', #{request.selectionReason}),
+            #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, 'COMPLETED', #{requestedBy},
+            #{requestId}, #{requestedBy}, #{requestedBy})
+    </insert>
+
+    <insert id="insertBatchJobItem">
+        insert into evaluation_batch_job_items (batch_job_id, target_ref, result_status, error_code, error_message,
+            excluded_reason, request_id, created_by, updated_by)
+        values (#{batchJobId}, #{targetRef}, #{resultStatus}, #{errorCode}, #{errorMessage}, #{excludedReason},
+            #{requestId}, #{createdBy}, #{createdBy})
+    </insert>
+
+    <update id="updateBatchJobCounts">
+        update evaluation_batch_jobs
+        set success_count = #{successCount},
+            failure_count = #{failureCount},
+            excluded_count = #{excludedCount},
+            updated_by = #{updatedBy},
+            updated_at = now()
+        where batch_job_id = #{batchJobId}
+    </update>
+
+    <insert id="insertScoreGeneration">
+        insert into score_calculation_generations (evaluation_material_id, formula_version_id, previous_score,
+            recalculated_score, base_score, participation_type, distribution_rate, cap_applied_yn, selection_reason,
+            generation_no, recalculation_batch_id, request_id, created_by, updated_by)
+        values (#{candidate.evaluationMaterialId}, #{formulaVersionId}, #{previousScore}, #{recalculatedScore},
+            #{candidate.baseScore}, #{candidate.participationType}, #{candidate.distributionRate}, #{candidate.capAppliedYn},
+            #{selectionReason}, #{candidate.nextGenerationNo}, #{batchJobId}, #{requestId}, #{createdBy}, #{createdBy})
+        on conflict (evaluation_material_id, generation_no) do nothing
+    </insert>
+
+    <update id="updateEvaluationMaterialScore">
+        update evaluation_materials
+        set calculated_score = #{recalculatedScore},
+            score_basis_ref = concat('B46-SCORE:', #{batchJobId}, ':', #{evaluationMaterialId}, ':G', #{generationNo}),
+            request_id = #{requestId},
+            updated_by = #{updatedBy},
+            updated_at = now()
+        where evaluation_material_id = #{evaluationMaterialId}
+          and deleted_yn = 'N'
+          and material_status != 'EVALUATION_CONFIRMED'
+    </update>
+</mapper>

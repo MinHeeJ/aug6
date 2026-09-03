@@ -371,6 +371,36 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "업무 운영 관리 > 의견·반려 관리 > 이의신청 의견 관리",
   },
   {
+    path: "/admin/evaluation-material-generations",
+    label: "평가자료 생성",
+    screenId: "SCR-EVAL-MATERIAL-GENERATION",
+    menuPath: "업무 운영 관리 > 일괄처리 관리 > 평가자료 생성",
+  },
+  {
+    path: "/admin/evaluation-material-deletions",
+    label: "평가자료 삭제",
+    screenId: "SCR-EVAL-MATERIAL-DELETION",
+    menuPath: "업무 운영 관리 > 일괄처리 관리 > 평가자료 삭제",
+  },
+  {
+    path: "/admin/score-recalculations",
+    label: "점수 재계산",
+    screenId: "SCR-SCORE-RECALCULATION",
+    menuPath: "업무 운영 관리 > 일괄처리 관리 > 점수 재계산",
+  },
+  {
+    path: "/admin/final-evaluation-confirmations",
+    label: "평가 확정·취소",
+    screenId: "SCR-FINAL-EVAL-CONFIRMATION",
+    menuPath: "업무 운영 관리 > 일괄처리 관리 > 평가 확정·취소",
+  },
+  {
+    path: "/admin/batch-processing-results",
+    label: "처리 결과 조회",
+    screenId: "SCR-EVAL-BATCH-RESULT",
+    menuPath: "업무 운영 관리 > 일괄처리 관리 > 처리 결과 조회",
+  },
+  {
     path: "/admin/department-chair-confirm-periods",
     label: "학과장 확인기간 관리",
     screenId: "SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT",
@@ -519,6 +549,10 @@ export function canAccessAdminRoute(
       "/admin/achievement-verifications",
       "/admin/grant-payment-approvals",
       "/admin/objection-opinions",
+      "/admin/evaluation-material-generations",
+      "/admin/evaluation-material-deletions",
+      "/admin/score-recalculations",
+      "/admin/final-evaluation-confirmations",
     ].includes(path)
   ) {
     return true;

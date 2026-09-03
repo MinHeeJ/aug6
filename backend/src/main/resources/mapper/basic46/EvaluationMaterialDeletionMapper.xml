@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic46.EvaluationMaterialDeletionMapper">
+    <resultMap id="EvaluationMaterialDeletionTargetMap" type="kr.ac.knue.commonfoundation.basic46.EvaluationMaterialDeletionTarget">
+        <constructor>
+            <arg column="evaluationMaterialId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="generationBatchId" javaType="string"/>
+            <arg column="finalStatus" javaType="string"/>
+            <arg column="canDelete" javaType="boolean"/>
+            <arg column="excludedReason" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="deletionFilters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                em.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and em.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedGenerationBatchId != null">
+                and em.generation_batch_id = #{criteria.normalizedGenerationBatchId}
+            </if>
+            and em.deleted_yn = 'N'
+        </where>
+    </sql>
+
+    <sql id="deletionProjection">
+        select em.evaluation_material_id as "evaluationMaterialId",
+               em.evaluation_year as "evaluationYear",
+               em.area_code as "areaCode",
+               em.organization_code as "organizationCode",
+               em.target_user_id as "targetUserId",
+               em.source_achievement_id as "sourceAchievementId",
+               em.generation_batch_id as "generationBatchId",
+               em.material_status as "finalStatus",
+               case when em.material_status != 'EVALUATION_CONFIRMED' then true else false end as "canDelete",
+               case when em.material_status = 'EVALUATION_CONFIRMED' then '평가확정 자료는 확정취소 후 삭제할 수 있습니다.' else null end as "excludedReason",
+               em.created_at as "createdAt"
+        from evaluation_materials em
+    </sql>
+
+    <select id="listDeletionPreviewTargets" resultMap="EvaluationMaterialDeletionTargetMap">
+        <include refid="deletionProjection"/>
+        <include refid="deletionFilters"/>
+        order by em.created_at desc, em.evaluation_material_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDeletionPreviewTargets" resultType="long">
+        select count(*)
+        from evaluation_materials em
+        <include refid="deletionFilters"/>
+    </select>
+
+    <select id="countDeletableTargets" resultType="long">
+        select count(*)
+        from evaluation_materials em
+        <include refid="deletionFilters"/>
+          and em.material_status != 'EVALUATION_CONFIRMED'
+    </select>
+
+    <select id="listDeletionCandidates" resultMap="EvaluationMaterialDeletionTargetMap">
+        <include refid="deletionProjection"/>
+        where em.evaluation_year = #{request.evaluationYear}
+          and em.area_code = #{request.areaCode}
+          and em.generation_batch_id = #{request.generationBatchId}
+          and em.deleted_yn = 'N'
+        order by em.evaluation_material_id
+    </select>
+
+    <insert id="insertDeletionBatchJob">
+        insert into evaluation_batch_jobs (batch_job_id, batch_type, evaluation_year, area_code, organization_code,
+            target_user_id, target_condition_json, total_count, success_count, failure_count, excluded_count,
+            job_status, requested_by, request_id, created_by, updated_by)
+        values (#{batchJobId}, 'DELETION', #{request.evaluationYear}, #{request.areaCode}, null, null,
+            jsonb_build_object('evaluationYear', #{request.evaluationYear}, 'areaCode', #{request.areaCode},
+                'generationBatchId', #{request.generationBatchId}, 'previewToken', #{request.previewToken},
+                'deletionReason', #{request.deletionReason}),
+            #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, 'COMPLETED', #{requestedBy},
+            #{requestId}, #{requestedBy}, #{requestedBy})
+    </insert>
+
+    <insert id="insertBatchJobItem">
+        insert into evaluation_batch_job_items (batch_job_id, target_ref, result_status, error_code, error_message,
+            excluded_reason, request_id, created_by, updated_by)
+        values (#{batchJobId}, #{targetRef}, #{resultStatus}, #{errorCode}, #{errorMessage}, #{excludedReason},
+            #{requestId}, #{createdBy}, #{createdBy})
+    </insert>
+
+    <update id="updateBatchJobCounts">
+        update evaluation_batch_jobs
+        set success_count = #{successCount},
+            failure_count = #{failureCount},
+            excluded_count = #{excludedCount},
+            updated_by = #{updatedBy},
+            updated_at = now()
+        where batch_job_id = #{batchJobId}
+    </update>
+
+    <update id="markEvaluationMaterialDeleted">
+        update evaluation_materials
+        set deleted_yn = 'Y',
+            material_status = 'DELETED',
+            deleted_by = #{deletedBy},
+            deleted_at = now(),
+            delete_reason = #{deleteReason},
+            request_id = #{requestId},
+            updated_by = #{deletedBy},
+            updated_at = now()
+        where evaluation_material_id = #{evaluationMaterialId}
+          and deleted_yn = 'N'
+          and material_status != 'EVALUATION_CONFIRMED'
+    </update>
+</mapper>

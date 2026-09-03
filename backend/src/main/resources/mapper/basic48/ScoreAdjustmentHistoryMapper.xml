@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic48.ScoreAdjustmentHistoryMapper">
+    <resultMap id="ScoreAdjustmentHistoryRowMap" type="kr.ac.knue.commonfoundation.basic48.ScoreAdjustmentHistoryRow">
+        <constructor>
+            <arg column="adjustmentHistId" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetUserName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="adjustmentTarget" javaType="string"/>
+            <arg column="beforeValue" javaType="java.math.BigDecimal"/>
+            <arg column="afterValue" javaType="java.math.BigDecimal"/>
+            <arg column="adjustmentReason" javaType="string"/>
+            <arg column="adjustedByName" javaType="string"/>
+            <arg column="approvedByName" javaType="string"/>
+            <arg column="adjustedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="requestId" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ScoreAdjustmentHistoryDetailMap" type="kr.ac.knue.commonfoundation.basic48.ScoreAdjustmentHistoryDetail">
+        <constructor>
+            <arg column="adjustmentHistId" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetUserName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="areaName" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="adjustmentTarget" javaType="string"/>
+            <arg column="beforeValue" javaType="java.math.BigDecimal"/>
+            <arg column="afterValue" javaType="java.math.BigDecimal"/>
+            <arg column="adjustmentReason" javaType="string"/>
+            <arg column="adjustmentRemark" javaType="string"/>
+            <arg column="adjustedByName" javaType="string"/>
+            <arg column="approvedByName" javaType="string"/>
+            <arg column="adjustedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="approvedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="approvalTrace" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="readOnlyNotice" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="scoreAdjustmentSelect">
+        select h.adjustment_hist_id as "adjustmentHistId",
+               h.target_user_id as "targetUserId",
+               case when k.name is not null then k.name else u.login_id end as "targetUserName",
+               h.evaluation_year as "evaluationYear",
+               h.area_code as "areaCode",
+               h.management_item_code as "managementItemCode",
+               h.adjustment_target as "adjustmentTarget",
+               h.before_value as "beforeValue",
+               h.after_value as "afterValue",
+               h.adjustment_reason as "adjustmentReason",
+               case when adj_k.name is not null then adj_k.name else adjusted_user.login_id end as "adjustedByName",
+               case when appr_k.name is not null then appr_k.name else approved_user.login_id end as "approvedByName",
+               h.adjusted_at as "adjustedAt",
+               h.request_id as "requestId"
+        from biz_score_adj_hist h
+        join users u on u.user_id = h.target_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        left join users adjusted_user on adjusted_user.user_id = h.adjusted_by
+        left join korus_personnel_snapshots adj_k on adj_k.employee_no = adjusted_user.employee_no
+        left join users approved_user on approved_user.user_id = h.approved_by
+        left join korus_personnel_snapshots appr_k on appr_k.employee_no = approved_user.employee_no
+    </sql>
+
+    <sql id="scoreAdjustmentWhere">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                h.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and h.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.targetUserId != null">
+                and h.target_user_id = #{criteria.targetUserId}
+            </if>
+            <if test="criteria.normalizedAdjustmentTarget != null">
+                and h.adjustment_target = #{criteria.normalizedAdjustmentTarget}
+            </if>
+            <if test="criteria.organizationScope and criteria.normalizedOrganizationCode != null">
+                and h.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listScoreAdjustmentHistories" resultMap="ScoreAdjustmentHistoryRowMap">
+        <include refid="scoreAdjustmentSelect"/>
+        <include refid="scoreAdjustmentWhere"/>
+        order by h.evaluation_year desc, h.adjusted_at desc, h.adjustment_hist_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countScoreAdjustmentHistories" resultType="long">
+        select count(*) from biz_score_adj_hist h
+        <include refid="scoreAdjustmentWhere"/>
+    </select>
+
+    <select id="findScoreAdjustmentHistoryDetail" resultMap="ScoreAdjustmentHistoryDetailMap">
+        select h.adjustment_hist_id as "adjustmentHistId",
+               h.target_user_id as "targetUserId",
+               case when k.name is not null then k.name else u.login_id end as "targetUserName",
+               h.evaluation_year as "evaluationYear",
+               h.area_code as "areaCode",
+               h.area_name as "areaName",
+               h.management_item_code as "managementItemCode",
+               h.adjustment_target as "adjustmentTarget",
+               h.before_value as "beforeValue",
+               h.after_value as "afterValue",
+               h.adjustment_reason as "adjustmentReason",
+               h.adjustment_remark as "adjustmentRemark",
+               case when adj_k.name is not null then adj_k.name else adjusted_user.login_id end as "adjustedByName",
+               case when appr_k.name is not null then appr_k.name else approved_user.login_id end as "approvedByName",
+               h.adjusted_at as "adjustedAt",
+               h.approved_at as "approvedAt",
+               h.approval_trace as "approvalTrace",
+               h.request_id as "requestId",
+               '점수 조정 이력은 조회 전용이며 점수나 평가백분율 조정 기능을 제공하지 않습니다.' as "readOnlyNotice"
+        from biz_score_adj_hist h
+        join users u on u.user_id = h.target_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        left join users adjusted_user on adjusted_user.user_id = h.adjusted_by
+        left join korus_personnel_snapshots adj_k on adj_k.employee_no = adjusted_user.employee_no
+        left join users approved_user on approved_user.user_id = h.approved_by
+        left join korus_personnel_snapshots appr_k on appr_k.employee_no = approved_user.employee_no
+        where h.adjustment_hist_id = #{adjustmentHistId}
+        <if test="dataScope != null and dataScope.toString() == 'ORGANIZATION' and organizationCode != null and organizationCode != ''">
+            and h.organization_code = #{organizationCode}
+        </if>
+        limit 1
+    </select>
+
+    <select id="countScoreAdjustmentHistoriesForReadonlyGuard" resultType="long">
+        select count(*) from biz_score_adj_hist
+    </select>
+
+    <select id="countScoreCalculationHistoriesForReadonlyGuard" resultType="long">
+        select count(*) from biz_score_calc_hist
+    </select>
+
+    <insert id="insertReadAudit">
+        insert into business_process_audit_logs (action_type, target_key, before_state, after_state, actor_user_id, result_status, request_id, created_at)
+        values ('BATCH', #{targetKey}, null, cast(#{afterStateJson} as jsonb), #{actorUserId}, 'SUCCESS', #{requestId}, CURRENT_TIMESTAMP)
+    </insert>
+</mapper>

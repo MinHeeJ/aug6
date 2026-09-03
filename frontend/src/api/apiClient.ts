@@ -3759,3 +3759,361 @@ export const researcherProfileApi = {
     );
   },
 };
+
+export type EvaluationSnapshotRow = {
+  snapshotId: string;
+  evaluationYear: string;
+  finalizationPoint: string;
+  organizationCode: string;
+  targetUserId: number;
+  ruleSnapshotRef: string;
+  materialSnapshotRef: string;
+  preservedResultRef: string;
+  snapshotStatus: string;
+  capturedAt: string;
+  requestId: string;
+};
+
+export type EvaluationSnapshotDetail = EvaluationSnapshotRow & {
+  ruleSnapshotJson: string;
+  materialSnapshotJson: string;
+  preservedResultJson: string;
+  readOnlyNotice: string;
+};
+
+export type EvaluationSnapshotSearchResponse = {
+  results: EvaluationSnapshotRow[];
+  page: number;
+  size: PageSize;
+  totalElements: number;
+};
+
+export type EvaluationSnapshotExcelDownload = {
+  fileName: string;
+  contentType: string;
+  rowCount: number;
+  downloadScope: string;
+  requestId: string;
+};
+
+export const evaluationSnapshotApi = {
+  listEvaluationSnapshots(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      finalizationPoint?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.finalizationPoint?.trim())
+      query.set("finalizationPoint", params.finalizationPoint.trim());
+    return apiRequest<EvaluationSnapshotSearchResponse>(
+      `/api/business/evaluation-snapshots?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getEvaluationSnapshotDetail(snapshotId: string) {
+    return apiRequest<EvaluationSnapshotDetail>(
+      `/api/business/evaluation-snapshots/${encodeURIComponent(snapshotId)}` as `/api/${string}`,
+    );
+  },
+  downloadEvaluationSnapshotsExcel(
+    params: { evaluationYear?: string; finalizationPoint?: string } = {},
+  ) {
+    const query = new URLSearchParams();
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.finalizationPoint?.trim())
+      query.set("finalizationPoint", params.finalizationPoint.trim());
+    return apiRequest<EvaluationSnapshotExcelDownload>(
+      `/api/business/evaluation-snapshots/download?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
+export type ScoreCalculationHistoryRow = {
+  calcHistId: string;
+  targetUserId: number;
+  targetUserName: string;
+  evaluationYear: string;
+  areaCode: string;
+  sourceAchievementId: number;
+  managementItemCode: string;
+  baseScore: number;
+  participationType: string;
+  distributionRate: number;
+  capAppliedYn: "Y" | "N";
+  formulaVersionId: string;
+  generationNo: number;
+  calculatedScore: number;
+  requestId: string;
+  calculatedAt: string;
+};
+
+export type ScoreCalculationHistoryDetail = ScoreCalculationHistoryRow & {
+  areaName: string;
+  sourceAchievementTitle: string;
+  calculationStepsJson: string;
+  sourceAchievementLink: string;
+  readOnlyNotice: string;
+};
+
+export type ScoreCalculationHistorySearchResponse = {
+  results: ScoreCalculationHistoryRow[];
+  page: number;
+  size: PageSize;
+  totalElements: number;
+};
+export type ScoreCalculationHistoryExcelDownload = {
+  fileName: string;
+  contentType: string;
+  rowCount: number;
+  description: string;
+  requestId: string;
+};
+
+export const scoreCalculationHistoryApi = {
+  listScoreCalculationHistories(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      targetUserId?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    )
+      query.set("targetUserId", String(params.targetUserId));
+    return apiRequest<ScoreCalculationHistorySearchResponse>(
+      `/api/business/score-calculation-histories?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getScoreCalculationHistoryDetail(calcHistId: string) {
+    return apiRequest<ScoreCalculationHistoryDetail>(
+      `/api/business/score-calculation-histories/${encodeURIComponent(calcHistId)}` as `/api/${string}`,
+    );
+  },
+  downloadScoreCalculationHistoriesExcel(
+    params: {
+      evaluationYear?: string;
+      areaCode?: string;
+      targetUserId?: number;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    )
+      query.set("targetUserId", String(params.targetUserId));
+    return apiRequest<ScoreCalculationHistoryExcelDownload>(
+      `/api/business/score-calculation-histories/download?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
+export type ScoreAdjustmentHistoryRow = {
+  adjustmentHistId: string;
+  targetUserId: number;
+  targetUserName: string;
+  evaluationYear: string;
+  areaCode: string;
+  managementItemCode: string;
+  adjustmentTarget: "SCORE" | "PERCENTAGE";
+  beforeValue: number;
+  afterValue: number;
+  adjustmentReason: string;
+  adjustedByName: string;
+  approvedByName: string;
+  adjustedAt: string;
+  requestId: string;
+};
+
+export type ScoreAdjustmentHistoryDetail = ScoreAdjustmentHistoryRow & {
+  areaName: string;
+  adjustmentRemark: string;
+  approvedAt: string;
+  approvalTrace: string;
+  readOnlyNotice: string;
+};
+export type ScoreAdjustmentHistorySearchResponse = {
+  results: ScoreAdjustmentHistoryRow[];
+  page: number;
+  size: PageSize;
+  totalElements: number;
+};
+export type ScoreAdjustmentHistoryExcelDownload = {
+  fileName: string;
+  contentType: string;
+  rowCount: number;
+  description: string;
+  requestId: string;
+};
+
+export const scoreAdjustmentHistoryApi = {
+  listScoreAdjustmentHistories(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      targetUserId?: number;
+      adjustmentTarget?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.adjustmentTarget?.trim())
+      query.set("adjustmentTarget", params.adjustmentTarget.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    )
+      query.set("targetUserId", String(params.targetUserId));
+    return apiRequest<ScoreAdjustmentHistorySearchResponse>(
+      `/api/business/score-adjustment-histories?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getScoreAdjustmentHistoryDetail(adjustmentHistId: string) {
+    return apiRequest<ScoreAdjustmentHistoryDetail>(
+      `/api/business/score-adjustment-histories/${encodeURIComponent(adjustmentHistId)}` as `/api/${string}`,
+    );
+  },
+  downloadScoreAdjustmentHistoriesExcel(
+    params: {
+      evaluationYear?: string;
+      areaCode?: string;
+      targetUserId?: number;
+      adjustmentTarget?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.adjustmentTarget?.trim())
+      query.set("adjustmentTarget", params.adjustmentTarget.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    )
+      query.set("targetUserId", String(params.targetUserId));
+    return apiRequest<ScoreAdjustmentHistoryExcelDownload>(
+      `/api/business/score-adjustment-histories/download?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};
+
+export type ScoreRecalculationHistoryRow = {
+  recalcHistId: string;
+  jobId: string;
+  targetUserId: number;
+  targetUserName: string;
+  evaluationYear: string;
+  formulaVersionId: string;
+  targetScope: "FORMULA_VERSION_CHANGE" | "TARGET_SCOPE" | "NO_CHANGE";
+  changedCount: number;
+  beforeTotalScore: number;
+  afterTotalScore: number;
+  executedAt: string;
+  requestId: string;
+};
+
+export type ScoreRecalculationHistoryDetail = ScoreRecalculationHistoryRow & {
+  criteriaDetail: string;
+  targetChangeSummaryJson: string;
+  readOnlyNotice: string;
+};
+export type ScoreRecalculationHistorySearchResponse = {
+  results: ScoreRecalculationHistoryRow[];
+  page: number;
+  size: PageSize;
+  totalElements: number;
+};
+export type ScoreRecalculationHistoryExcelDownload = {
+  fileName: string;
+  contentType: string;
+  rowCount: number;
+  description: string;
+  requestId: string;
+};
+
+export const scoreRecalculationHistoryApi = {
+  listScoreRecalculationHistories(
+    params: {
+      page?: number;
+      size?: PageSize;
+      evaluationYear?: string;
+      targetUserId?: number;
+      executedFrom?: string;
+      executedTo?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.executedFrom?.trim())
+      query.set("executedFrom", params.executedFrom.trim());
+    if (params.executedTo?.trim())
+      query.set("executedTo", params.executedTo.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    )
+      query.set("targetUserId", String(params.targetUserId));
+    return apiRequest<ScoreRecalculationHistorySearchResponse>(
+      `/api/business/score-recalculation-histories?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getScoreRecalculationHistoryDetail(recalcHistId: string) {
+    return apiRequest<ScoreRecalculationHistoryDetail>(
+      `/api/business/score-recalculation-histories/${encodeURIComponent(recalcHistId)}` as `/api/${string}`,
+    );
+  },
+  downloadScoreRecalculationHistoriesExcel(
+    params: {
+      evaluationYear?: string;
+      targetUserId?: number;
+      executedFrom?: string;
+      executedTo?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.executedFrom?.trim())
+      query.set("executedFrom", params.executedFrom.trim());
+    if (params.executedTo?.trim())
+      query.set("executedTo", params.executedTo.trim());
+    if (
+      params.targetUserId !== undefined &&
+      Number.isFinite(params.targetUserId)
+    )
+      query.set("targetUserId", String(params.targetUserId));
+    return apiRequest<ScoreRecalculationHistoryExcelDownload>(
+      `/api/business/score-recalculation-histories/download?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};

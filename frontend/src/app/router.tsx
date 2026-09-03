@@ -71,6 +71,10 @@ import { EvaluationMaterialDeletionPage } from "../pages/admin/SCR-EVAL-MATERIAL
 import { ScoreRecalculationPage } from "../pages/admin/SCR-SCORE-RECALCULATION";
 import { FinalEvaluationConfirmationPage } from "../pages/admin/SCR-FINAL-EVAL-CONFIRMATION";
 import { BatchProcessingResultPage } from "../pages/admin/SCR-EVAL-BATCH-RESULT";
+import { EvaluationSnapshotHistoryPage } from "../pages/admin/SCR-EVAL-SNAPSHOT-HISTORY";
+import { ScoreCalculationHistoryPage } from "../pages/admin/SCR-SCORE-CALC-HISTORY";
+import { ScoreAdjustmentHistoryPage } from "../pages/admin/SCR-SCORE-ADJUSTMENT-HISTORY";
+import { ScoreRecalculationHistoryPage } from "../pages/admin/SCR-SCORE-RECALCULATION-HISTORY";
 import { BusinessPeriodManagementPage } from "../pages/admin/SCR-BUSINESS-PERIOD-INTEGRATED-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
@@ -327,6 +331,14 @@ function renderAdminPage(path: string | undefined) {
       return <FinalEvaluationConfirmationPage />;
     case "/admin/batch-processing-results":
       return <BatchProcessingResultPage />;
+    case "/admin/evaluation-snapshots":
+      return <EvaluationSnapshotHistoryPage />;
+    case "/admin/score-calculation-histories":
+      return <ScoreCalculationHistoryPage />;
+    case "/admin/score-adjustment-histories":
+      return <ScoreAdjustmentHistoryPage />;
+    case "/admin/score-recalculation-histories":
+      return <ScoreRecalculationHistoryPage />;
     case "/admin/business-status-transitions":
       return <BusinessStatusTransitionPage />;
     case "/admin/rejection-reasons":

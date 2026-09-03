@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic48.ScoreRecalculationHistoryMapper">
+    <resultMap id="ScoreRecalculationHistoryRowMap" type="kr.ac.knue.commonfoundation.basic48.ScoreRecalculationHistoryRow">
+        <constructor>
+            <arg column="recalcHistId" javaType="string"/>
+            <arg column="jobId" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetUserName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="formulaVersionId" javaType="string"/>
+            <arg column="targetScope" javaType="string"/>
+            <arg column="changedCount" javaType="java.lang.Integer"/>
+            <arg column="beforeTotalScore" javaType="java.math.BigDecimal"/>
+            <arg column="afterTotalScore" javaType="java.math.BigDecimal"/>
+            <arg column="executedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="requestId" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ScoreRecalculationHistoryDetailMap" type="kr.ac.knue.commonfoundation.basic48.ScoreRecalculationHistoryDetail">
+        <constructor>
+            <arg column="recalcHistId" javaType="string"/>
+            <arg column="jobId" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetUserName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="formulaVersionId" javaType="string"/>
+            <arg column="targetScope" javaType="string"/>
+            <arg column="changedCount" javaType="java.lang.Integer"/>
+            <arg column="beforeTotalScore" javaType="java.math.BigDecimal"/>
+            <arg column="afterTotalScore" javaType="java.math.BigDecimal"/>
+            <arg column="executedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="criteriaDetail" javaType="string"/>
+            <arg column="targetChangeSummaryJson" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="readOnlyNotice" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="scoreRecalculationSelect">
+        select h.recalc_hist_id as "recalcHistId",
+               h.job_id as "jobId",
+               h.target_user_id as "targetUserId",
+               case when k.name is not null then k.name else u.login_id end as "targetUserName",
+               h.evaluation_year as "evaluationYear",
+               h.formula_version_id as "formulaVersionId",
+               h.target_scope as "targetScope",
+               h.changed_count as "changedCount",
+               h.before_total_score as "beforeTotalScore",
+               h.after_total_score as "afterTotalScore",
+               h.executed_at as "executedAt",
+               h.request_id as "requestId"
+        from biz_recalc_hist h
+        join users u on u.user_id = h.target_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+    </sql>
+
+    <sql id="scoreRecalculationWhere">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                h.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.targetUserId != null">
+                and h.target_user_id = #{criteria.targetUserId}
+            </if>
+            <if test="criteria.normalizedExecutedFrom != null">
+                and h.executed_at &gt;= cast(#{criteria.normalizedExecutedFrom} as date)
+            </if>
+            <if test="criteria.normalizedExecutedTo != null">
+                and h.executed_at &lt; (cast(#{criteria.normalizedExecutedTo} as date) + interval '1 day')
+            </if>
+            <if test="criteria.organizationScope and criteria.normalizedOrganizationCode != null">
+                and h.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listScoreRecalculationHistories" resultMap="ScoreRecalculationHistoryRowMap">
+        <include refid="scoreRecalculationSelect"/>
+        <include refid="scoreRecalculationWhere"/>
+        order by h.evaluation_year desc, h.executed_at desc, h.recalc_hist_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countScoreRecalculationHistories" resultType="long">
+        select count(*) from biz_recalc_hist h
+        <include refid="scoreRecalculationWhere"/>
+    </select>
+
+    <select id="findScoreRecalculationHistoryDetail" resultMap="ScoreRecalculationHistoryDetailMap">
+        select h.recalc_hist_id as "recalcHistId",
+               h.job_id as "jobId",
+               h.target_user_id as "targetUserId",
+               case when k.name is not null then k.name else u.login_id end as "targetUserName",
+               h.evaluation_year as "evaluationYear",
+               h.formula_version_id as "formulaVersionId",
+               h.target_scope as "targetScope",
+               h.changed_count as "changedCount",
+               h.before_total_score as "beforeTotalScore",
+               h.after_total_score as "afterTotalScore",
+               h.executed_at as "executedAt",
+               h.criteria_detail as "criteriaDetail",
+               h.target_change_summary_json::text as "targetChangeSummaryJson",
+               h.request_id as "requestId",
+               '재계산 이력은 조회 전용이며 재계산 실행 CTA 또는 점수 수정 기능을 제공하지 않습니다.' as "readOnlyNotice"
+        from biz_recalc_hist h
+        join users u on u.user_id = h.target_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        where h.recalc_hist_id = #{recalcHistId}
+        <if test="dataScope != null and dataScope.toString() == 'ORGANIZATION' and organizationCode != null and organizationCode != ''">
+            and h.organization_code = #{organizationCode}
+        </if>
+        limit 1
+    </select>
+
+    <select id="countScoreRecalculationHistoriesForReadonlyGuard" resultType="long">
+        select count(*) from biz_recalc_hist
+    </select>
+
+    <select id="countScoreCalculationHistoriesForReadonlyGuard" resultType="long">
+        select count(*) from biz_score_calc_hist
+    </select>
+
+    <insert id="insertReadAudit">
+        insert into business_process_audit_logs (action_type, target_key, before_state, after_state, actor_user_id, result_status, request_id, created_at)
+        values ('BATCH', #{targetKey}, null, cast(#{afterStateJson} as jsonb), #{actorUserId}, 'SUCCESS', #{requestId}, CURRENT_TIMESTAMP)
+    </insert>
+</mapper>

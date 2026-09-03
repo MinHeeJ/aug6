@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic48.ScoreCalculationHistoryMapper">
+    <resultMap id="ScoreCalculationHistoryRowMap" type="kr.ac.knue.commonfoundation.basic48.ScoreCalculationHistoryRow">
+        <constructor>
+            <arg column="calcHistId" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetUserName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="sourceAchievementId" javaType="java.lang.Long"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="baseScore" javaType="java.math.BigDecimal"/>
+            <arg column="participationType" javaType="string"/>
+            <arg column="distributionRate" javaType="java.math.BigDecimal"/>
+            <arg column="capAppliedYn" javaType="string"/>
+            <arg column="formulaVersionId" javaType="string"/>
+            <arg column="generationNo" javaType="int"/>
+            <arg column="calculatedScore" javaType="java.math.BigDecimal"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="calculatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="ScoreCalculationHistoryDetailMap" type="kr.ac.knue.commonfoundation.basic48.ScoreCalculationHistoryDetail">
+        <constructor>
+            <arg column="calcHistId" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="targetUserName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="areaName" javaType="string"/>
+            <arg column="sourceAchievementId" javaType="java.lang.Long"/>
+            <arg column="sourceAchievementTitle" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="baseScore" javaType="java.math.BigDecimal"/>
+            <arg column="participationType" javaType="string"/>
+            <arg column="distributionRate" javaType="java.math.BigDecimal"/>
+            <arg column="capAppliedYn" javaType="string"/>
+            <arg column="formulaVersionId" javaType="string"/>
+            <arg column="generationNo" javaType="int"/>
+            <arg column="calculatedScore" javaType="java.math.BigDecimal"/>
+            <arg column="calculationStepsJson" javaType="string"/>
+            <arg column="sourceAchievementLink" javaType="string"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="calculatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="readOnlyNotice" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="scoreCalculationSelect">
+        select h.calc_hist_id as "calcHistId",
+               h.target_user_id as "targetUserId",
+               case when k.name is not null then k.name else u.login_id end as "targetUserName",
+               h.evaluation_year as "evaluationYear",
+               h.area_code as "areaCode",
+               h.source_achievement_id as "sourceAchievementId",
+               h.management_item_code as "managementItemCode",
+               h.base_score as "baseScore",
+               h.participation_type as "participationType",
+               h.distribution_rate as "distributionRate",
+               h.cap_applied_yn as "capAppliedYn",
+               h.formula_version_id as "formulaVersionId",
+               h.generation_no as "generationNo",
+               h.calculated_score as "calculatedScore",
+               h.request_id as "requestId",
+               h.calculated_at as "calculatedAt"
+        from biz_score_calc_hist h
+        join users u on u.user_id = h.target_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+    </sql>
+
+    <sql id="scoreCalculationWhere">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                h.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and h.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.targetUserId != null">
+                and h.target_user_id = #{criteria.targetUserId}
+            </if>
+            <if test="criteria.selfScope and criteria.selfUserId != null">
+                and h.target_user_id = #{criteria.selfUserId}
+            </if>
+            <if test="criteria.organizationScope and criteria.normalizedOrganizationCode != null">
+                and h.organization_code = #{criteria.normalizedOrganizationCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listScoreCalculationHistories" resultMap="ScoreCalculationHistoryRowMap">
+        <include refid="scoreCalculationSelect"/>
+        <include refid="scoreCalculationWhere"/>
+        order by h.evaluation_year desc, h.calculated_at desc, h.calc_hist_id
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countScoreCalculationHistories" resultType="long">
+        select count(*) from biz_score_calc_hist h
+        <include refid="scoreCalculationWhere"/>
+    </select>
+
+    <select id="findScoreCalculationHistoryDetail" resultMap="ScoreCalculationHistoryDetailMap">
+        select h.calc_hist_id as "calcHistId",
+               h.target_user_id as "targetUserId",
+               case when k.name is not null then k.name else u.login_id end as "targetUserName",
+               h.evaluation_year as "evaluationYear",
+               h.area_code as "areaCode",
+               h.area_name as "areaName",
+               h.source_achievement_id as "sourceAchievementId",
+               h.source_achievement_title as "sourceAchievementTitle",
+               h.management_item_code as "managementItemCode",
+               h.base_score as "baseScore",
+               h.participation_type as "participationType",
+               h.distribution_rate as "distributionRate",
+               h.cap_applied_yn as "capAppliedYn",
+               h.formula_version_id as "formulaVersionId",
+               h.generation_no as "generationNo",
+               h.calculated_score as "calculatedScore",
+               h.calculation_steps_json::text as "calculationStepsJson",
+               h.source_achievement_link as "sourceAchievementLink",
+               h.request_id as "requestId",
+               h.calculated_at as "calculatedAt",
+               '점수·기준점수·배분율·계산식 수정 없이 조회만 제공하는 산출근거입니다.' as "readOnlyNotice"
+        from biz_score_calc_hist h
+        join users u on u.user_id = h.target_user_id
+        left join korus_personnel_snapshots k on k.employee_no = u.employee_no
+        where h.calc_hist_id = #{calcHistId}
+        <if test="dataScope != null and dataScope.toString() == 'SELF' and selfUserId != null">
+            and h.target_user_id = #{selfUserId}
+        </if>
+        <if test="dataScope != null and dataScope.toString() == 'ORGANIZATION' and organizationCode != null and organizationCode != ''">
+            and h.organization_code = #{organizationCode}
+        </if>
+        limit 1
+    </select>
+
+    <select id="countScoreCalculationHistoriesForReadonlyGuard" resultType="long">
+        select count(*) from biz_score_calc_hist
+    </select>
+
+    <select id="countEvaluationMaterialsForReadonlyGuard" resultType="long">
+        select count(*) from evaluation_materials
+    </select>
+
+    <insert id="insertReadAudit">
+        insert into business_process_audit_logs (action_type, target_key, before_state, after_state, actor_user_id, result_status, request_id, created_at)
+        values ('BATCH', #{targetKey}, null, cast(#{afterStateJson} as jsonb), #{actorUserId}, 'SUCCESS', #{requestId}, CURRENT_TIMESTAMP)
+    </insert>
+</mapper>

@@ -98,6 +98,70 @@ class ResearcherProfileApiTest {
     }
 
     @Test
+    void saveResearcherProfileResearchFieldsPersistsTabSideEffectForReq1271() throws Exception {
+        when(service.saveResearchFields(eq("E1001"), any(), eq(teacher)))
+                .thenReturn(new ResearcherProfileSaveResponse(detail(), List.of()));
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/research-fields")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"majorName\":\"컴퓨터교육\",\"detailMajorName\":\"AI교육\",\"fieldCategory\":\"공학\"}],\"changeReason\":\"연구분야 최신화\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.profile.employeeNo").value("E1001"))
+                .andExpect(jsonPath("$.data.profile.researchFields[0].majorName").value("컴퓨터교육"));
+        verify(service).saveResearchFields(eq("E1001"), any(), eq(teacher));
+    }
+
+    @Test
+    void saveResearcherProfileCareersPersistsTabSideEffectForReq1272() throws Exception {
+        when(service.saveCareers(eq("E1001"), any(), eq(teacher)))
+                .thenReturn(new ResearcherProfileSaveResponse(detail(), List.of()));
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/careers")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"workStartYm\":\"202001\",\"workEndYm\":\"202412\",\"workplace\":\"한국교원대학교\",\"positionName\":\"교수\",\"workContent\":\"연구\"}],\"changeReason\":\"경력 최신화\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.profile.employeeNo").value("E1001"))
+                .andExpect(jsonPath("$.data.profile.careers[0].workplace").value("한국교원대학교"));
+        verify(service).saveCareers(eq("E1001"), any(), eq(teacher));
+    }
+
+    @Test
+    void saveResearcherProfileCertificationsPersistsTabSideEffectForReq1274() throws Exception {
+        when(service.saveCertifications(eq("E1001"), any(), eq(teacher)))
+                .thenReturn(new ResearcherProfileSaveResponse(detail(), List.of()));
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/certifications")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"acquiredYm\":\"202403\",\"certificationName\":\"교원자격\",\"issuerName\":\"교육부\"}],\"changeReason\":\"자격 최신화\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.profile.employeeNo").value("E1001"))
+                .andExpect(jsonPath("$.data.profile.certifications[0].certificationName").value("교원자격"));
+        verify(service).saveCertifications(eq("E1001"), any(), eq(teacher));
+    }
+
+    @Test
+    void saveResearcherProfileCertificationsRejectsReadonlyPayloadForReq1274() throws Exception {
+        mockMvc.perform(put("/api/researcher-profiles/E1001/certifications")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"items\":[{\"certificationName\":\"교원자격\"}],\"employeeNo\":\"E9999\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").value("employeeNo"));
+        verify(service, never()).saveCertifications(any(), any(), any());
+    }
+
+    @Test
     void listDegreePrerequisiteMissingResearchersAllowsR04AndReturnsRowsForReq1269() throws Exception {
         when(service.listDegreePrerequisiteMissing(any())).thenReturn(new ResearcherProfileSearchResponse(List.of(summary()), 0, 20, 1));
 

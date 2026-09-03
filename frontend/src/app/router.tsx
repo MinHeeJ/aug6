@@ -66,6 +66,11 @@ import { DepartmentChairConfirmationManagementPage } from "../pages/admin/SCR-DE
 import { AchievementVerificationManagementPage } from "../pages/admin/SCR-ACHIEVEMENT-VERIFICATION-MGMT";
 import { GrantPaymentApprovalManagementPage } from "../pages/admin/SCR-GRANT-PAYMENT-APPROVAL-MGMT";
 import { ObjectionOpinionManagementPage } from "../pages/admin/SCR-OBJECTION-OPINION-MGMT";
+import { EvaluationMaterialGenerationPage } from "../pages/admin/SCR-EVALUATION-MATERIAL-GENERATION";
+import { EvaluationMaterialDeletionPage } from "../pages/admin/SCR-EVALUATION-MATERIAL-DELETION";
+import { ScoreRecalculationPage } from "../pages/admin/SCR-SCORE-RECALCULATION";
+import { FinalEvaluationConfirmationPage } from "../pages/admin/SCR-FINAL-EVALUATION-CONFIRMATION";
+import { EvaluationBatchResultPage } from "../pages/admin/SCR-EVALUATION-BATCH-RESULT";
 import { BusinessPeriodManagementPage } from "../pages/admin/SCR-BUSINESS-PERIOD-INTEGRATED-MGMT";
 import { BusinessStatusTransitionPage } from "../pages/admin/SCR-BUSINESS-STATUS-TRANSITION";
 import { RejectionReasonPage } from "../pages/admin/SCR-REJECTION-REASON";
@@ -158,7 +163,7 @@ export function AppRouter() {
     );
   }
 
-  const routedPage = renderAdminPage(adminRoute?.path);
+  const routedPage = renderAdminPage(adminRoute?.path, auth.user);
   if (routedPage) {
     return <AdminShell>{routedPage}</AdminShell>;
   }
@@ -204,7 +209,7 @@ export function AppRouter() {
   );
 }
 
-function renderAdminPage(path: string | undefined) {
+function renderAdminPage(path: string | undefined, user: CurrentUser | null) {
   switch (path) {
     case "/admin/users":
       return <UserManagementPage />;
@@ -312,6 +317,18 @@ function renderAdminPage(path: string | undefined) {
       return <GrantPaymentApprovalManagementPage />;
     case "/admin/objection-opinions":
       return <ObjectionOpinionManagementPage />;
+    case "/admin/evaluation-material-generations":
+      return <EvaluationMaterialGenerationPage />;
+    case "/admin/evaluation-material-deletions":
+      return <EvaluationMaterialDeletionPage />;
+    case "/admin/score-recalculations":
+      return <ScoreRecalculationPage />;
+    case "/admin/final-evaluation-confirmations":
+      return (
+        <FinalEvaluationConfirmationPage currentRoles={user?.roles ?? []} />
+      );
+    case "/admin/evaluation-batch-results":
+      return <EvaluationBatchResultPage />;
     case "/admin/business-status-transitions":
       return <BusinessStatusTransitionPage />;
     case "/admin/rejection-reasons":

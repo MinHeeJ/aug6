@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic45.FinalEvaluationConfirmationMapper">
+    <resultMap id="FinalEvaluationConfirmationTargetMap" type="kr.ac.knue.commonfoundation.basic45.FinalEvaluationConfirmationTarget">
+        <constructor>
+            <arg column="targetId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="organizationName" javaType="string"/>
+            <arg column="targetName" javaType="string"/>
+            <arg column="confirmationStatus" javaType="string"/>
+            <arg column="confirmedBy" javaType="java.lang.Long"/>
+            <arg column="confirmedByName" javaType="string"/>
+            <arg column="confirmedAt" javaType="string"/>
+            <arg column="canceledBy" javaType="java.lang.Long"/>
+            <arg column="canceledByName" javaType="string"/>
+            <arg column="canceledAt" javaType="string"/>
+            <arg column="cancelReason" javaType="string"/>
+            <arg column="materialCount" javaType="int"/>
+            <arg column="totalScore" javaType="java.math.BigDecimal"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="confirmationProjection">
+        select em.target_user_id as "targetId",
+               em.evaluation_year as "evaluationYear",
+               min(em.area_code) as "areaCode",
+               coalesce(max(org.organization_name), '-') as "organizationName",
+               coalesce(max(kps.name), max(u.login_id), concat('사용자 ', em.target_user_id)) as "targetName",
+               coalesce(max(fec.confirmation_status), case when bool_and(em.material_status = '평가확정') then '평가확정' else '인증' end) as "confirmationStatus",
+               max(fec.confirmed_by) as "confirmedBy",
+               coalesce(max(confirm_kps.name), max(confirm_user.login_id)) as "confirmedByName",
+               to_char(max(fec.confirmed_at), 'YYYY-MM-DD"T"HH24:MI:SS') as "confirmedAt",
+               max(fec.canceled_by) as "canceledBy",
+               coalesce(max(cancel_kps.name), max(cancel_user.login_id)) as "canceledByName",
+               to_char(max(fec.canceled_at), 'YYYY-MM-DD"T"HH24:MI:SS') as "canceledAt",
+               max(fec.cancel_reason) as "cancelReason",
+               count(em.evaluation_material_id)::integer as "materialCount",
+               coalesce(sum(em.calculated_score), 0)::numeric(10,2) as "totalScore"
+        from evaluation_materials em
+        join users u on u.user_id = em.target_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        left join organizations org on org.organization_code = kps.organization_code
+        left join final_evaluation_confirmations fec
+          on fec.target_user_id = em.target_user_id
+         and fec.evaluation_year = em.evaluation_year
+        left join users confirm_user on confirm_user.user_id = fec.confirmed_by
+        left join korus_personnel_snapshots confirm_kps on confirm_kps.employee_no = confirm_user.employee_no
+        left join users cancel_user on cancel_user.user_id = fec.canceled_by
+        left join korus_personnel_snapshots cancel_kps on cancel_kps.employee_no = cancel_user.employee_no
+        where em.deleted_yn = 'N'
+          and em.material_status in ('인증','평가확정')
+          <if test="criteria.normalizedEvaluationYear != null">
+              and em.evaluation_year = #{criteria.normalizedEvaluationYear}
+          </if>
+          <if test="criteria.normalizedAreaCode != null">
+              and em.area_code = #{criteria.normalizedAreaCode}
+          </if>
+          <if test="criteria.normalizedTargetUserId != null">
+              and em.target_user_id = #{criteria.normalizedTargetUserId}
+          </if>
+        group by em.target_user_id, em.evaluation_year
+        <if test="criteria.normalizedConfirmationStatus != null">
+            having coalesce(max(fec.confirmation_status), case when bool_and(em.material_status = '평가확정') then '평가확정' else '인증' end) = #{criteria.normalizedConfirmationStatus}
+        </if>
+    </sql>
+
+    <select id="listConfirmations" resultMap="FinalEvaluationConfirmationTargetMap">
+        <include refid="confirmationProjection"/>
+        order by "evaluationYear" desc, "targetId"
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countConfirmations" resultType="long">
+        select count(*)
+        from (
+            <include refid="confirmationProjection"/>
+        ) confirmation_targets
+    </select>
+
+    <select id="countConfirmableMaterials" resultType="int">
+        select count(*)
+        from evaluation_materials em
+        where em.target_user_id = #{targetId}
+          and em.evaluation_year = #{evaluationYear}
+          and em.deleted_yn = 'N'
+          and em.material_status = '인증'
+          and exists (
+              select 1
+              from score_calculation_generations scg
+              where scg.evaluation_material_id = em.evaluation_material_id
+          )
+    </select>
+
+    <select id="countCancelableMaterials" resultType="int">
+        select count(*)
+        from evaluation_materials em
+        where em.target_user_id = #{targetId}
+          and em.evaluation_year = #{evaluationYear}
+          and em.deleted_yn = 'N'
+          and em.material_status = '평가확정'
+    </select>
+
+    <select id="nextConfirmationSequence" resultType="long">
+        select count(*) + 1
+        from evaluation_batch_requests
+        where job_type = 'CONFIRMATION'
+    </select>
+
+    <insert id="insertBatchRequest">
+        insert into evaluation_batch_requests (batch_id, job_type, target_condition_json, request_user_id, request_status, request_id)
+        values (#{batchId}, #{jobType}, #{targetConditionJson}::jsonb, #{requestUserId}, 'COMPLETED', #{requestId})
+    </insert>
+
+    <update id="updateMaterialsStatus">
+        update evaluation_materials
+        set material_status = #{nextStatus},
+            request_id = #{requestId},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{requestUserId}
+        where target_user_id = #{targetId}
+          and evaluation_year = #{evaluationYear}
+          and deleted_yn = 'N'
+          and material_status = #{previousStatus}
+    </update>
+
+    <insert id="insertMaterialStatusHistories">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        select 'BASIC45_EVALUATION_MATERIAL',
+               concat('evaluation_material_id:', em.evaluation_material_id),
+               'UPDATE',
+               'material_status',
+               #{previousStatus},
+               #{nextStatus},
+               #{requestUserId},
+               #{changeReason}
+        from evaluation_materials em
+        where em.target_user_id = #{targetId}
+          and em.evaluation_year = #{evaluationYear}
+          and em.deleted_yn = 'N'
+          and em.material_status = #{nextStatus}
+          and em.request_id = #{requestId}
+    </insert>
+
+    <insert id="upsertConfirmation">
+        insert into final_evaluation_confirmations (
+            target_user_id, evaluation_year, confirmation_status, confirmation_batch_id,
+            confirmed_by, confirmed_at, canceled_by, canceled_at, cancel_reason, request_id
+        )
+        values (#{targetId}, #{evaluationYear}, #{confirmationStatus}, #{batchId}, #{requestUserId}, CURRENT_TIMESTAMP, null, null, null, #{requestId})
+        on conflict (target_user_id, evaluation_year) do update set
+            confirmation_status = excluded.confirmation_status,
+            confirmation_batch_id = excluded.confirmation_batch_id,
+            confirmed_by = excluded.confirmed_by,
+            confirmed_at = excluded.confirmed_at,
+            canceled_by = null,
+            canceled_at = null,
+            cancel_reason = null,
+            request_id = excluded.request_id,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="markConfirmationCanceled">
+        update final_evaluation_confirmations
+        set confirmation_status = '인증',
+            confirmation_batch_id = #{batchId},
+            canceled_by = #{requestUserId},
+            canceled_at = CURRENT_TIMESTAMP,
+            cancel_reason = #{cancelReason},
+            request_id = #{requestId},
+            updated_at = CURRENT_TIMESTAMP
+        where target_user_id = #{targetId}
+          and evaluation_year = #{evaluationYear}
+          and confirmation_status = '평가확정'
+    </update>
+
+    <insert id="insertBatchResult">
+        insert into evaluation_batch_results (batch_id, job_type, total_count, success_count, failure_count, excluded_count, error_detail_json, request_id)
+        values (#{batchId}, #{jobType}, #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, '[]'::jsonb, #{requestId})
+        on conflict (batch_id) do update set
+            total_count = excluded.total_count,
+            success_count = excluded.success_count,
+            failure_count = excluded.failure_count,
+            excluded_count = excluded.excluded_count,
+            error_detail_json = excluded.error_detail_json,
+            request_id = excluded.request_id
+    </insert>
+</mapper>

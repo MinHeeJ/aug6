@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic45.EvaluationMaterialDeletionMapper">
+    <resultMap id="EvaluationMaterialDeletionTargetMap" type="kr.ac.knue.commonfoundation.basic45.EvaluationMaterialDeletionTarget">
+        <constructor>
+            <arg column="evaluationMaterialId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="targetUserId" javaType="long"/>
+            <arg column="sourceAchievementId" javaType="long"/>
+            <arg column="generationBatchId" javaType="string"/>
+            <arg column="materialStatus" javaType="string"/>
+            <arg column="materialOrigin" javaType="string"/>
+            <arg column="achievementTitle" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="deletionTargetProjection">
+        select em.evaluation_material_id as "evaluationMaterialId",
+               em.evaluation_year as "evaluationYear",
+               em.area_code as "areaCode",
+               em.target_user_id as "targetUserId",
+               em.source_achievement_id as "sourceAchievementId",
+               em.generation_batch_id as "generationBatchId",
+               em.material_status as "materialStatus",
+               em.material_origin as "materialOrigin",
+               coalesce(em.material_snapshot_json -&gt;&gt; 'achievementTitle', concat('평가자료 ', em.evaluation_material_id)) as "achievementTitle"
+        from evaluation_materials em
+        where em.deleted_yn = 'N'
+          and em.material_origin = 'BATCH_GENERATED'
+          and em.material_status &lt;&gt; '평가확정'
+          <if test="criteria.normalizedEvaluationYear != null">
+              and em.evaluation_year = #{criteria.normalizedEvaluationYear}
+          </if>
+          <if test="criteria.normalizedAreaCode != null">
+              and em.area_code = #{criteria.normalizedAreaCode}
+          </if>
+          <if test="criteria.normalizedGenerationBatchId != null">
+              and em.generation_batch_id = #{criteria.normalizedGenerationBatchId}
+          </if>
+    </sql>
+
+    <select id="listDeletionTargets" resultMap="EvaluationMaterialDeletionTargetMap">
+        <include refid="deletionTargetProjection"/>
+        order by "evaluationYear" desc, "areaCode", "evaluationMaterialId"
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countDeletionTargets" resultType="long">
+        select count(*)
+        from (
+            <include refid="deletionTargetProjection"/>
+        ) deletion_targets
+    </select>
+
+    <select id="nextDeletionSequence" resultType="long">
+        select count(*) + 1
+        from evaluation_batch_requests
+        where job_type = 'DELETION'
+    </select>
+
+    <insert id="insertBatchRequest">
+        insert into evaluation_batch_requests (batch_id, job_type, target_condition_json, request_user_id, request_status, request_id)
+        values (#{batchId}, #{jobType}, #{targetConditionJson}::jsonb, #{requestUserId}, 'COMPLETED', #{requestId})
+    </insert>
+
+    <update id="logicalDeleteEvaluationMaterials">
+        update evaluation_materials em
+        set deleted_yn = 'Y',
+            material_status = '삭제',
+            delete_reason = #{deleteReason},
+            deleted_by = #{requestUserId},
+            deleted_at = CURRENT_TIMESTAMP,
+            request_id = #{requestId},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{requestUserId}
+        where em.deleted_yn = 'N'
+          and em.material_origin = 'BATCH_GENERATED'
+          and em.material_status &lt;&gt; '평가확정'
+          <if test="criteria.normalizedEvaluationYear != null">
+              and em.evaluation_year = #{criteria.normalizedEvaluationYear}
+          </if>
+          <if test="criteria.normalizedAreaCode != null">
+              and em.area_code = #{criteria.normalizedAreaCode}
+          </if>
+          <if test="criteria.normalizedGenerationBatchId != null">
+              and em.generation_batch_id = #{criteria.normalizedGenerationBatchId}
+          </if>
+    </update>
+
+    <insert id="insertBatchResult">
+        insert into evaluation_batch_results (batch_id, job_type, total_count, success_count, failure_count, excluded_count, error_detail_json, request_id)
+        values (#{batchId}, #{jobType}, #{totalCount}, #{successCount}, #{failureCount}, #{excludedCount}, '[]'::jsonb, #{requestId})
+        on conflict (batch_id) do update set
+            total_count = excluded.total_count,
+            success_count = excluded.success_count,
+            failure_count = excluded.failure_count,
+            excluded_count = excluded.excluded_count,
+            error_detail_json = excluded.error_detail_json,
+            request_id = excluded.request_id
+    </insert>
+</mapper>

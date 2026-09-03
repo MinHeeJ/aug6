@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic45.EvaluationBatchResultMapper">
+    <resultMap id="EvaluationBatchResultRowMap" type="kr.ac.knue.commonfoundation.basic45.EvaluationBatchResultRow">
+        <constructor>
+            <arg column="batchId" javaType="string"/>
+            <arg column="jobType" javaType="string"/>
+            <arg column="jobTypeName" javaType="string"/>
+            <arg column="requestStatus" javaType="string"/>
+            <arg column="targetCondition" javaType="string"/>
+            <arg column="totalCount" javaType="int"/>
+            <arg column="successCount" javaType="int"/>
+            <arg column="failureCount" javaType="int"/>
+            <arg column="excludedCount" javaType="int"/>
+            <arg column="requestId" javaType="string"/>
+            <arg column="requestedAt" javaType="string"/>
+            <arg column="completedAt" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="EvaluationBatchResultErrorRowMap" type="kr.ac.knue.commonfoundation.basic45.EvaluationBatchResultErrorRow">
+        <constructor>
+            <arg column="batchId" javaType="string"/>
+            <arg column="targetKey" javaType="string"/>
+            <arg column="targetName" javaType="string"/>
+            <arg column="errorCode" javaType="string"/>
+            <arg column="message" javaType="string"/>
+            <arg column="detail" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="resultProjection">
+        select ebr.batch_id as "batchId",
+               ebr.job_type as "jobType",
+               case ebr.job_type
+                   when 'GENERATION' then '생성'
+                   when 'DELETION' then '삭제'
+                   when 'RECALCULATION' then '재계산'
+                   when 'CONFIRMATION' then '확정'
+                   else ebr.job_type
+               end as "jobTypeName",
+               ebrq.request_status as "requestStatus",
+               ebrq.target_condition_json::text as "targetCondition",
+               ebr.total_count as "totalCount",
+               ebr.success_count as "successCount",
+               ebr.failure_count as "failureCount",
+               ebr.excluded_count as "excludedCount",
+               ebr.request_id as "requestId",
+               to_char(ebrq.requested_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "requestedAt",
+               to_char(ebrq.completed_at, 'YYYY-MM-DD"T"HH24:MI:SS') as "completedAt"
+        from evaluation_batch_results ebr
+        join evaluation_batch_requests ebrq on ebrq.batch_id = ebr.batch_id
+        where 1 = 1
+          <if test="criteria.normalizedBatchId != null">
+              and ebr.batch_id = #{criteria.normalizedBatchId}
+          </if>
+          <if test="criteria.normalizedJobType != null">
+              and ebr.job_type = #{criteria.normalizedJobType}
+          </if>
+          <if test="criteria.normalizedTargetCondition != null">
+              and ebrq.target_condition_json::text ilike concat('%', #{criteria.normalizedTargetCondition}, '%')
+          </if>
+    </sql>
+
+    <select id="listResults" resultMap="EvaluationBatchResultRowMap">
+        <include refid="resultProjection"/>
+        order by "requestedAt" desc nulls last, "batchId" desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countResults" resultType="long">
+        select count(*)
+        from (
+            <include refid="resultProjection"/>
+        ) evaluation_batch_result_rows
+    </select>
+
+    <select id="listErrors" resultMap="EvaluationBatchResultErrorRowMap">
+        select ebr.batch_id as "batchId",
+               coalesce(error_item ->> 'targetKey', error_item ->> 'sourceAchievementId', error_item ->> 'targetId', '-') as "targetKey",
+               coalesce(error_item ->> 'targetName', error_item ->> 'achievementTitle', '-') as "targetName",
+               coalesce(error_item ->> 'errorCode', 'BATCH_ITEM_ERROR') as "errorCode",
+               coalesce(error_item ->> 'message', error_item ->> 'errorMessage', '-') as "message",
+               coalesce(error_item ->> 'detail', error_item::text) as "detail"
+        from evaluation_batch_results ebr
+        cross join lateral jsonb_array_elements(ebr.error_detail_json) as error_item
+        where ebr.batch_id = #{batchId}
+        order by "targetKey"
+        limit #{size} offset #{offset}
+    </select>
+
+    <select id="countErrors" resultType="long">
+        select count(*)
+        from evaluation_batch_results ebr
+        cross join lateral jsonb_array_elements(ebr.error_detail_json) as error_item
+        where ebr.batch_id = #{batchId}
+    </select>
+</mapper>

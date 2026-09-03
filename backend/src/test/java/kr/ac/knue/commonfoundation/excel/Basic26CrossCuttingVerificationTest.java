@@ -77,14 +77,14 @@ class Basic26CrossCuttingVerificationTest {
     }
 
     @Test
-    void openApiUncoveredRequirementLedgerKeepsCrossCuttingExcelSecurityAndCleanupAssertions() throws Exception {
+    void openApiRequirementAccountingKeepsCrossCuttingExcelSecurityAndCleanupAssertions() throws Exception {
         String openApi = new ClassPathResource("contracts/openapi.yaml").getContentAsString(StandardCharsets.UTF_8);
-        String ledger = openApi.substring(openApi.indexOf("x-uncovered-requirements:"));
 
-        assertThat(ledger).contains(
-                "canonical_id: REQ-565", "status: covered", "contracts/openapi.yaml x-uncovered-requirements",
-                "canonical_id: REQ-586", "status: covered", "downloadUploadTemplate",
-                "canonical_id: REQ-588", "status: data-constraint", "data-model.md 공통 제약");
+        assertThat(openApi).doesNotContain("x-uncovered-requirements:");
+        assertThat(openApi).contains(
+                "operationId: downloadUploadTemplate",
+                "operationId: createExcelDownload",
+                "operationId: listEvaluationBatchResults");
     }
 
     private Cookie adminCookie() {

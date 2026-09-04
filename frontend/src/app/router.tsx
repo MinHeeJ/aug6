@@ -105,6 +105,14 @@ import {
   MenuUsageManagementPage,
 } from "../pages/admin/CommonOperationsPages";
 import {
+  CollegeEvaluationUnitAuthorityPage,
+  AppealBusinessSettingPage,
+  ResultViewBusinessSettingPage,
+  PersonalAchievementScorePage,
+  ResearchClassificationCriterionPage,
+  UnconfirmedResearchAchievementPage,
+} from "../pages/admin/Basic50BusinessPages";
+import {
   DataScopeRuleManagementPage,
   DutyAssignmentManagementPage,
   PositionAssignmentManagementPage,
@@ -385,6 +393,18 @@ function renderAdminPage(path: string | undefined) {
       return <DutyAssignmentManagementPage />;
     case "/admin/data-scope-rules":
       return <DataScopeRuleManagementPage />;
+    case "/admin/college-evaluation-unit-authorities":
+      return <CollegeEvaluationUnitAuthorityPage />;
+    case "/admin/appeal-business-settings":
+      return <AppealBusinessSettingPage />;
+    case "/admin/result-view-business-settings":
+      return <ResultViewBusinessSettingPage />;
+    case "/achievement/personal-scores":
+      return <PersonalAchievementScorePage />;
+    case "/admin/research-classification-criteria":
+      return <ResearchClassificationCriterionPage />;
+    case "/admin/unconfirmed-research-achievements":
+      return <UnconfirmedResearchAchievementPage />;
     default:
       return null;
   }

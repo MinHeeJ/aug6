@@ -534,6 +534,43 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-SCORE-RECALCULATION-HISTORY",
     menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 재계산 이력",
   },
+  {
+    path: "/admin/college-evaluation-unit-authorities",
+    label: "소속대학·평가단위 권한 관리",
+    screenId: "SCR-COLLEGE-EVALUATION-UNIT-AUTHORITY",
+    menuPath: "평가 기준 관리 > 기간·권한 관리 > 소속대학·평가단위 권한 관리",
+  },
+  {
+    path: "/admin/appeal-business-settings",
+    label: "이의신청 기간·처리권한 관리",
+    screenId: "SCR-APPEAL-BUSINESS-SETTING",
+    menuPath: "평가 기준 관리 > 기간·권한 관리 > 이의신청 기간·처리권한 관리",
+  },
+  {
+    path: "/admin/result-view-business-settings",
+    label: "개인평가결과 조회기간·처리권한 관리",
+    screenId: "SCR-RESULT-VIEW-BUSINESS-SETTING",
+    menuPath:
+      "평가 기준 관리 > 기간·권한 관리 > 개인평가결과 조회기간·처리권한 관리",
+  },
+  {
+    path: "/achievement/personal-scores",
+    label: "개인 업적점수·세부규정 조회",
+    screenId: "SCR-PERSONAL-ACHIEVEMENT-SCORE",
+    menuPath: "업적 평가 조회 > 개인 업적점수·세부규정 조회",
+  },
+  {
+    path: "/admin/research-classification-criteria",
+    label: "연구실적 분류기준 설정",
+    screenId: "SCR-RESEARCH-CLASSIFICATION-CRITERION",
+    menuPath: "업적 평가 관리 > 연구실적 관리 > 연구실적 분류·미확인 목록 관리",
+  },
+  {
+    path: "/admin/unconfirmed-research-achievements",
+    label: "미확인 연구실적 목록",
+    screenId: "SCR-UNCONFIRMED-RESEARCH-ACHIEVEMENT",
+    menuPath: "업적 평가 관리 > 연구실적 관리 > 미확인 연구실적 목록",
+  },
 ];
 
 export type LoginValidationErrors = Partial<

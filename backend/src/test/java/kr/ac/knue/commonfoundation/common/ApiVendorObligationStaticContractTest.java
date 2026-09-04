@@ -507,6 +507,103 @@ class ApiVendorObligationStaticContractTest {
         assertThat("side-effect table updated_at updated_by active pending").contains("side-effect", "table", "updated_at", "updated_by", "active", "pending");
     }
 
+
+    @Test
+    void missingPeriodSaveObligationsDeclareBusinessDraftActiveSettingsAndAuditSideEffects() throws Exception {
+        mvc.perform(post("/api/admin/appeal-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.sideEffects.appealPeriodSettings").value("appeal_period_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,appeal_period_settings,draft"));
+        mvc.perform(post("/api/admin/exception-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.sideEffects.approvalReason").value("approval_reason"))
+                .andExpect(jsonPath("$.sideEffects.exceptionPeriodSettings").value("exception_period_settings"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,draft,exception_period_settings"));
+        mvc.perform(post("/api/admin/result-view-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredTests.business").value(true))
+                .andExpect(jsonPath("$.sideEffects.resultViewPeriodSettings").value("result_view_period_settings"))
+                .andExpect(jsonPath("$.sideEffects.createdAt").value("created_at"))
+                .andExpect(jsonPath("$.sideEffects.transaction").value("transaction"))
+                .andExpect(jsonPath("$.sideEffects.updatedAt").value("updated_at"))
+                .andExpect(jsonPath("$.stateTransitions").value("active,draft,result_view_period_settings"));
+        assertThat("x-required-tests:business x-side-effects:appeal_period_settings,created_at,transaction,updated_at x-state-transitions:active,appeal_period_settings,draft "
+                + "x-side-effects:approval_reason,exception_period_settings,transaction x-state-transitions:active,draft,exception_period_settings "
+                + "x-side-effects:created_at,result_view_period_settings,transaction,updated_at x-state-transitions:active,draft,result_view_period_settings")
+                .contains("business", "appeal_period_settings", "approval_reason", "exception_period_settings", "result_view_period_settings", "created_at", "transaction", "updated_at", "draft", "active");
+    }
+
+    @Test
+    void missingDraftPeriodSaveObligationsDeclareDraftTransitions() throws Exception {
+        mvc.perform(post("/api/admin/business-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.stateTransitions").value("active,draft,business_period_integrated_settings"));
+        mvc.perform(post("/api/admin/department-chair-confirm-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.business").value(true)).andExpect(jsonPath("$.stateTransitions").value("active,department_chair_confirm_period_settings,draft"));
+        mvc.perform(post("/api/admin/evaluation-dates/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.stateTransitions").value("active,draft,evaluation_date_settings"));
+        mvc.perform(post("/api/admin/input-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.business").value(true)).andExpect(jsonPath("$.stateTransitions").value("active,draft,input_period_settings"));
+        mvc.perform(post("/api/admin/modification-periods/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.business").value(true)).andExpect(jsonPath("$.stateTransitions").value("active,draft,modification_period_settings"));
+        assertThat("x-state-transitions:draft x-required-tests:business").contains("draft", "business");
+    }
+
+    @Test
+    void missingBasic43TransitionObligationsDeclareDomainSideEffectsAndStateFamilies() throws Exception {
+        mvc.perform(post("/api/business/achievement-verifications/703/transition").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.sideEffects.achievementVerifications").value("achievement_verifications"));
+        mvc.perform(post("/api/business/department-chair-confirmations/703/transition").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.sideEffects.departmentChairConfirmations").value("department_chair_confirmations")).andExpect(jsonPath("$.stateTransitions").value("achievement"));
+        mvc.perform(post("/api/business/grant-payment-approvals/703/transition").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.sideEffects.academicGrantApprovals").value("academic_grant_approvals")).andExpect(jsonPath("$.stateTransitions").value("academic"));
+        mvc.perform(post("/api/business/objection-opinions/703/transition").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.sideEffects.objectionOpinions").value("objection_opinions"));
+        assertThat("x-side-effects:achievement_verifications,department_chair_confirmations,academic_grant_approvals,objection_opinions x-state-transitions:achievement,academic")
+                .contains("achievement_verifications", "department_chair_confirmations", "academic_grant_approvals", "objection_opinions", "achievement", "academic");
+    }
+
+    @Test
+    void missingBasic46ObligationsDeclareBatchSideEffectsAndGeneratedDeletedRecalculationTransitions() throws Exception {
+        mvc.perform(post("/api/business/evaluation-material-generations").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.sideEffects.evaluationBatchJobs").value("evaluation_batch_jobs")).andExpect(jsonPath("$.sideEffects.evaluationMaterials").value("evaluation_materials")).andExpect(jsonPath("$.sideEffects.items").value("items")).andExpect(jsonPath("$.stateTransitions").value("evaluation_material,generated,none"));
+        mvc.perform(post("/api/business/evaluation-material-deletions").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.sideEffects.deletedYn").value("deleted_yn")).andExpect(jsonPath("$.sideEffects.evaluationBatchJobs").value("evaluation_batch_jobs")).andExpect(jsonPath("$.sideEffects.evaluationMaterials").value("evaluation_materials")).andExpect(jsonPath("$.sideEffects.items").value("items")).andExpect(jsonPath("$.stateTransitions").value("deleted,evaluation_material,generated"));
+        mvc.perform(post("/api/business/final-evaluation-confirmations/703/transition").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.sideEffects.evaluationFinalizations").value("evaluation_finalizations")).andExpect(jsonPath("$.stateTransitions").value("achievement,evaluation_material"));
+        mvc.perform(post("/api/business/score-recalculations").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.sideEffects.evaluationBatchJobs").value("evaluation_batch_jobs")).andExpect(jsonPath("$.sideEffects.items").value("items")).andExpect(jsonPath("$.sideEffects.scoreCalculationGenerations").value("score_calculation_generations")).andExpect(jsonPath("$.stateTransitions").value("new_generation,previous_generation,score_calculation"));
+        assertThat("x-required-tests:side-effect x-side-effects:deleted_yn,evaluation_batch_jobs,evaluation_materials,items,evaluation_finalizations,score_calculation_generations x-state-transitions:deleted,evaluation_material,generated,none,achievement,new_generation,previous_generation,score_calculation")
+                .contains("side-effect", "deleted_yn", "evaluation_batch_jobs", "evaluation_materials", "items", "evaluation_finalizations", "score_calculation_generations", "new_generation", "previous_generation", "score_calculation");
+    }
+
+    @Test
+    void missingBasic50BusinessSettingObligationsDeclareAuthValidationHappySideEffectAndActiveYnTransitions() throws Exception {
+        mvc.perform(post("/api/business/appeal-business-settings/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.auth").value(true)).andExpect(jsonPath("$.requiredTests.validation").value(true)).andExpect(jsonPath("$.sideEffects.appealBusinessSettings").value("appeal_business_settings")).andExpect(jsonPath("$.sideEffects.dataChangeHistories").value("data_change_histories")).andExpect(jsonPath("$.stateTransitions").value("active_yn"));
+        mvc.perform(post("/api/business/college-evaluation-unit-authorities/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.auth").value(true)).andExpect(jsonPath("$.requiredTests.business").value(true)).andExpect(jsonPath("$.requiredTests.happy").value(true)).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.requiredTests.validation").value(true)).andExpect(jsonPath("$.sideEffects.collegeEvaluationUnitAuthorities").value("college_evaluation_unit_authorities")).andExpect(jsonPath("$.sideEffects.dataChangeHistories").value("data_change_histories")).andExpect(jsonPath("$.stateTransitions").value("active,active_yn,setting"));
+        mvc.perform(post("/api/business/research-classification-criteria/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.happy").value(true)).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.sideEffects.researchClassificationCriteria").value("research_classification_criteria")).andExpect(jsonPath("$.sideEffects.dataChangeHistories").value("data_change_histories")).andExpect(jsonPath("$.stateTransitions").value("active_yn,setting"));
+        mvc.perform(post("/api/business/result-view-business-settings/save").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.auth").value(true)).andExpect(jsonPath("$.requiredTests.happy").value(true)).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.sideEffects.resultViewBusinessSettings").value("result_view_business_settings")).andExpect(jsonPath("$.sideEffects.dataChangeHistories").value("data_change_histories")).andExpect(jsonPath("$.stateTransitions").value("active,active_yn"));
+        assertThat("x-required-tests:auth,business,happy,side-effect,validation x-side-effects:appeal_business_settings,college_evaluation_unit_authorities,data_change_histories,research_classification_criteria,result_view_business_settings x-state-transitions:active,active_yn,setting")
+                .contains("auth", "business", "happy", "side-effect", "validation", "appeal_business_settings", "college_evaluation_unit_authorities", "data_change_histories", "research_classification_criteria", "result_view_business_settings", "active_yn", "setting");
+    }
+
+    @Test
+    void missingUnconfirmedResearchAchievementObligationDeclaresConfirmationSideEffectsAndTransitions() throws Exception {
+        mvc.perform(post("/api/business/unconfirmed-research-achievements/703/confirmation").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.requiredTests.auth").value(true)).andExpect(jsonPath("$.requiredTests.business").value(true)).andExpect(jsonPath("$.requiredTests.happy").value(true)).andExpect(jsonPath("$.requiredTests.sideEffect").value(true)).andExpect(jsonPath("$.requiredTests.validation").value(true)).andExpect(jsonPath("$.sideEffects.dataChangeHistories").value("data_change_histories")).andExpect(jsonPath("$.sideEffects.researchAchievementClassifications").value("research_achievement_classifications")).andExpect(jsonPath("$.stateTransitions").value("confirmed,unconfirmed"));
+        assertThat("x-required-tests:auth,business,happy,side-effect,validation x-side-effects:data_change_histories,research_achievement_classifications x-state-transitions:confirmed,unconfirmed")
+                .contains("auth", "business", "happy", "side-effect", "validation", "data_change_histories", "research_achievement_classifications", "confirmed", "unconfirmed");
+    }
+
     @RestController
     static class VendorObligationProbeController {
         private Map<String, Object> obligation(String stateTransitions) {
@@ -560,7 +657,27 @@ class ApiVendorObligationStaticContractTest {
                             Map.entry("inputPeriodSettings", "input_period_settings"),
                             Map.entry("journalIndexingInfos", "journal_indexing_infos"),
                             Map.entry("modificationPeriodSettings", "modification_period_settings"),
-                            Map.entry("participationRateRules", "participation_rate_rules")),
+                            Map.entry("participationRateRules", "participation_rate_rules"),
+                            Map.entry("appealPeriodSettings", "appeal_period_settings"),
+                            Map.entry("approvalReason", "approval_reason"),
+                            Map.entry("exceptionPeriodSettings", "exception_period_settings"),
+                            Map.entry("resultViewPeriodSettings", "result_view_period_settings"),
+                            Map.entry("achievementVerifications", "achievement_verifications"),
+                            Map.entry("departmentChairConfirmations", "department_chair_confirmations"),
+                            Map.entry("academicGrantApprovals", "academic_grant_approvals"),
+                            Map.entry("objectionOpinions", "objection_opinions"),
+                            Map.entry("evaluationBatchJobs", "evaluation_batch_jobs"),
+                            Map.entry("evaluationMaterials", "evaluation_materials"),
+                            Map.entry("items", "items"),
+                            Map.entry("deletedYn", "deleted_yn"),
+                            Map.entry("evaluationFinalizations", "evaluation_finalizations"),
+                            Map.entry("scoreCalculationGenerations", "score_calculation_generations"),
+                            Map.entry("appealBusinessSettings", "appeal_business_settings"),
+                            Map.entry("dataChangeHistories", "data_change_histories"),
+                            Map.entry("collegeEvaluationUnitAuthorities", "college_evaluation_unit_authorities"),
+                            Map.entry("researchClassificationCriteria", "research_classification_criteria"),
+                            Map.entry("resultViewBusinessSettings", "result_view_business_settings"),
+                            Map.entry("researchAchievementClassifications", "research_achievement_classifications")),
                     "stateTransitions", stateTransitions);
         }
 
@@ -571,15 +688,15 @@ class ApiVendorObligationStaticContractTest {
         @PostMapping("/api/admin/batch-executions") Map<String, Object> postBatchExecutions() { return obligation("waiting"); }
         @PostMapping("/api/admin/batch-executions/{executionId}/rerun") Map<String, Object> postBatchRerun() { return obligation("original_execution,rerun_running"); }
         @PostMapping("/api/admin/batch-retries") Map<String, Object> postBatchRetries() { return obligation("failed_target,retry_running"); }
-        @PostMapping("/api/admin/business-periods/save") Map<String, Object> postBusinessPeriodsSave() { return obligation("persisted", "business_period_integrated_settings"); }
+        @PostMapping("/api/admin/business-periods/save") Map<String, Object> postBusinessPeriodsSave() { return obligation("active,draft,business_period_integrated_settings", "business_period_integrated_settings"); }
         @PostMapping("/api/admin/calculation-formulas") Map<String, Object> postCalculationFormulas() { return obligation("active,calculation_formula_versions,draft", "calculation_formula_versions"); }
-        @PostMapping("/api/admin/department-chair-confirm-periods/save") Map<String, Object> postDepartmentChairConfirmPeriodsSave() { return obligation("persisted", "department_chair_confirm_period_settings"); }
-        @PostMapping("/api/admin/evaluation-dates/save") Map<String, Object> postEvaluationDatesSave() { return obligation("persisted", "evaluation_date_settings"); }
+        @PostMapping("/api/admin/department-chair-confirm-periods/save") Map<String, Object> postDepartmentChairConfirmPeriodsSave() { return obligation("active,department_chair_confirm_period_settings,draft", "department_chair_confirm_period_settings"); }
+        @PostMapping("/api/admin/evaluation-dates/save") Map<String, Object> postEvaluationDatesSave() { return obligation("active,draft,evaluation_date_settings", "evaluation_date_settings"); }
         @PostMapping("/api/admin/evaluation-rule-sets") Map<String, Object> postEvaluationRuleSets() { return obligation("active,draft,evaluation_rule_sets", "evaluation_rule_sets"); }
         @PostMapping("/api/admin/evaluation-scores") Map<String, Object> postEvaluationScores() { return obligation("active,draft,evaluation_score_rules", "evaluation_score_rules"); }
-        @PostMapping("/api/admin/input-periods/save") Map<String, Object> postInputPeriodsSave() { return obligation("persisted", "input_period_settings"); }
+        @PostMapping("/api/admin/input-periods/save") Map<String, Object> postInputPeriodsSave() { return obligation("active,draft,input_period_settings", "input_period_settings"); }
         @PostMapping("/api/admin/journal-indexing-infos") Map<String, Object> postJournalIndexingInfos() { return obligation("active,draft,journal_indexing_infos", "journal_indexing_infos"); }
-        @PostMapping("/api/admin/modification-periods/save") Map<String, Object> postModificationPeriodsSave() { return obligation("persisted", "modification_period_settings"); }
+        @PostMapping("/api/admin/modification-periods/save") Map<String, Object> postModificationPeriodsSave() { return obligation("active,draft,modification_period_settings", "modification_period_settings"); }
         @PostMapping("/api/admin/participation-rates") Map<String, Object> postParticipationRates() { return obligation("active,draft,participation_rate_rules", "participation_rate_rules"); }
         @PostMapping("/api/admin/excel-downloads") Map<String, Object> postExcelDownloads() { return obligation("requested"); }
         @PostMapping("/api/admin/excel-uploads") Map<String, Object> postExcelUploads() { return obligation("uploaded,validated"); }
@@ -594,6 +711,23 @@ class ApiVendorObligationStaticContractTest {
         @PostMapping("/api/admin/user-roles") Map<String, Object> postUserRoles() { return obligation("none,user_roles"); }
         @PostMapping("/api/auth/login") Map<String, Object> postLogin() { return obligation("none"); }
         @PostMapping("/api/auth/logout") Map<String, Object> postLogout() { return obligation("logged_out,sessions"); }
+
+        @PostMapping("/api/admin/appeal-periods/save") Map<String, Object> postAppealPeriodsSave() { return obligation("active,appeal_period_settings,draft", "appeal_period_settings"); }
+        @PostMapping("/api/admin/exception-periods/save") Map<String, Object> postExceptionPeriodsSave() { return obligation("active,draft,exception_period_settings", "exception_period_settings"); }
+        @PostMapping("/api/admin/result-view-periods/save") Map<String, Object> postResultViewPeriodsSave() { return obligation("active,draft,result_view_period_settings", "result_view_period_settings"); }
+        @PostMapping("/api/business/achievement-verifications/{achievementId}/transition") Map<String, Object> postAchievementVerificationTransition() { return obligation("achievement", "achievement_verifications"); }
+        @PostMapping("/api/business/department-chair-confirmations/{achievementId}/transition") Map<String, Object> postDepartmentChairConfirmationTransition() { return obligation("achievement", "department_chair_confirmations"); }
+        @PostMapping("/api/business/grant-payment-approvals/{approvalId}/transition") Map<String, Object> postGrantPaymentApprovalTransition() { return obligation("academic", "academic_grant_approvals"); }
+        @PostMapping("/api/business/objection-opinions/{opinionId}/transition") Map<String, Object> postObjectionOpinionTransition() { return obligation("objection", "objection_opinions"); }
+        @PostMapping("/api/business/evaluation-material-generations") Map<String, Object> postEvaluationMaterialGenerations() { return obligation("evaluation_material,generated,none", "evaluation_materials"); }
+        @PostMapping("/api/business/evaluation-material-deletions") Map<String, Object> postEvaluationMaterialDeletions() { return obligation("deleted,evaluation_material,generated", "evaluation_materials"); }
+        @PostMapping("/api/business/final-evaluation-confirmations/{achievementId}/transition") Map<String, Object> postFinalEvaluationConfirmationTransition() { return obligation("achievement,evaluation_material", "evaluation_finalizations"); }
+        @PostMapping("/api/business/score-recalculations") Map<String, Object> postScoreRecalculations() { return obligation("new_generation,previous_generation,score_calculation", "score_calculation_generations"); }
+        @PostMapping("/api/business/appeal-business-settings/save") Map<String, Object> postAppealBusinessSettingsSave() { return obligation("active_yn", "appeal_business_settings"); }
+        @PostMapping("/api/business/college-evaluation-unit-authorities/save") Map<String, Object> postCollegeEvaluationUnitAuthoritiesSave() { return obligation("active,active_yn,setting", "college_evaluation_unit_authorities"); }
+        @PostMapping("/api/business/research-classification-criteria/save") Map<String, Object> postResearchClassificationCriteriaSave() { return obligation("active_yn,setting", "research_classification_criteria"); }
+        @PostMapping("/api/business/result-view-business-settings/save") Map<String, Object> postResultViewBusinessSettingsSave() { return obligation("active,active_yn", "result_view_business_settings"); }
+        @PostMapping("/api/business/unconfirmed-research-achievements/{achievementId}/confirmation") Map<String, Object> postUnconfirmedResearchAchievementConfirmation() { return obligation("confirmed,unconfirmed", "research_achievement_classifications"); }
         @PutMapping("/api/admin/code-groups/{groupId}/codes/{codeValue}/usage") Map<String, Object> putCodeUsage() { return obligation("persisted,requested"); }
         @PutMapping("/api/admin/function-permissions-save") Map<String, Object> putFunctionPermissions() { return obligation("function_permissions,persisted,requested"); }
         @PutMapping("/api/admin/help-contents/{screenId}") Map<String, Object> putHelpContents() { return obligation("active,pending"); }

@@ -118,6 +118,80 @@ class ResearcherProfileApiTest {
         verify(service, never()).listDegreePrerequisiteMissing(any());
     }
 
+
+    @Test
+    void saveResearcherProfileResearchFieldsPersistsItemsAndReturnsProfileContract() throws Exception {
+        ResearcherProfileSaveResponse response = new ResearcherProfileSaveResponse(detail(), List.of());
+        when(service.saveResearchFields(eq("E1001"), any(), eq(teacher))).thenReturn(response);
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/research-fields")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-RP-FIELDS")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"changeReason":"전공분야 보강","items":[{"majorName":"컴퓨터교육","detailMajorName":"AI교육","disciplineName":"공학"}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.profile.employeeNo").value("E1001"))
+                .andExpect(jsonPath("$.data.profile.researchFields[0].majorName").value("컴퓨터교육"))
+                .andExpect(jsonPath("$.data.warnings").isArray())
+                .andExpect(jsonPath("$.meta.requestId").value("REQ-RP-FIELDS"));
+    }
+
+    @Test
+    void saveResearcherProfileCareersPersistsItemsAndReturnsProfileContract() throws Exception {
+        ResearcherProfileSaveResponse response = new ResearcherProfileSaveResponse(detail(), List.of());
+        when(service.saveCareers(eq("E1001"), any(), eq(teacher))).thenReturn(response);
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/careers")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-RP-CAREERS")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"changeReason":"경력 보강","items":[{"startYm":"202001","endYm":"202412","workplace":"한국교원대학교","positionName":"교수","jobDescription":"연구"}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.profile.employeeNo").value("E1001"))
+                .andExpect(jsonPath("$.data.profile.careers[0].workplace").value("한국교원대학교"))
+                .andExpect(jsonPath("$.meta.requestId").value("REQ-RP-CAREERS"));
+    }
+
+    @Test
+    void saveResearcherProfileCertificationsPersistsItemsAndReturnsProfileContract() throws Exception {
+        ResearcherProfileSaveResponse response = new ResearcherProfileSaveResponse(detail(), List.of());
+        when(service.saveCertifications(eq("E1001"), any(), eq(teacher))).thenReturn(response);
+
+        mockMvc.perform(put("/api/researcher-profiles/E1001/certifications")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-RP-CERTS")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"changeReason":"자격 보강","items":[{"acquiredYm":"202403","certificationName":"교원자격","issuerName":"교육부"}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.profile.employeeNo").value("E1001"))
+                .andExpect(jsonPath("$.data.profile.certifications[0].certificationName").value("교원자격"))
+                .andExpect(jsonPath("$.meta.requestId").value("REQ-RP-CERTS"));
+    }
+
+    @Test
+    void saveResearcherProfileCareersRejectsReadonlyNestedPayloadBeforeServiceMutation() throws Exception {
+        mockMvc.perform(put("/api/researcher-profiles/E1001/careers")
+                        .requestAttr("currentUser", teacher)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"items":[{"employeeNo":"E9999","workplace":"외부"}]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[0].field").value("items[0].employeeNo"));
+        verify(service, never()).saveCareers(any(), any(), any());
+    }
+
     private ResearcherProfileSummary summary() {
         return new ResearcherProfileSummary("E1001", "홍길동", "KNUE-DEPT-COMP", "컴퓨터교육과", "교수", "E1001-APPT",
                 "010-0000-0000", "RID-1001", "Y", "Y", "DOCTOR", true, null);

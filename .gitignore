@@ -7,7 +7,6 @@ coverage/
 .cache/
 *.log
 *.local
-target/
 
 # Playwright verifier artifacts
 test-results/

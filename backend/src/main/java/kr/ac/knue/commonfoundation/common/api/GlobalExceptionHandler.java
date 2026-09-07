@@ -2,6 +2,7 @@ package kr.ac.knue.commonfoundation.common.api;
 
 import java.util.Comparator;
 import java.util.List;
+import kr.ac.knue.commonfoundation.schoolinfo.ExternalIntegrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -67,6 +68,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
+    }
+
+    @ExceptionHandler(ExternalIntegrationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleExternalIntegration(ExternalIntegrationException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.fail(ApiError.of("EXTERNAL_INTEGRATION_ERROR", exception.getMessage())));
     }
 
     @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})

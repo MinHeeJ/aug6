@@ -4256,7 +4256,7 @@ paths:
       x-business-rules: [업로드 파일과 템플릿 규칙을 검증한다]
       x-side-effects: [excel_upload_files 생성, excel_upload_staging_rows 생성, excel_upload_errors 생성, excel_upload_histories 생성]
       x-required-tests: [happy, auth, validation, business, side-effect]
-      x-state-transitions: [uploaded -> validated]
+      x-state-transitions: [UPLOADED -> VALIDATED]
       x-related-requirements: [REQ-601, REQ-603]
   /api/admin/excel-uploads/{uploadId}/commit:
     post:
@@ -5382,7 +5382,99 @@ paths:
       x-business-rules: [예외기간 종료일시는 시작일시 이후여야 하며 동일 평가연도/교원/영역/대상기능 활성 기간 중복을 금지한다]
       x-related-requirements: [REQ-1166, REQ-1167, REQ-1170, REQ-1180]
 
+  /api/admin/school-info:
+    get:
+      operationId: searchSchoolInfo
+      summary: 학교정보 조회
+      parameters:
+        - name: schoolName
+          in: query
+          required: false
+          schema: { type: string }
+          description: 외부 SCHUL_NM 부분일치 검색어. 한글은 adapter에서 URL 인코딩한다.
+        - name: educationOfficeCode
+          in: query
+          required: false
+          schema: { type: string }
+          description: 외부 ATPT_OFCDC_SC_CODE 검색 조건.
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: size
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 100 }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '502': { description: NEIS 외부 API 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '504': { description: NEIS 외부 API timeout, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R09]
+      x-pagination: { defaultPage: 1, defaultSize: 100, maxSize: 100, countSource: renderedRowsLength }
+      x-filtering: [schoolName, educationOfficeCode]
+      x-related-requirements: [REQ-1634, REQ-1635, REQ-1636, REQ-1637, REQ-1638, REQ-1639, REQ-1640, REQ-1641, REQ-1648, REQ-1649, REQ-1657]
+      x-required-tests:
+        - 'happy: NEIS INFO-000 응답 -> URL 인코딩된 query로 조회하고 표시 row만 반환한다'
+        - 'empty: NEIS INFO-200 응답 -> 성공 envelope와 빈 rows를 반환한다'
+        - 'external-error: INFO-000/INFO-200 외 result code -> ApiError로 변환한다'
+        - 'auth: R09 세션 없는 학교정보 조회 -> 401 또는 403 ApiError가 반환된다'
+
 x-uncovered-requirements:
+  - canonical_id: REQ-1633
+    status: screen-only
+    evidence: 좌측 메뉴와 `/admin/school-info` route 노출은 ui-design.md의 SCR-SCHOOL-INFO-LOOKUP 계약과 menu seed로 검증하며 OpenAPI operation 직접 소유가 아니다.
+  - canonical_id: REQ-1642
+    status: screen-only
+    evidence: 학교명/시도교육청 입력 영역은 SCR-SCHOOL-INFO-LOOKUP 화면 계약이 소유하고 query parameter는 searchSchoolInfo가 참조한다.
+  - canonical_id: REQ-1643
+    status: screen-only
+    evidence: 7개 결과 컬럼 렌더링은 ui-design.md의 table 계약이 소유하고 API는 외부 field를 전달한다.
+  - canonical_id: REQ-1644
+    status: screen-only
+    evidence: 조회 중/결과 없음/오류 사유 구분은 SCR-SCHOOL-INFO-LOOKUP 화면 상태와 frontend page test가 검증한다.
+  - canonical_id: REQ-1645
+    status: data-constraint
+    evidence: 학교정보 조회 결과 무저장은 data-model.md의 BASIC-53 External Response Data Boundary와 mapper/table 부재 검증이 소유한다.
+  - canonical_id: REQ-1646
+    status: non-functional
+    evidence: Port/Adapter 외부 호출 분리는 architecture.md의 SchoolInfo module boundary와 backend unit test가 소유한다.
+  - canonical_id: REQ-1647
+    status: data-constraint
+    evidence: MyBatis Mapper 생성 금지는 data-model.md persistence exclusion과 static scan이 소유한다.
+  - canonical_id: REQ-1650
+    status: non-functional
+    evidence: NEIS_OPEN_API_KEY 환경변수 placeholder는 architecture.md와 quickstart.md runtime config 검증이 소유한다.
+  - canonical_id: REQ-1651
+    status: non-functional
+    evidence: 인증키 원문 비밀 보존은 security/config scan과 architecture.md runtime config 경계가 소유한다.
+  - canonical_id: REQ-1652
+    status: data-constraint
+    evidence: 신규 menu seed migration은 data-model.md Seed Data Contract와 Flyway migration task가 소유한다.
+  - canonical_id: REQ-1653
+    status: screen-only
+    evidence: 관리자 역할의 메뉴 접근은 menu_permissions seed와 UI menu visibility 검증이 소유한다.
+  - canonical_id: REQ-1654
+    status: non-functional
+    evidence: backend API 계약 테스트 추가는 tasks.md T001~T005와 test suite evidence가 소유한다.
+  - canonical_id: REQ-1655
+    status: non-functional
+    evidence: 외부 API stub 세 갈래 테스트는 backend test fixture와 tasks.md T001/T011이 소유한다.
+  - canonical_id: REQ-1656
+    status: non-functional
+    evidence: frontend page test 세 상태 검증은 tasks.md T012/T015가 소유한다.
+  - canonical_id: REQ-1658
+    status: out-of-scope
+    evidence: 학교정보 DB 저장·즐겨찾기·Excel 다운로드·pagination UI 제외는 spec.md 범위 밖과 route/action 부재 검증이 소유한다.
+  - canonical_id: REQ-1659
+    status: out-of-scope
+    evidence: 다른 공공데이터 API 추가 연동 제외는 spec.md 범위 밖과 OpenAPI path 부재 검증이 소유한다.
+  - canonical_id: REQ-1660
+    status: out-of-scope
+    evidence: 인증키 발급·관리 화면 제외는 spec.md 범위 밖과 route/API 부재 검증이 소유한다.
   - canonical_id: REQ-713
     status: non-functional
     evidence: 동일 저장소 재사용은 OpenAPI operation 직접 매핑 대상이 아니며 architecture-runtime artifact에서 추적한다.
@@ -5556,6 +5648,29 @@ components:
       name: SESSION
       description: HttpOnly SameSite=Lax session cookie
   schemas:
+
+    SchoolInfoSearchResponse:
+      type: object
+      required: [page, size, displayedCount, rows]
+      properties:
+        page: { type: integer, minimum: 1 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        displayedCount: { type: integer, minimum: 0 }
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchoolInfoRow'
+    SchoolInfoRow:
+      type: object
+      required: [educationOfficeName, schoolName, schoolKindName, locationName, foundationName, roadAddress, telephoneNumber]
+      properties:
+        educationOfficeName: { type: string }
+        schoolName: { type: string }
+        schoolKindName: { type: string }
+        locationName: { type: string }
+        foundationName: { type: string }
+        roadAddress: { type: string }
+        telephoneNumber: { type: string }
 
     SaveAppealPeriodRequest:
       type: object

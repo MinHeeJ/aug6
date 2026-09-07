@@ -37,6 +37,12 @@ privacy:
     aes256-gcm-key: "${PRIVACY_CRYPTO_KEY:}"
     hmac-key: "${PRIVACY_HMAC_KEY:${PRIVACY_CRYPTO_KEY:}}"
 
+neis:
+  open-api-key: "${NEIS_OPEN_API_KEY:}"
+  timeout: ${NEIS_TIMEOUT:PT5S}
+  school-info:
+    endpoint: ${NEIS_SCHOOL_INFO_ENDPOINT:https://open.neis.go.kr/hub/schoolInfo}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

@@ -82,6 +82,7 @@ import { DataChangeHistoryPage } from "../pages/admin/SCR-DATA-CHANGE-HISTORY";
 import { DeletedBusinessDataPage } from "../pages/admin/SCR-DELETED-BUSINESS-DATA";
 import { KorusFacultySyncPage } from "../pages/admin/SCR-KORUS-FACULTY-SYNC";
 import { FullTimeFacultyStatusPage } from "../pages/admin/SCR-FULL-TIME-FACULTY-STATUS";
+import { SchoolInfoLookupPage } from "../pages/admin/SCR-SCHOOL-INFO-LOOKUP";
 import {
   DegreePrerequisiteMissingPage,
   ResearcherProfileDetailPage,
@@ -359,6 +360,8 @@ function renderAdminPage(path: string | undefined) {
       return <KorusFacultySyncPage />;
     case "/admin/full-time-faculty-statuses":
       return <FullTimeFacultyStatusPage />;
+    case "/admin/school-info":
+      return <SchoolInfoLookupPage />;
     case "/researcher-profiles":
       return <ResearcherProfileListPage />;
     case "/researcher-profiles/{employeeNo}":

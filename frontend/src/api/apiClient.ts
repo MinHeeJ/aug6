@@ -80,6 +80,53 @@ export type HealthStatus = {
   service?: string;
 };
 
+export type SchoolInfoRow = {
+  educationOfficeName: string;
+  schoolName: string;
+  schoolKindName: string;
+  locationName: string;
+  foundationName: string;
+  roadAddress: string;
+  telephoneNumber: string;
+};
+
+export type SchoolInfoSearchResponse = {
+  page: number;
+  size: number;
+  displayedCount: number;
+  rows: SchoolInfoRow[];
+};
+
+export type SchoolInfoSearchParams = {
+  schoolName?: string;
+  educationOfficeCode?: string;
+  page?: number;
+  size?: number;
+};
+
+function buildSchoolInfoSearchPath(params: SchoolInfoSearchParams = {}) {
+  const query = new URLSearchParams();
+  if (params.schoolName?.trim())
+    query.set("schoolName", params.schoolName.trim());
+  if (params.educationOfficeCode?.trim()) {
+    query.set("educationOfficeCode", params.educationOfficeCode.trim());
+  }
+  query.set("page", String(params.page ?? 1));
+  query.set("size", String(params.size ?? 100));
+  return `/api/admin/school-info?${query.toString()}` as `/api/${string}`;
+}
+
+export const schoolInfoApi = {
+  paths: {
+    search: buildSchoolInfoSearchPath,
+  },
+  search(params: SchoolInfoSearchParams = {}) {
+    return apiRequest<SchoolInfoSearchResponse>(
+      buildSchoolInfoSearchPath(params),
+    );
+  },
+};
+
 export type MenuItem = {
   menuId: number;
   parentMenuId?: number;

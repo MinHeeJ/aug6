@@ -93,6 +93,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/admin/deleted-business-data")) {
             return "/admin/deleted-business-data";
         }
+        if (apiPath.equals("/api/admin/school-info")) {
+            return "/admin/school-info";
+        }
         if (apiPath.equals("/api/admin/users") || apiPath.matches("/api/admin/users/[^/]+/(account|roles)")) {
             return "/admin/users";
         }

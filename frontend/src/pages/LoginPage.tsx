@@ -203,6 +203,12 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "시스템 관리 > 공통 운영 관리 > 공통 환경설정",
   },
   {
+    path: "/admin/school-info",
+    label: "학교정보 조회",
+    screenId: "SCR-SCHOOL-INFO-LOOKUP",
+    menuPath: "시스템 관리 > 외부 연동 > 학교 정보 조회",
+  },
+  {
     path: "/admin/base-years",
     label: "기준연도 관리",
     screenId: "SCR-BASE-YEAR-MGMT",
@@ -630,6 +636,7 @@ export function canAccessAdminRoute(
       "/admin/score-calculation-histories",
       "/admin/score-adjustment-histories",
       "/admin/score-recalculation-histories",
+      "/admin/school-info",
     ].includes(path)
   ) {
     return true;

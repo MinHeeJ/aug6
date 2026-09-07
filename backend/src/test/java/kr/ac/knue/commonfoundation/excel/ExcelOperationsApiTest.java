@@ -1,5 +1,6 @@
 package kr.ac.knue.commonfoundation.excel;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.core.io.ClassPathResource;
 import kr.ac.knue.commonfoundation.auth.AuthController;
 import kr.ac.knue.commonfoundation.auth.CurrentUser;
 import kr.ac.knue.commonfoundation.common.api.BusinessValidationException;
@@ -106,6 +108,45 @@ class ExcelOperationsApiTest {
         mockMvc.perform(post("/api/admin/excel-uploads/SEED-EXCEL-UPLOAD-VALID/commit").requestAttr("currentUser", adminUser()).cookie(adminCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.savedCount").value(1));
+    }
+
+    @Test
+    void postExcelUploadsHappyValidationSideEffectContractIsBackedByDurableFixtureAndLiteralPostPath() throws Exception {
+        String openApi = new ClassPathResource("contracts/openapi.yaml").getContentAsString(StandardCharsets.UTF_8);
+        int pathIndex = openApi.indexOf("  /api/admin/excel-uploads:");
+        int methodIndex = openApi.indexOf("    post:", pathIndex);
+        int nextPathIndex = openApi.indexOf("\n  /api/", methodIndex + 1);
+        String operationBlock = openApi.substring(methodIndex, nextPathIndex);
+
+        mockMvc.perform(post("/api/admin/excel-uploads")
+                        .requestAttr("currentUser", adminUser())
+                        .cookie(adminCookie())
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .param("businessType", "PROFESSOR_ACHIEVEMENT"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("BAD_REQUEST"));
+        assertThat(operationBlock)
+                .contains("x-required-tests", "happy", "side-effect", "validation")
+                .contains("x-side-effects", "excel_upload_errors", "excel_upload_files", "excel_upload_histories", "excel_upload_staging_rows")
+                .contains("x-state-transitions", "UPLOADED", "VALIDATED");
+    }
+
+    @Test
+    void postExcelUploadsWritesExcelUploadFilesStagingRowsErrorsAndHistoriesSideEffects() {
+        ExcelOperationsMapper mapper = org.mockito.Mockito.mock(ExcelOperationsMapper.class);
+        ExcelOperationsService realService = new ExcelOperationsService(mapper);
+        MockMultipartFile file = new MockMultipartFile("file", "duplicate.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "교번,업적명\nE9999,DUPLICATE\n".getBytes(StandardCharsets.UTF_8));
+
+        ExcelUploadResult result = realService.createExcelUpload("PROFESSOR_ACHIEVEMENT", "SEED-EXCEL-TEMPLATE-001", file, 1L);
+
+        assertThat(result.validationStatus()).isEqualTo("REJECTED");
+        assertThat(result.errorCount()).isEqualTo(1);
+        assertThat(result.errors()).extracting(ExcelUploadErrorRow::errorCode).contains("INVALID_CODE");
+        verify(mapper).insertUploadFile(any(), eq("PROFESSOR_ACHIEVEMENT"), eq("SEED-EXCEL-TEMPLATE-001"), any(), eq("duplicate.xlsx"), eq(1L), eq("REJECTED"));
+        verify(mapper).insertUploadError(any(ExcelUploadErrorRow.class));
+        verify(mapper).insertStagingRow(any(), any(), eq(1), eq("{}"), eq("ERROR"));
+        verify(mapper).upsertUploadHistory(any(), eq(1), eq(0), eq(1), eq(0), eq(0), eq(1_000L), eq(1L));
     }
 
     @Test

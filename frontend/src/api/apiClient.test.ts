@@ -6,6 +6,7 @@ import {
   evaluationElementApi,
   evaluationManagementItemApi,
   menuPermissionApi,
+  menuStructureApi,
   organizationApi,
 } from "./apiClient";
 
@@ -51,6 +52,25 @@ describe("apiRequest", () => {
     expect(requestedUrl).toContain("targetId=R09");
     expect(requestedUrl).toContain("accessAllowed=DENY");
     expect(requestedUrl).toContain("page=1");
+  });
+
+  it("calls getLocalizedMenuTree with the selected language on the relative menu API path", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        success: true,
+        data: { lang: "en", rows: [] },
+        meta: {},
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await menuStructureApi.getLocalizedMenuTree("en");
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/admin/menus/localized-tree?lang=en",
+    );
   });
 
   it("retrieves organization parent-relation history through the relative history endpoint", async () => {

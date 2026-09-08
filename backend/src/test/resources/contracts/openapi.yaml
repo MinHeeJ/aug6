@@ -1582,6 +1582,75 @@ paths:
         - 'validation: 필수 field 누락 메뉴 접근권한 저장 요청 -> 해당 field-level ApiError가 반환된다'
         - 'business: 메뉴 접근권한 저장 업무 규칙 위반 -> 기존 상태가 변경되지 않는다'
         - 'side-effect: 메뉴 접근권한 저장 성공 -> 변경 처리자와 처리일시가 관련 row에 남는다'
+  /api/admin/menus/localized-tree:
+    get:
+      operationId: getLocalizedMenuTree
+      summary: 언어별 메뉴 계층 조회
+      security:
+        - SessionCookie: []
+      x-roles:
+        - R09
+      parameters:
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [ko, en]
+          description: 현재 UI 언어 코드
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      error:
+                        $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증 필요
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      error:
+                        $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      error:
+                        $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+        - REQ-1740
+        - REQ-1743
+        - REQ-1744
+      x-business-rules:
+        - 메뉴 외 DB 조회 데이터는 다국어 변환하지 않고 메뉴 표시명만 언어별로 결정한다.
+        - lang=en이고 menus.menu_name_en이 null 또는 blank이면 menus.menu_name을 displayName으로 반환한다.
+      x-required-tests:
+        - 'happy: R09 세션과 lang=en 요청 -> ApiResponse.data.rows[*].displayName이 menus.menu_name_en 또는 fallback menus.menu_name으로 반환된다'
+        - 'auth: SessionCookie 없는 lang=en 요청 -> 401 ApiError가 반환된다'
+        - 'validation: lang=ja 요청 -> ApiError.fields.lang에 지원 언어 오류가 반환된다'
+        - 'business: menu_name_en이 blank인 영어 메뉴 row -> displayName은 menu_name이며 row 순서와 권한 필터는 기존 menu tree와 동일하다'
+        - 'side-effect: getLocalizedMenuTree 성공 -> menus, menu_permissions, user preference table 어느 것도 변경되지 않는다'
   /api/admin/menus/tree:
     get:
       operationId: getMenuTree
@@ -7780,6 +7849,37 @@ components:
         FOND_SC_NM: { type: string, description: 설립구분 }
         ORG_RDNMA: { type: string, description: 도로명주소 }
         ORG_TELNO: { type: string, description: 전화번호 }
+    LocalizedMenuNode:
+      type: object
+      properties:
+        menuId: { type: integer, format: int64 }
+        parentMenuId: { type: integer, format: int64, nullable: true }
+        menuType: { type: string }
+        menuName: { type: string, description: 기존 한국어 메뉴명 }
+        menuNameEn: { type: string, nullable: true, description: 메뉴 영문명 }
+        displayName: { type: string, description: lang 기준 메뉴 표시명 }
+        displayOrder: { type: integer }
+        screenId: { type: string, nullable: true }
+        url: { type: string, nullable: true }
+        icon: { type: string, nullable: true }
+        businessCategory: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        systemUseYn: { type: string }
+        status: { type: string }
+        changeReason: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedMenuNode'
+    LocalizedMenuTreeResponse:
+      type: object
+      properties:
+        lang: { type: string, enum: [ko, en] }
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalizedMenuNode'
     FunctionPermissionRequest:
       type: object
       required: [screenId, roleCode, functionType, permissionAllowed, changeReason]
@@ -9337,6 +9437,36 @@ x-uncovered-requirements:
   - canonical_id: REQ-1727
     status: out-of-scope
     evidence: "report_print_histories 수정·삭제 operation은 범위 밖이므로 제공하지 않는다."
+  - canonical_id: REQ-1734
+    status: screen-only
+    evidence: "Header Language Contract의 지원 언어 selector가 한국어/영어 선택지를 표시한다."
+  - canonical_id: REQ-1735
+    status: screen-only
+    evidence: "SCR-COMMON-SHELL header region과 B14-045가 신규 언어 선택 UI를 정의한다."
+  - canonical_id: REQ-1736
+    status: screen-only
+    evidence: "Header Language Contract와 I18n Resource Coverage가 영어 선택 시 정적 UI 문구 번역을 검증한다."
+  - canonical_id: REQ-1737
+    status: screen-only
+    evidence: "Header Language Contract의 기본값 규칙이 최초 표시 언어를 한국어로 고정한다."
+  - canonical_id: REQ-1738
+    status: screen-only
+    evidence: "Browser session language state 규칙이 DB 저장 없이 화면 세션 유지 범위를 정의한다."
+  - canonical_id: REQ-1739
+    status: screen-only
+    evidence: "I18n Resource Coverage가 전체 화면 정적 문구를 다국어 리소스 대상으로 지정한다."
+  - canonical_id: REQ-1741
+    status: data-constraint
+    evidence: "data-model.md patch의 `menus.menu_name_en` field contract가 영문명 컬럼을 정의한다."
+  - canonical_id: REQ-1742
+    status: data-constraint
+    evidence: "data-model.md Seed Data Contract patch가 기존 메뉴 영문명 migration seed를 요구한다."
+  - canonical_id: REQ-1745
+    status: non-functional
+    evidence: "plan.md 기술 컨텍스트와 architecture.md patch가 `i18next / react-i18next` 사용을 고정한다."
+  - canonical_id: REQ-1746
+    status: non-functional
+    evidence: "plan.md 배포/빌드 경계와 quickstart.md patch가 사전 빌드 이미지 의존성 포함을 검증한다."
 x-shared-contract-reference:
   technology_stack:
     backend: Java 17 + Spring Boot 3.3.x + Maven + MyBatis + PostgreSQL 16

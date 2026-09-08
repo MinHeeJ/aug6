@@ -187,6 +187,8 @@ public class ReportManagementService {
         if (mapper.countRunningBulkReportJobs(reportId, request.targetHash()) > 0) throw new ConflictException("JOB_ALREADY_RUNNING: 진행 중인 동일 대량 출력 작업이 있습니다.");
         BulkReportJobRow row = mapper.insertBulkReportJob(request, user.userId(), requestId, request.targetPersonIds().size());
         request.targetPersonIds().forEach(targetId -> mapper.insertBulkReportJobTarget(row.jobId(), targetId));
+        mapper.insertReportPrintHistory(reportId, user.userId(), "대량 출력 준비 대상 " + request.targetPersonIds().size() + "건", outputFormat,
+                request.targetPersonIds().size(), "QUEUED", null, requestId);
         return row;
     }
 
@@ -291,6 +293,10 @@ public class ReportManagementService {
             flag(fields, field, value);
         }
         if (!Set.of("ROLE", "ORG", "USER").contains(norm(r.granteeType()))) fields.add(new ValidationError("granteeType", "ROLE, ORG, USER 중 하나를 선택하세요."));
+        if ("N".equals(norm(r.allowViewYn())) && "N".equals(norm(r.allowPreviewYn())) && "N".equals(norm(r.allowPrintYn()))
+                && "N".equals(norm(r.allowPdfYn())) && "N".equals(norm(r.allowExcelYn()))) {
+            fields.add(new ValidationError("allowedActions", "하나 이상의 허용행위를 선택하세요."));
+        }
         required(fields, "changeReason", r.changeReason(), "변경 사유를 입력하세요.");
         if (!fields.isEmpty()) throw new BusinessValidationException("보고서 권한 저장 요청이 올바르지 않습니다.", fields);
     }

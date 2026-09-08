@@ -1,5 +1,5 @@
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   ChevronDown,
@@ -15,10 +15,23 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../../app/AuthProvider";
-import type { MenuItem } from "../../api/apiClient";
+import { menuStructureApi, type MenuItem } from "../../api/apiClient";
+import {
+  i18n,
+  setApplicationLanguage,
+  type SupportedLanguage,
+} from "../../i18n";
+import { useTranslation } from "react-i18next";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
+  const { t } = useTranslation();
+  const [language, setLanguage] = useState<SupportedLanguage>(() =>
+    i18n.language === "en" ? "en" : "ko",
+  );
+  const [localizedMenus, setLocalizedMenus] = useState<MenuItem[]>(
+    () => auth.user?.menus ?? [],
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [miniSidebar, setMiniSidebar] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -34,10 +47,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   );
   const currentPath =
     typeof window === "undefined" ? "/" : window.location.pathname;
-  const visibleMenus = useMemo(
-    () => auth.user?.menus ?? [],
-    [auth.user?.menus],
-  );
+  const visibleMenus = useMemo(() => localizedMenus, [localizedMenus]);
   const activeHeaderMenu =
     visibleMenus.find((menu) => menu.menuId === activeHeaderMenuId) ?? null;
   const searchResults = useMemo(() => {
@@ -58,13 +68,51 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const closeMobile = () => setSidebarOpen(false);
 
+  useEffect(() => {
+    const syncLanguage = (nextLanguage: string) => {
+      setLanguage(nextLanguage === "en" ? "en" : "ko");
+    };
+    i18n.on("languageChanged", syncLanguage);
+    return () => i18n.off("languageChanged", syncLanguage);
+  }, []);
+
+  useEffect(() => {
+    setLocalizedMenus(auth.user?.menus ?? []);
+  }, [auth.user?.menus]);
+
+  useEffect(() => {
+    if (auth.status !== "authenticated") return;
+    let cancelled = false;
+    void menuStructureApi
+      .getLocalizedMenuTree(language)
+      .then((response) => {
+        if (!cancelled && response.data?.rows) {
+          setLocalizedMenus(response.data.rows);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLocalizedMenus(auth.user?.menus ?? []);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.status, auth.user?.menus, language]);
+
+  const handleLanguageChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setLanguage(setApplicationLanguage(event.target.value));
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-lightgray text-link dark:bg-dark dark:text-white/90">
       {sidebarOpen ? (
         <button
           type="button"
           className="fixed inset-0 z-[2] bg-dark/55 backdrop-blur-sm xl:hidden"
-          aria-label="모바일 메뉴 닫기"
+          aria-label={t("모바일 메뉴 닫기")}
           onClick={closeMobile}
         />
       ) : null}
@@ -94,14 +142,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 Common Foundation
               </p>
               <p className="truncate text-xs text-muted dark:text-white/50">
-                시스템 관리 콘솔
+                {t("시스템 관리 콘솔")}
               </p>
             </div>
           </a>
           <button
             type="button"
             className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-lightmuted transition-colors hover:bg-lightprimary hover:text-primary xl:hidden"
-            aria-label="닫기"
+            aria-label={t("닫기")}
             onClick={closeMobile}
           >
             <X size={18} />
@@ -126,7 +174,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             ))
           ) : (
             <div className="mt-4 rounded-2xl border border-dashed border-ld bg-lightgray p-4 text-xs text-muted dark:border-white/10 dark:bg-white/5 dark:text-white/60">
-              표시 가능한 메뉴가 없습니다.
+              {t("표시 가능한 메뉴가 없습니다.")}
             </div>
           )}
         </nav>
@@ -148,7 +196,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <button
               className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-lightprimary text-primary transition-colors hover:bg-primary hover:text-white"
               type="button"
-              aria-label="로그아웃"
+              aria-label={t("로그아웃")}
               onClick={() => void auth.logout()}
             >
               <LogOut size={18} />
@@ -165,7 +213,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <button
                   className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-link transition-colors after:absolute after:h-10 after:w-10 after:rounded-full after:bg-transparent hover:text-primary hover:after:bg-lightprimary dark:text-white/80 xl:hidden"
                   type="button"
-                  aria-label="모바일 메뉴"
+                  aria-label={t("모바일 메뉴")}
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu size={20} />
@@ -173,7 +221,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <button
                   className="relative hidden h-10 w-10 items-center justify-center rounded-full text-link transition-colors after:absolute after:h-10 after:w-10 after:rounded-full after:bg-transparent hover:text-primary hover:after:bg-lightprimary dark:text-white/80 xl:inline-flex"
                   type="button"
-                  aria-label={miniSidebar ? "메뉴 펼치기" : "메뉴 접기"}
+                  aria-label={miniSidebar ? t("메뉴 펼치기") : t("메뉴 접기")}
                   onClick={() => setMiniSidebar((value) => !value)}
                 >
                   <Menu size={20} />
@@ -181,7 +229,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <nav
                   className="hidden min-w-0 items-center gap-1 lg:flex"
                   data-testid="header-menu-bar"
-                  aria-label="헤더 주요 메뉴"
+                  aria-label={t("헤더 주요 메뉴")}
                   onMouseLeave={() => setActiveHeaderMenuId(null)}
                 >
                   {visibleMenus.map((menu) => (
@@ -196,7 +244,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         onMouseEnter={() => setActiveHeaderMenuId(menu.menuId)}
                         onFocus={() => setActiveHeaderMenuId(menu.menuId)}
                       >
-                        {menu.menuName}
+                        {menuLabel(menu)}
                         {menu.children?.length ? (
                           <ChevronDown size={14} />
                         ) : null}
@@ -224,7 +272,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   onClick={() => setSearchOpen((value) => !value)}
                 >
                   <span className="inline-flex items-center gap-2">
-                    <Search size={16} /> 메뉴 또는 화면 검색
+                    <Search size={16} /> {t("메뉴 또는 화면 검색")}
                   </span>
                   <kbd className="rounded-md bg-lightgray px-2 py-1 text-[11px] text-lightmuted dark:bg-white/10 dark:text-white/60">
                     Ctrl K
@@ -233,13 +281,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="flex items-center gap-2">
+                <label className="hidden items-center gap-2 rounded-full border border-ld bg-white px-3 py-2 text-xs font-semibold text-link md:inline-flex dark:border-white/10 dark:bg-white/5 dark:text-white/80">
+                  <span>{t("언어")}</span>
+                  <select
+                    data-testid="header-language-selector"
+                    className="bg-transparent text-sm font-semibold outline-none"
+                    value={language}
+                    onChange={handleLanguageChange}
+                    aria-label={t("언어")}
+                  >
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                  </select>
+                </label>
                 <IconCircleButton
-                  label={darkMode ? "라이트 모드" : "다크 모드"}
+                  label={darkMode ? t("라이트 모드") : t("다크 모드")}
                   onClick={toggleTheme}
                 >
                   {darkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </IconCircleButton>
-                <IconCircleButton label="알림">
+                <IconCircleButton label={t("알림")}>
                   <Bell size={18} />
                   <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-error" />
                 </IconCircleButton>
@@ -273,7 +334,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         type="button"
                         onClick={() => void auth.logout()}
                       >
-                        <LogOut size={16} /> 로그아웃
+                        <LogOut size={16} /> {t("로그아웃")}
                       </button>
                     </div>
                   ) : null}
@@ -284,13 +345,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <div className="mt-4 rounded-2xl border border-ld bg-white p-3 shadow-md dark:border-white/10 dark:bg-dark">
                 <label className="flex items-center gap-3 rounded-xl bg-lightgray px-4 py-3 text-sm text-muted dark:bg-white/5 dark:text-white/60">
                   <Search size={18} />
-                  <span className="sr-only">메뉴 검색어</span>
+                  <span className="sr-only">{t("메뉴 검색어")}</span>
                   <input
                     data-testid="menu-search-input"
                     className="w-full border-0 bg-transparent p-0 text-sm text-link shadow-none outline-none placeholder:text-muted focus-visible:ring-0 dark:text-white/90"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="메뉴명, 화면ID, 경로를 검색하세요"
+                    placeholder={t("메뉴명, 화면ID, 경로를 검색하세요")}
                     autoFocus
                   />
                 </label>
@@ -311,7 +372,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         }}
                       >
                         <span className="block font-semibold">
-                          {result.menu.menuName}
+                          {menuLabel(result.menu)}
                         </span>
                         <span className="mt-1 block truncate text-xs text-muted dark:text-white/55">
                           {result.path.join(" > ")}
@@ -320,7 +381,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     ))
                   ) : (
                     <p className="rounded-xl border border-dashed border-ld px-4 py-3 text-sm text-muted dark:border-white/10 dark:text-white/60">
-                      검색 결과가 없습니다.
+                      {t("검색 결과가 없습니다.")}
                     </p>
                   )}
                 </div>
@@ -347,7 +408,7 @@ function HeaderMegaMenu({
       {columns.map((column) => (
         <div key={column.menuId} className="min-w-0">
           <p className="px-2 text-xs font-bold uppercase tracking-wide text-muted dark:text-white/50">
-            {column.menuName}
+            {menuLabel(column)}
           </p>
           <div className="mt-2 space-y-1">
             {flattenMenuLeaves([column]).map((item) => (
@@ -360,7 +421,7 @@ function HeaderMegaMenu({
                     navigateInsideApp(event, item.menu.url, onNavigate);
                 }}
               >
-                <span className="block truncate">{item.menu.menuName}</span>
+                <span className="block truncate">{menuLabel(item.menu)}</span>
                 <span className="mt-1 block truncate text-xs font-normal text-muted dark:text-white/50">
                   {item.menu.screenId ?? item.menu.url}
                 </span>
@@ -384,7 +445,7 @@ function flattenMenuLeaves(
   parents: string[] = [],
 ): FlatMenuItem[] {
   return menus.flatMap((menu) => {
-    const path = [...parents, menu.menuName];
+    const path = [...parents, menuLabel(menu)];
     const current =
       menu.url != null
         ? [
@@ -392,7 +453,7 @@ function flattenMenuLeaves(
               menu,
               path,
               searchText: [
-                menu.menuName,
+                menuLabel(menu),
                 menu.screenId ?? "",
                 menu.url ?? "",
                 path.join(" "),
@@ -404,6 +465,10 @@ function flattenMenuLeaves(
         : [];
     return [...current, ...flattenMenuLeaves(menu.children ?? [], path)];
   });
+}
+
+function menuLabel(menu: MenuItem): string {
+  return menu.displayName?.trim() ? menu.displayName : menu.menuName;
 }
 
 function IconCircleButton({
@@ -467,13 +532,13 @@ function MenuNode({
             navigateInsideApp(event, menu.url, onNavigate);
           }
         }}
-        title={miniSidebar ? menu.menuName : undefined}
+        title={miniSidebar ? menuLabel(menu) : undefined}
       >
         {icon}
         <span
           className={`max-w-36 flex-1 truncate leading-normal ${miniSidebar ? "xl:hidden" : ""}`}
         >
-          {menu.menuName}
+          {menuLabel(menu)}
         </span>
         {hasChildren ? (
           <ChevronDown

@@ -26,6 +26,13 @@ public class MenuStructureManagementController {
         return ApiResponse.ok(service.getMenuTree(filter));
     }
 
+    @GetMapping("/api/admin/menus/localized-tree")
+    public ApiResponse<LocalizedMenuTreeResponse> getLocalizedMenuTree(
+            @RequestParam String lang,
+            HttpServletRequest servletRequest) {
+        return ApiResponse.ok(service.getLocalizedMenuTree(lang, currentUser(servletRequest)));
+    }
+
     @PutMapping("/api/admin/menus/{menuId}/parent")
     public ApiResponse<MenuTreeNode> updateMenuParent(
             @PathVariable Long menuId,

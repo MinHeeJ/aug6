@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, Save, Search, ShieldAlert, UserCog } from "lucide-react";
 import { ApiClientError, apiRequest } from "../../api/apiClient";
+import { useTranslation } from "react-i18next";
 import {
   EmptyState,
   ErrorState,
@@ -176,6 +177,7 @@ export const userManagementApi = {
 };
 
 export function UserManagementPage() {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [state, setState] = useState<UserManagementState>(
     createEmptyUserManagementState(),
@@ -190,8 +192,8 @@ export function UserManagementPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const selectedRoleLabels = useMemo(
-    () => roleCodes.join(", ") || "선택 없음",
-    [roleCodes],
+    () => roleCodes.join(", ") || t("선택 없음"),
+    [roleCodes, t],
   );
 
   const loadUsers = async (nextFilters = filters) => {
@@ -259,7 +261,7 @@ export function UserManagementPage() {
     const message =
       caught instanceof Error
         ? caught.message
-        : "요청 처리 중 오류가 발생했습니다.";
+        : t("요청 처리 중 오류가 발생했습니다.");
     setState((current) =>
       reduceUserManagementState(current, { type: "error", message }),
     );
@@ -278,7 +280,7 @@ export function UserManagementPage() {
       setState((current) =>
         reduceUserManagementState(current, {
           type: "success",
-          message: "사용자 정보가 저장되었습니다.",
+          message: t("사용자 정보가 저장되었습니다."),
         }),
       );
       await loadUsers();
@@ -302,7 +304,7 @@ export function UserManagementPage() {
       setState((current) =>
         reduceUserManagementState(current, {
           type: "success",
-          message: "사용자 정보가 저장되었습니다.",
+          message: t("사용자 정보가 저장되었습니다."),
         }),
       );
       await loadUsers();
@@ -325,34 +327,37 @@ export function UserManagementPage() {
   return (
     <section data-screen-id="SCR-USER-MGMT" className="space-y-6">
       <div className="mb-6 overflow-hidden rounded-md border-none bg-lightsecondary py-4 px-6 shadow-none">
-        <h1 className="text-xl font-semibold text-dark">사용자 관리</h1>
+        <h1 className="text-xl font-semibold text-dark">{t("사용자 관리")}</h1>
         <p className="mt-2 text-sm text-link">
-          시스템 관리 · 사용자·조직 관리 · 사용자 관리
+          {t("시스템 관리 · 사용자·조직 관리 · 사용자 관리")}
         </p>
       </div>
 
       {state.status === "permission" ? (
         <PermissionState
-          title="사용자 관리 권한 없음"
-          message="R09 시스템관리자 권한 또는 메뉴 접근 권한이 필요합니다."
+          title={t("사용자 관리 권한 없음")}
+          message={t("R09 시스템관리자 권한 또는 메뉴 접근 권한이 필요합니다.")}
         />
       ) : (
         <>
           {state.status === "error" ? (
-            <ErrorState title="사용자 관리 오류" message={state.message} />
+            <ErrorState title={t("사용자 관리 오류")} message={state.message} />
           ) : null}
           {state.status === "success" ? (
-            <SuccessState title="저장 완료" message={state.message} />
+            <SuccessState title={t("저장 완료")} message={state.message} />
           ) : null}
 
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 rounded bg-white p-6 shadow-md">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-dark">검색조건</h2>
+                  <h2 className="text-lg font-semibold text-dark">
+                    {t("검색조건")}
+                  </h2>
                   <p className="text-sm text-muted">
-                    KORUS 원천 인사정보는 조회 전용이며 로컬 DB의 사용여부와
-                    업무 역할만 저장합니다.
+                    {t(
+                      "KORUS 원천 인사정보는 조회 전용이며 로컬 DB의 사용여부와 업무 역할만 저장합니다.",
+                    )}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -361,65 +366,65 @@ export function UserManagementPage() {
                     className="rounded border border-ld px-4 py-2 text-sm text-link hover:text-primary"
                     onClick={resetFilters}
                   >
-                    조건 초기화
+                    {t("조건 초기화")}
                   </button>
                   <button
                     type="button"
                     className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-white shadow-btn-shadow"
                     onClick={() => void loadUsers()}
                   >
-                    <Search size={16} /> 조회
+                    <Search size={16} /> {t("조회")}
                   </button>
                 </div>
               </div>
               <div className="mt-5 grid gap-3 md:grid-cols-4">
                 <FilterInput
-                  label="교번"
+                  label={t("교번")}
                   value={filters.employeeNo}
                   onChange={(value) =>
                     setFilters({ ...filters, employeeNo: value })
                   }
                 />
                 <FilterInput
-                  label="성명"
+                  label={t("성명")}
                   value={filters.name}
                   onChange={(value) => setFilters({ ...filters, name: value })}
                 />
                 <FilterInput
-                  label="소속 조직코드"
+                  label={t("소속 조직코드")}
                   value={filters.organizationCodeFilter}
                   onChange={(value) =>
                     setFilters({ ...filters, organizationCodeFilter: value })
                   }
                 />
                 <FilterInput
-                  label="직급"
+                  label={t("직급")}
                   value={filters.rankName}
                   onChange={(value) =>
                     setFilters({ ...filters, rankName: value })
                   }
                 />
                 <SelectInput
-                  label="재직상태"
+                  label={t("재직상태")}
                   value={filters.employmentStatus}
                   onChange={(value) =>
                     setFilters({ ...filters, employmentStatus: value })
                   }
                   options={[
-                    ["", "전체"],
-                    ["ACTIVE", "재직"],
-                    ["LEAVE", "휴직"],
-                    ["RETIRED", "퇴직"],
+                    ["", t("전체")],
+                    ["ACTIVE", t("재직")],
+                    ["LEAVE", t("휴직")],
+                    ["RETIRED", t("퇴직")],
                   ]}
                 />
                 <SelectInput
-                  label="역할"
+                  label={t("역할")}
                   value={filters.roleCodeFilter}
                   onChange={(value) =>
                     setFilters({ ...filters, roleCodeFilter: value })
                   }
                   options={[
-                    ["", "전체"],
+                    ["", t("전체")],
                     ...roles.map((role) => [
                       role.roleCode,
                       `${role.roleCode} ${role.roleName}`,
@@ -427,15 +432,15 @@ export function UserManagementPage() {
                   ]}
                 />
                 <SelectInput
-                  label="사용여부"
+                  label={t("사용여부")}
                   value={filters.systemUseYn}
                   onChange={(value) =>
                     setFilters({ ...filters, systemUseYn: value })
                   }
                   options={[
-                    ["", "전체"],
-                    ["Y", "사용"],
-                    ["N", "미사용"],
+                    ["", t("전체")],
+                    ["Y", t("사용")],
+                    ["N", t("미사용")],
                   ]}
                 />
               </div>
@@ -443,21 +448,23 @@ export function UserManagementPage() {
 
             <section className="col-span-12 rounded bg-white p-6 shadow-md xl:col-span-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-dark">사용자 목록</h2>
+                <h2 className="text-lg font-semibold text-dark">
+                  {t("사용자 목록")}
+                </h2>
                 <span className="rounded bg-lightprimary px-3 py-1 text-sm font-semibold text-primary">
                   {state.users.length}건
                 </span>
               </div>
               {state.status === "loading" ? (
                 <div className="mt-4">
-                  <LoadingState title="사용자 조회 중" />
+                  <LoadingState title={t("사용자 조회 중")} />
                 </div>
               ) : null}
               {state.status === "empty" ? (
                 <div className="mt-4">
                   <EmptyState
-                    title="사용자 없음"
-                    message="조건에 맞는 사용자가 없습니다."
+                    title={t("사용자 없음")}
+                    message={t("조건에 맞는 사용자가 없습니다.")}
                   />
                 </div>
               ) : null}
@@ -466,13 +473,13 @@ export function UserManagementPage() {
                   <table className="min-w-full divide-y divide-ld text-sm">
                     <thead className="bg-lightgray text-left text-xs font-semibold uppercase text-lightmuted">
                       <tr>
-                        <th className="px-4 py-3">교번/성명</th>
-                        <th className="px-4 py-3">소속/직급</th>
-                        <th className="px-4 py-3">보직</th>
-                        <th className="px-4 py-3">재직/퇴직일자</th>
-                        <th className="px-4 py-3">역할</th>
-                        <th className="px-4 py-3">사용</th>
-                        <th className="px-4 py-3">동기화</th>
+                        <th className="px-4 py-3"> {t("교번/성명")} </th>
+                        <th className="px-4 py-3"> {t("소속/직급")} </th>
+                        <th className="px-4 py-3"> {t("보직")} </th>
+                        <th className="px-4 py-3"> {t("재직/퇴직일자")} </th>
+                        <th className="px-4 py-3"> {t("역할")} </th>
+                        <th className="px-4 py-3"> {t("사용")} </th>
+                        <th className="px-4 py-3"> {t("동기화")} </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-ld">
@@ -496,7 +503,7 @@ export function UserManagementPage() {
                             {user.positionName ?? "-"}
                           </td>
                           <td className="px-4 py-3">
-                            {employmentLabel(user.employmentStatus)}
+                            {t(employmentLabel(user.employmentStatus))}
                             <br />
                             <span className="text-muted">
                               {user.retirementDate ?? "-"}
@@ -506,7 +513,7 @@ export function UserManagementPage() {
                             {user.roleCodes?.join(", ") || "-"}
                           </td>
                           <td className="px-4 py-3">
-                            {user.systemUseYn === "Y" ? "사용" : "미사용"}
+                            {user.systemUseYn === "Y" ? t("사용") : t("미사용")}
                           </td>
                           <td className="px-4 py-3 text-muted">
                             {formatDateTime(user.lastSyncedAt)}
@@ -525,57 +532,64 @@ export function UserManagementPage() {
                   <UserCog size={20} />
                 </span>
                 <div>
-                  <h2 className="text-lg font-semibold text-dark">상세/편집</h2>
+                  <h2 className="text-lg font-semibold text-dark">
+                    {t("상세/편집")}
+                  </h2>
                   <p className="text-sm text-muted">
-                    시스템 사용여부와 업무 역할만 수정 가능
+                    {t("시스템 사용여부와 업무 역할만 수정 가능")}
                   </p>
                 </div>
               </div>
               {!selectedUser ? (
                 <div className="mt-4">
                   <EmptyState
-                    title="사용자를 선택하세요"
-                    message="목록 행을 선택하면 상세 정보와 편집 폼이 표시됩니다."
+                    title={t("사용자를 선택하세요")}
+                    message={t(
+                      "목록 행을 선택하면 상세 정보와 편집 폼이 표시됩니다.",
+                    )}
                   />
                 </div>
               ) : (
                 <div className="mt-5 space-y-4">
                   <ReadonlyField
-                    label="KORUS 교번"
+                    label={t("KORUS 교번")}
                     value={selectedUser.employeeNo}
                   />
-                  <ReadonlyField label="KORUS 성명" value={selectedUser.name} />
                   <ReadonlyField
-                    label="KORUS 소속"
+                    label={t("KORUS 성명")}
+                    value={selectedUser.name}
+                  />
+                  <ReadonlyField
+                    label={t("KORUS 소속")}
                     value={
                       selectedUser.organizationName ??
                       selectedUser.organizationCode
                     }
                   />
                   <ReadonlyField
-                    label="KORUS 직급/재직"
-                    value={`${selectedUser.rankName ?? "-"} / ${employmentLabel(selectedUser.employmentStatus)}`}
+                    label={t("KORUS 직급/재직")}
+                    value={`${selectedUser.rankName ?? "-"} / ${t(employmentLabel(selectedUser.employmentStatus))}`}
                   />
                   <div className="rounded bg-lightwarning p-3 text-sm text-link">
                     <ShieldAlert
                       className="mr-2 inline text-warning"
                       size={16}
                     />
-                    KORUS 원천 필드는 읽기 전용입니다.
+                    {t("KORUS 원천 필드는 읽기 전용입니다.")}
                   </div>
                   <SelectInput
-                    label="시스템 사용여부"
+                    label={t("시스템 사용여부")}
                     value={systemUseYn}
                     onChange={(value) => setSystemUseYn(value as "Y" | "N")}
                     options={[
-                      ["Y", "사용"],
-                      ["N", "미사용"],
+                      ["Y", t("사용")],
+                      ["N", t("미사용")],
                     ]}
                     error={fieldErrors.systemUseYn}
                   />
                   <div>
                     <p className="mb-2 text-sm font-semibold text-link">
-                      업무 역할
+                      {t("업무 역할")}
                     </p>
                     <div className="grid gap-2 rounded border border-ld p-3">
                       {roles.map((role) => (
@@ -600,7 +614,7 @@ export function UserManagementPage() {
                         </label>
                       ))}
                       <p className="text-xs text-muted">
-                        선택: {selectedRoleLabels}
+                        {t("선택:")} {selectedRoleLabels}
                       </p>
                       {fieldErrors.roleCodes ? (
                         <p className="text-xs text-error">
@@ -610,21 +624,21 @@ export function UserManagementPage() {
                     </div>
                   </div>
                   <FilterInput
-                    label="역할 유효 시작일"
+                    label={t("역할 유효 시작일")}
                     type="date"
                     value={validStartDate}
                     onChange={setValidStartDate}
                     error={fieldErrors.validStartDate}
                   />
                   <FilterInput
-                    label="역할 유효 종료일"
+                    label={t("역할 유효 종료일")}
                     type="date"
                     value={validEndDate}
                     onChange={setValidEndDate}
                     error={fieldErrors.validEndDate}
                   />
                   <label className="block text-sm font-semibold text-link">
-                    변경 사유
+                    {t("변경 사유")}
                     <textarea
                       className="mt-2 w-full rounded border border-ld px-3 py-2 text-sm"
                       value={changeReason}
@@ -642,21 +656,21 @@ export function UserManagementPage() {
                       className="inline-flex items-center justify-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-white"
                       onClick={() => void saveAccount()}
                     >
-                      <Save size={16} /> 사용여부 저장
+                      <Save size={16} /> {t("사용여부 저장")}
                     </button>
                     <button
                       type="button"
                       className="inline-flex items-center justify-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white"
                       onClick={() => void saveRoles()}
                     >
-                      <RefreshCw size={16} /> 역할 저장
+                      <RefreshCw size={16} /> {t("역할 저장")}
                     </button>
                     <button
                       type="button"
                       className="rounded border border-ld px-4 py-2 text-sm text-link sm:col-span-2"
                       onClick={cancelEdits}
                     >
-                      취소
+                      {t("취소")}
                     </button>
                   </div>
                 </div>

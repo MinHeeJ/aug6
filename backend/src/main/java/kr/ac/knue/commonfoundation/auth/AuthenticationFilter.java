@@ -102,7 +102,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/admin/menus/exposure") || apiPath.equals("/api/admin/menus/exposure-save")) {
             return "/admin/menu-usage";
         }
-        if (apiPath.equals("/api/admin/menus/tree") || apiPath.equals("/api/admin/menus/reorder") || apiPath.matches("/api/admin/menus/[^/]+/parent")) {
+        if (apiPath.equals("/api/admin/menus/tree") || apiPath.equals("/api/admin/menus/localized-tree") || apiPath.equals("/api/admin/menus/reorder") || apiPath.matches("/api/admin/menus/[^/]+/parent")) {
             return "/admin/menu-structure";
         }
         if (apiPath.equals("/api/admin/organizations/tree")) {

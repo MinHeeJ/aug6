@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Param;
 public interface MenuStructureMapper {
     List<MenuTreeRow> findMenusForTree(@Param("filter") String filter);
 
+    List<MenuTreeRow> findMenusForLocalizedTree();
+
     int existsMenu(@Param("menuId") Long menuId);
 
     int isDescendant(@Param("ancestorMenuId") Long ancestorMenuId, @Param("candidateMenuId") Long candidateMenuId);

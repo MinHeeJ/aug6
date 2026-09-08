@@ -919,7 +919,7 @@ function Screen({
   );
 }
 
-function SearchPanel({
+function SearchPanel<TFilters extends Record<string, string>>({
   filters,
   setFilters,
   pageSize,
@@ -927,8 +927,8 @@ function SearchPanel({
   onSearch,
   onCsv,
 }: {
-  filters: Record<string, string>;
-  setFilters: (v: Record<string, string>) => void;
+  filters: TFilters;
+  setFilters: (v: TFilters) => void;
   pageSize: PageSize;
   setPageSize: (v: PageSize) => void;
   onSearch: () => void;
@@ -943,7 +943,7 @@ function SearchPanel({
               data-testid={`${key}-filter-input`}
               value={filters[key]}
               onChange={(e) =>
-                setFilters({ ...filters, [key]: e.target.value })
+                setFilters({ ...filters, [key]: e.target.value } as TFilters)
               }
             />
           </Field>

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 type StateProps = {
   title?: string;
   message?: string;
@@ -43,6 +45,7 @@ function StateCard({
   title,
   message,
 }: StateProps & { tone: "info" | "muted" | "error" | "warning" | "success" }) {
+  const { t } = useTranslation();
   const toneClasses = {
     info: "bg-lightinfo text-info",
     muted: "bg-lightgray text-muted",
@@ -55,8 +58,8 @@ function StateCard({
       className={`rounded border border-ld p-6 shadow-sm ${toneClasses}`}
       role="status"
     >
-      <h2 className="text-lg font-semibold text-dark">{title}</h2>
-      <p className="mt-2 text-sm text-bodytext">{message}</p>
+      <h2 className="text-lg font-semibold text-dark">{t(title ?? "")}</h2>
+      <p className="mt-2 text-sm text-bodytext">{t(message ?? "")}</p>
     </section>
   );
 }

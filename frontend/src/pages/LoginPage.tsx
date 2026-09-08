@@ -705,7 +705,7 @@ function hasMenuUrl(menus: CurrentUser["menus"], path: string): boolean {
 }
 
 function menuUrlMatchesPath(
-  menuUrl: string | undefined,
+  menuUrl: string | null | undefined,
   path: string,
 ): boolean {
   if (!menuUrl) {

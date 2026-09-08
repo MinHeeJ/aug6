@@ -7,22 +7,41 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import kr.ac.knue.commonfoundation.auth.CurrentUser;
 import kr.ac.knue.commonfoundation.common.api.BusinessValidationException;
 import kr.ac.knue.commonfoundation.common.api.ValidationError;
+import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MenuStructureManagementService {
     private final MenuStructureMapper mapper;
+    private final EffectivePermissionService permissionService;
 
     public MenuStructureManagementService(MenuStructureMapper mapper) {
+        this(mapper, null);
+    }
+
+    @Autowired
+    public MenuStructureManagementService(MenuStructureMapper mapper, EffectivePermissionService permissionService) {
         this.mapper = mapper;
+        this.permissionService = permissionService;
     }
 
     @Transactional(readOnly = true)
     public List<MenuTreeNode> getMenuTree(String filter) {
-        return buildTree(mapper.findMenusForTree(blankToNull(filter)));
+        return buildTree(mapper.findMenusForTree(blankToNull(filter)), "ko");
+    }
+
+    @Transactional(readOnly = true)
+    public LocalizedMenuTreeResponse getLocalizedMenuTree(String lang, CurrentUser currentUser) {
+        String normalizedLang = validateLang(lang);
+        List<MenuTreeRow> rows = mapper.findMenusForLocalizedTree().stream()
+                .filter(row -> isVisibleToCurrentUser(row, currentUser))
+                .toList();
+        return new LocalizedMenuTreeResponse(normalizedLang, prune(buildTree(rows, normalizedLang)));
     }
 
     @Transactional
@@ -49,6 +68,42 @@ public class MenuStructureManagementService {
         }
         return mapper.findMenusByParent(request.parentMenuId()).stream()
                 .map(MenuTreeNode::from)
+                .sorted(Comparator.comparingInt(MenuTreeNode::displayOrder).thenComparing(MenuTreeNode::menuId))
+                .toList();
+    }
+
+    private String validateLang(String lang) {
+        if ("ko".equals(lang) || "en".equals(lang)) {
+            return lang;
+        }
+        throw unsupportedLanguage(lang);
+    }
+
+    public static BusinessValidationException unsupportedLanguage(String lang) {
+        String received = lang == null || lang.isBlank() ? "blank" : lang;
+        return new BusinessValidationException("지원하지 않는 언어 코드입니다.",
+                List.of(new ValidationError("lang", "지원 언어는 ko 또는 en입니다. 요청값: " + received)));
+    }
+
+    private boolean isVisibleToCurrentUser(MenuTreeRow row, CurrentUser currentUser) {
+        if (row.url() == null || row.url().isBlank()) {
+            return true;
+        }
+        if (currentUser != null && currentUser.roles() != null && currentUser.roles().contains("R09")) {
+            return true;
+        }
+        return permissionService != null
+                && currentUser != null
+                && permissionService.canAccess(currentUser.userId(), currentUser.roles(), row.url());
+    }
+
+    private List<MenuTreeNode> prune(List<MenuTreeNode> items) {
+        return items.stream()
+                .map(item -> new MenuTreeNode(item.menuId(), item.parentMenuId(), item.menuType(), item.menuName(),
+                        item.menuNameEn(), item.displayName(), item.displayOrder(), item.screenId(), item.url(),
+                        item.icon(), item.businessCategory(), item.description(), item.systemUseYn(), item.status(),
+                        item.changeReason(), item.updatedAt(), prune(item.children())))
+                .filter(item -> item.url() != null || !item.children().isEmpty())
                 .sorted(Comparator.comparingInt(MenuTreeNode::displayOrder).thenComparing(MenuTreeNode::menuId))
                 .toList();
     }
@@ -89,10 +144,10 @@ public class MenuStructureManagementService {
         return fields;
     }
 
-    private List<MenuTreeNode> buildTree(List<MenuTreeRow> rows) {
+    private List<MenuTreeNode> buildTree(List<MenuTreeRow> rows, String lang) {
         Map<Long, MenuTreeNode> byId = new LinkedHashMap<>();
         for (MenuTreeRow row : rows) {
-            byId.put(row.menuId(), MenuTreeNode.from(row));
+            byId.put(row.menuId(), MenuTreeNode.from(row, lang));
         }
         List<MenuTreeNode> roots = new ArrayList<>();
         for (MenuTreeNode node : byId.values()) {

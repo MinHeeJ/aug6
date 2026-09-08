@@ -4,12 +4,14 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+COPY Dockerfile ./
 COPY vite.config.ts ./
 COPY vitest.config.ts ./
 COPY tsconfig*.json ./
 COPY tailwind.config.js ./
 COPY postcss.config.js ./
 COPY index.html ./
+COPY tests ./tests
 COPY src ./src
 RUN npm run build
 

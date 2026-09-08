@@ -130,12 +130,24 @@ export const schoolInfoApi = {
 export type MenuItem = {
   menuId: number;
   parentMenuId?: number;
+  menuType?: string;
   menuName: string;
-  screenId?: string;
-  url?: string;
-  icon?: string;
+  menuNameEn?: string | null;
+  displayName?: string;
+  screenId?: string | null;
+  url?: string | null;
+  icon?: string | null;
+  businessCategory?: string | null;
+  description?: string | null;
+  systemUseYn?: string;
+  status?: string;
   displayOrder: number;
   children: MenuItem[];
+};
+
+export type LocalizedMenuTreeResponse = {
+  lang: "ko" | "en";
+  rows: MenuItem[];
 };
 
 export type CurrentUser = {
@@ -806,6 +818,8 @@ export type MenuTreeNode = {
   parentMenuId?: number | null;
   menuType: string;
   menuName: string;
+  menuNameEn?: string | null;
+  displayName?: string;
   displayOrder: number;
   screenId?: string | null;
   url?: string | null;
@@ -831,6 +845,12 @@ export type MenuReorderPayload = {
 };
 
 export const menuStructureApi = {
+  getLocalizedMenuTree(lang: "ko" | "en") {
+    const query = new URLSearchParams({ lang });
+    return apiRequest<LocalizedMenuTreeResponse>(
+      `/api/admin/menus/localized-tree?${query.toString()}` as `/api/${string}`,
+    );
+  },
   getMenuTree(params: { filter?: string } = {}) {
     const query = new URLSearchParams();
     if (params.filter) query.set("filter", params.filter);

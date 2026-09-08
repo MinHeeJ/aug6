@@ -7,6 +7,7 @@ public record MenuTreeRow(
         Long parentMenuId,
         String menuType,
         String menuName,
+        String menuNameEn,
         Integer displayOrder,
         String screenId,
         String url,

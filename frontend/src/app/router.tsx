@@ -9,6 +9,7 @@ import {
   SuccessState,
 } from "../components/States";
 import { authApi, type CurrentUser } from "../api/apiClient";
+import { useTranslation } from "react-i18next";
 import {
   ADMIN_ROUTES,
   LoginPage,
@@ -128,6 +129,7 @@ import {
 
 export function AppRouter() {
   const auth = useAuth();
+  const { t } = useTranslation();
   const path = usePathname();
   const adminRoute = ADMIN_ROUTES.find((route) =>
     routeMatchesPath(route.path, path),
@@ -137,8 +139,8 @@ export function AppRouter() {
     return (
       <AdminShell>
         <LoadingState
-          title="인증 확인 중"
-          message="세션 정보를 확인하고 있습니다."
+          title={t("인증 확인 중")}
+          message={t("세션 정보를 확인하고 있습니다.")}
         />
       </AdminShell>
     );
@@ -165,8 +167,8 @@ export function AppRouter() {
     return (
       <AdminShell>
         <ErrorState
-          title="인증 오류"
-          message={auth.error ?? "인증 처리 중 오류가 발생했습니다."}
+          title={t("인증 오류")}
+          message={auth.error ?? t("인증 처리 중 오류가 발생했습니다.")}
         />
       </AdminShell>
     );
@@ -176,8 +178,8 @@ export function AppRouter() {
     return (
       <AdminShell>
         <PermissionState
-          title="권한이 없습니다"
-          message={`${adminRoute.label} 화면 접근 권한이 없습니다.`}
+          title={t("권한이 없습니다")}
+          message={`${t(adminRoute.label)} ${t("화면 접근 권한이 없습니다.")}`}
         />
       </AdminShell>
     );
@@ -201,22 +203,22 @@ export function AppRouter() {
       <section className="mb-6 rounded-md bg-lightsecondary p-6 shadow-none">
         <h1 className="text-xl font-semibold text-dark">Dashboard</h1>
         <p className="mt-2 text-sm text-muted">
-          한국교원대학교 교수업적평가시스템 공통기능 기반
+          {t("한국교원대학교 교수업적평가시스템 공통기능 기반")}
         </p>
       </section>
       <section className="grid grid-cols-12 gap-6">
         <DashboardCard
-          title="권한 역할"
+          title={t("권한 역할")}
           value={auth.user?.roles.join(", ") ?? "-"}
         />
         <DashboardCard
-          title="시스템 관리 메뉴"
+          title={t("시스템 관리 메뉴")}
           value={`${countMenus(auth.user?.menus ?? [])}개`}
         />
-        <DashboardCard title="세션 상태" value="인증됨" />
+        <DashboardCard title={t("세션 상태")} value={t("인증됨")} />
         <section className="col-span-12 rounded-md bg-white p-6 shadow-md">
           <h2 className="text-lg font-semibold text-dark">
-            공통 상태 컴포넌트
+            {t("공통 상태 컴포넌트")}
           </h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <EmptyState />
@@ -451,35 +453,38 @@ function AdminRoutePage({
   route: (typeof ADMIN_ROUTES)[number];
   user: CurrentUser | null;
 }) {
+  const { t } = useTranslation();
   return (
     <section data-screen-id={route.screenId} className="space-y-6">
       <div className="rounded-md bg-lightsecondary p-6 shadow-none">
-        <h1 className="text-xl font-semibold text-dark">{route.label}</h1>
-        <p className="mt-2 text-sm text-muted">{route.menuPath}</p>
+        <h1 className="text-xl font-semibold text-dark">{t(route.label)}</h1>
+        <p className="mt-2 text-sm text-muted">{t(route.menuPath)}</p>
       </div>
       <div className="grid grid-cols-12 gap-6">
         <section className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-8">
           <p className="text-sm font-semibold text-primary">{route.screenId}</p>
           <h2 className="mt-2 text-lg font-semibold text-dark">
-            보호 route placeholder
+            {t("보호 route placeholder")}
           </h2>
           <p className="mt-3 text-sm text-muted">
-            이 route는 로그인한 사용자가 메뉴 권한 확인 후 업무 화면에 접근할 수
-            있음을 검증하기 위한 shell placeholder입니다.
+            {t(
+              "이 route는 로그인한 사용자가 메뉴 권한 확인 후 업무 화면에 접근할 수 있음을 검증하기 위한 shell placeholder입니다.",
+            )}
           </p>
           <div
             className="mt-5 rounded-md bg-lightsuccess p-4 text-sm text-success"
             role="status"
           >
-            접근 가능: {user?.loginId ?? "-"} / {user?.roles.join(", ") ?? "-"}
+            {t("접근 가능:")} {user?.loginId ?? "-"} /{" "}
+            {user?.roles.join(", ") ?? "-"}
           </div>
         </section>
         <aside className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-4">
-          <h3 className="text-lg font-semibold text-dark">상태</h3>
+          <h3 className="text-lg font-semibold text-dark">{t("상태")}</h3>
           <ul className="mt-4 space-y-2 text-sm text-muted">
-            <li>loading: route guard 인증 확인</li>
-            <li>permission: R09 또는 메뉴 권한 없음</li>
-            <li>success: 현재 보호 route 렌더링</li>
+            <li>{t("loading: route guard 인증 확인")}</li>
+            <li>{t("permission: R09 또는 메뉴 권한 없음")}</li>
+            <li>{t("success: 현재 보호 route 렌더링")}</li>
           </ul>
         </aside>
       </div>

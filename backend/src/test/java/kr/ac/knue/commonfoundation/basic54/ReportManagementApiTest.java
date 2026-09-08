@@ -1,7 +1,6 @@
 package kr.ac.knue.commonfoundation.basic54;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,10 +17,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import kr.ac.knue.commonfoundation.auth.AuthController;
 import kr.ac.knue.commonfoundation.auth.CurrentUser;
+import kr.ac.knue.commonfoundation.common.api.BusinessValidationException;
 import kr.ac.knue.commonfoundation.common.api.ConflictException;
+import kr.ac.knue.commonfoundation.common.api.ValidationError;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -262,6 +265,171 @@ class ReportManagementApiTest {
             mockMvc.perform(get(path).requestAttr("currentUser", r04).cookie(sessionCookie()))
                     .andExpect(status().isNotFound());
         }
+    }
+
+
+    @Test
+    void durableOpenApiFixtureContainsBasic54ReportOperations() throws Exception {
+        ClassPathResource resource = new ClassPathResource("contracts/openapi.yaml");
+        assertThat(resource.exists()).isTrue();
+        String yaml = resource.getContentAsString(StandardCharsets.UTF_8);
+        assertThat(yaml).contains("/api/business/reports/save");
+        assertThat(yaml).contains("/api/business/report-form-versions/save");
+        assertThat(yaml).contains("/api/business/report-permissions/save");
+        assertThat(yaml).contains("/api/business/bulk-report-jobs");
+        assertThat(yaml).contains("/api/business/bulk-report-jobs/{jobId}/result");
+    }
+
+    @Test
+    void postApiBusinessReportsSaveAuthRequiredBeforeDataChangeHistorySideEffect() throws Exception {
+        mockMvc.perform(post("/api/business/reports/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reportJson()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        verify(service, never()).saveReport(any(), any(), any());
+    }
+
+    @Test
+    void postApiBusinessReportFormVersionsSaveAuthRequiredBeforeSideEffect() throws Exception {
+        mockMvc.perform(post("/api/business/report-form-versions/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reportId\":\"FINAL_EVALUATION\",\"versionName\":\"v2.0\",\"effectiveDate\":\"2026-01-01\",\"formFileRef\":\"templates/reports/final.hwp\",\"currentYn\":\"Y\",\"changeReason\":\"서식 개정\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        verify(service, never()).saveReportFormVersion(any(), any(), any());
+    }
+
+    @Test
+    void postApiBusinessReportFormVersionsSaveHappySideEffectPersistsCurrentYn() throws Exception {
+        when(service.saveReportFormVersion(any(), eq(r09), eq("REQ-B54-FORM-SAVE")))
+                .thenReturn(formVersion("v2.0", LocalDate.parse("2026-01-01"), "Y"));
+        mockMvc.perform(post("/api/business/report-form-versions/save")
+                        .requestAttr("currentUser", r09).cookie(sessionCookie()).header("X-Request-Id", "REQ-B54-FORM-SAVE")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reportId\":\"FINAL_EVALUATION\",\"versionName\":\"v2.0\",\"effectiveDate\":\"2026-01-01\",\"formFileRef\":\"templates/reports/final.hwp\",\"currentYn\":\"Y\",\"changeReason\":\"서식 개정\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.effectiveDate").value("2026-01-01"))
+                .andExpect(jsonPath("$.data.currentYn").value("Y"));
+    }
+
+    @Test
+    void postApiBusinessReportPermissionsSaveHappyAuthValidationBusinessSideEffectUpsert() throws Exception {
+        when(service.saveReportPermissions(any(), eq(r09), eq("REQ-B54-PERM-SAVE")))
+                .thenReturn(new ReportPermissionSearchResponse(List.of(permission("R03", "Y", "N")), 0, 100, 1));
+        mockMvc.perform(post("/api/business/report-permissions/save")
+                        .requestAttr("currentUser", r09).cookie(sessionCookie()).header("X-Request-Id", "REQ-B54-PERM-SAVE")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"changeReason\":\"PDF 권한 부여\",\"permissions\":[{\"granteeType\":\"ROLE\",\"granteeId\":\"R03\",\"reportId\":\"FINAL_EVALUATION\",\"allowViewYn\":\"Y\",\"allowPreviewYn\":\"N\",\"allowPrintYn\":\"Y\",\"allowPdfYn\":\"Y\",\"allowExcelYn\":\"N\",\"dataScope\":\"ALL\",\"activeYn\":\"Y\",\"changeReason\":\"PDF 권한 부여\"}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.permissions[0].granteeId").value("R03"))
+                .andExpect(jsonPath("$.data.permissions[0].allowPdfYn").value("Y"))
+                .andExpect(jsonPath("$.data.permissions[0].activeYn").value("Y"));
+    }
+
+    @Test
+    void postApiBusinessReportPermissionsSaveAuthRequiredBeforeSideEffect() throws Exception {
+        mockMvc.perform(post("/api/business/report-permissions/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissions\":[{\"granteeType\":\"ROLE\",\"granteeId\":\"R03\",\"reportId\":\"FINAL_EVALUATION\",\"allowViewYn\":\"Y\",\"allowPreviewYn\":\"N\",\"allowPrintYn\":\"Y\",\"allowPdfYn\":\"Y\",\"allowExcelYn\":\"N\",\"dataScope\":\"ALL\",\"activeYn\":\"Y\",\"changeReason\":\"권한 검증\"}]}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        verify(service, never()).saveReportPermissions(any(), any(), any());
+    }
+
+    @Test
+    void postApiBusinessReportPermissionsSaveValidationReturnsReportIdFieldError() throws Exception {
+        mockMvc.perform(post("/api/business/report-permissions/save")
+                        .requestAttr("currentUser", r09).cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissions\":[{\"granteeType\":\"ROLE\",\"granteeId\":\"R03\",\"allowViewYn\":\"Y\",\"allowPreviewYn\":\"N\",\"allowPrintYn\":\"Y\",\"allowPdfYn\":\"Y\",\"allowExcelYn\":\"N\",\"dataScope\":\"ALL\",\"activeYn\":\"Y\",\"changeReason\":\"검증\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.fields[*].field").value(hasItem("permissions[0].reportId")));
+        verify(service, never()).saveReportPermissions(any(), any(), any());
+    }
+
+    @Test
+    void postApiBusinessReportPermissionsSaveBusinessRejectsNoAllowedActionsWithoutSideEffect() throws Exception {
+        when(service.saveReportPermissions(any(), eq(r09), any()))
+                .thenThrow(new BusinessValidationException("보고서 권한 저장 요청이 올바르지 않습니다.",
+                        List.of(new ValidationError("allowedActions", "하나 이상의 허용행위를 선택하세요."))));
+        mockMvc.perform(post("/api/business/report-permissions/save")
+                        .requestAttr("currentUser", r09).cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"permissions\":[{\"granteeType\":\"ROLE\",\"granteeId\":\"R03\",\"reportId\":\"FINAL_EVALUATION\",\"allowViewYn\":\"N\",\"allowPreviewYn\":\"N\",\"allowPrintYn\":\"N\",\"allowPdfYn\":\"N\",\"allowExcelYn\":\"N\",\"dataScope\":\"ALL\",\"activeYn\":\"Y\",\"changeReason\":\"허용행위 없음\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.fields[*].field").value(hasItem("allowedActions")));
+    }
+
+    @Test
+    void getApiBusinessBulkReportJobsHappyReturnsBodyContract() throws Exception {
+        when(service.listBulkReportJobs(eq(r04), any())).thenReturn(new BulkReportJobSearchResponse(List.of(job("COMPLETED", 100)), 0, 20, 1));
+        mockMvc.perform(get("/api/business/bulk-report-jobs")
+                        .requestAttr("currentUser", r04).cookie(sessionCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.jobs[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.jobs[0].successCount").value(2));
+    }
+
+    @Test
+    void getApiBusinessBulkReportJobsAuthRequiredBeforeSideEffect() throws Exception {
+        mockMvc.perform(get("/api/business/bulk-report-jobs"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        verify(service, never()).listBulkReportJobs(any(), any());
+    }
+
+    @Test
+    void getApiBusinessBulkReportJobsTargetsHappyReturnsRowsContract() throws Exception {
+        when(service.listBulkReportTargets(eq(r04), any()))
+                .thenReturn(new BulkReportTargetSearchResponse(List.of(new BulkReportJobTargetRow(7001L, 901L, 101L, "홍길동", "KNUE-DEPT-COMP", "FAILED", "PDF 생성 실패")), 0, 20, 1));
+        mockMvc.perform(get("/api/business/bulk-report-jobs/targets")
+                        .requestAttr("currentUser", r04).cookie(sessionCookie()).param("reportId", "FINAL_EVALUATION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.targets[0].targetPersonName").value("홍길동"))
+                .andExpect(jsonPath("$.data.targets[0].resultCode").value("FAILED"));
+    }
+
+    @Test
+    void getApiBusinessBulkReportJobsResultHappyIncludesCompletedAndFailedStateTransitions() throws Exception {
+        BulkReportJobTargetRow failure = new BulkReportJobTargetRow(7001L, 901L, 101L, "홍길동", "KNUE-DEPT-COMP", "FAILED", "PDF 생성 실패");
+        when(service.getBulkReportJobResult(r04, 901L)).thenReturn(BulkReportJobResultResponse.from(job("FAILED", 100), List.of(failure)));
+        mockMvc.perform(get("/api/business/bulk-report-jobs/901/result")
+                        .requestAttr("currentUser", r04).cookie(sessionCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("FAILED"))
+                .andExpect(jsonPath("$.data.failures[0].errorDetail").value("PDF 생성 실패"));
+    }
+
+    @Test
+    void getApiBusinessBulkReportJobsResultAuthRequiredBeforeSideEffect() throws Exception {
+        mockMvc.perform(get("/api/business/bulk-report-jobs/901/result"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        verify(service, never()).getBulkReportJobResult(any(), any());
+    }
+
+    @Test
+    void postApiBusinessBulkReportJobsAuthRequiredBeforeSideEffectTables() throws Exception {
+        mockMvc.perform(post("/api/business/bulk-report-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reportId\":\"FINAL_EVALUATION\",\"targetPersonIds\":[1,2],\"targetHash\":\"HASH-FINAL-NEW\",\"outputFormat\":\"PDF\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHENTICATED"));
+        verify(service, never()).createBulkReportJob(any(), any(), any());
+    }
+
+    @Test
+    void postApiBusinessBulkReportJobsSideEffectCreatesJobTargetsAndReportPrintHistories() throws Exception {
+        when(service.createBulkReportJob(any(), eq(r04), eq("REQ-B54-BULK-SIDE"))).thenReturn(job("QUEUED", 0));
+        mockMvc.perform(post("/api/business/bulk-report-jobs")
+                        .requestAttr("currentUser", r04).cookie(sessionCookie()).header("X-Request-Id", "REQ-B54-BULK-SIDE")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reportId\":\"FINAL_EVALUATION\",\"targetPersonIds\":[1,2],\"targetHash\":\"HASH-FINAL-NEW\",\"outputFormat\":\"PDF\"}"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.data.status").value("QUEUED"))
+                .andExpect(jsonPath("$.data.totalCount").value(2));
+        verify(service).createBulkReportJob(any(), eq(r04), eq("REQ-B54-BULK-SIDE"));
     }
 
     private ReportRow report(String reportId, String activeYn) { return new ReportRow(reportId, "최종평가서", "FACULTY_ACHIEVEMENT", "templates/reports/final.hwp", "FINAL_EVALUATION_DATASET", activeYn, "저장", 9L, 9L, LocalDateTime.parse("2026-09-08T09:00:00"), LocalDateTime.parse("2026-09-08T09:00:00")); }

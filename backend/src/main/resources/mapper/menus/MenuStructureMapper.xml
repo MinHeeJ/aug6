@@ -7,6 +7,7 @@
             <arg column="parentMenuId" javaType="long"/>
             <arg column="menuType" javaType="string"/>
             <arg column="menuName" javaType="string"/>
+            <arg column="menuNameEn" javaType="string"/>
             <arg column="displayOrder" javaType="int"/>
             <arg column="screenId" javaType="string"/>
             <arg column="url" javaType="string"/>
@@ -25,6 +26,7 @@
                m.parent_menu_id as "parentMenuId",
                m.menu_type as "menuType",
                m.menu_name as "menuName",
+               m.menu_name_en as "menuNameEn",
                m.display_order as "displayOrder",
                m.screen_id as "screenId",
                m.url as "url",
@@ -48,6 +50,15 @@
                     or m.url ilike concat('%', #{filter}, '%'))
             </if>
         </where>
+        order by coalesce(m.parent_menu_id, 0), m.display_order, m.menu_id
+    </select>
+
+    <select id="findMenusForLocalizedTree" resultMap="MenuTreeRowMap">
+        <include refid="menuTreeSelect"/>
+        where m.status = 'ACTIVE'
+          and m.system_use_yn = 'Y'
+          and (m.exposure_start_at is null or m.exposure_start_at &lt;= CURRENT_TIMESTAMP)
+          and (m.exposure_end_at is null or m.exposure_end_at &gt;= CURRENT_TIMESTAMP)
         order by coalesce(m.parent_menu_id, 0), m.display_order, m.menu_id
     </select>
 

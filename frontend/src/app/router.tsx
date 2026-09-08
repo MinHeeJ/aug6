@@ -118,6 +118,13 @@ import {
   DutyAssignmentManagementPage,
   PositionAssignmentManagementPage,
 } from "../pages/admin/OperationsAssignmentScreens";
+import {
+  BulkReportJobManagementPage,
+  ReportFormVersionManagementPage,
+  ReportListManagementPage,
+  ReportPermissionManagementPage,
+  ReportPrintHistoryPage,
+} from "../pages/admin/ReportManagementPages";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -408,6 +415,16 @@ function renderAdminPage(path: string | undefined) {
       return <ResearchClassificationCriterionPage />;
     case "/admin/unconfirmed-research-achievements":
       return <UnconfirmedResearchAchievementPage />;
+    case "/admin/reports":
+      return <ReportListManagementPage />;
+    case "/admin/report-form-versions":
+      return <ReportFormVersionManagementPage />;
+    case "/admin/report-permissions":
+      return <ReportPermissionManagementPage />;
+    case "/admin/report-print-histories":
+      return <ReportPrintHistoryPage />;
+    case "/admin/bulk-report-jobs":
+      return <BulkReportJobManagementPage />;
     default:
       return null;
   }

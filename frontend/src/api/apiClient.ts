@@ -4164,3 +4164,356 @@ export const scoreRecalculationHistoryApi = {
     );
   },
 };
+
+export type ReportOutputFormat = "PDF" | "EXCEL";
+export type ReportResultCode = "SUCCESS" | "FAILED" | "FORBIDDEN";
+
+export type ReportRow = {
+  reportId: string;
+  reportName: string;
+  businessCategory: string;
+  templateFileRef: string;
+  datasetCode: string;
+  activeYn: YesNo;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type ReportSearchResponse = {
+  reports: ReportRow[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ReportOutputPayload = {
+  outputFormat: ReportOutputFormat;
+  outputBaseDate?: string;
+  targetPersonIds: number[];
+  targetSummary: string;
+};
+
+export type ReportOutputResult = {
+  reportId: string;
+  reportName: string;
+  datasetCode: string;
+  outputFormat: ReportOutputFormat;
+  outputBaseDate: string;
+  formVersionId: number;
+  formVersionName: string;
+  formFileRef: string;
+  outputCount: number;
+  fileRef: string;
+  requestId: string;
+};
+
+export type ReportPrintHistory = {
+  printHistoryId: number;
+  reportId: string;
+  reportName: string;
+  requesterId: number;
+  requesterName: string;
+  targetSummary: string;
+  outputFormat: ReportOutputFormat;
+  outputCount: number;
+  resultCode: ReportResultCode;
+  outputAt: string;
+  fileRef?: string | null;
+  requestId?: string | null;
+};
+
+export type ReportPrintHistorySearchResponse = {
+  histories: ReportPrintHistory[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ReportFormVersion = {
+  formVersionId: number;
+  reportId: string;
+  reportName?: string;
+  versionName: string;
+  effectiveDate: string;
+  currentYn: YesNo;
+  formFileRef: string;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type ReportFormVersionSearchResponse = {
+  formVersions: ReportFormVersion[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ReportFormVersionPayload = {
+  formVersionId?: number | null;
+  reportId: string;
+  versionName: string;
+  effectiveDate: string;
+  formFileRef: string;
+  changeReason: string;
+};
+
+export type ReportPermission = {
+  permissionId: number;
+  granteeType: "ROLE" | "ORG" | "USER";
+  granteeId: string;
+  granteeName?: string;
+  reportId: string;
+  reportName?: string;
+  allowViewYn: YesNo;
+  allowPreviewYn: YesNo;
+  allowPrintYn: YesNo;
+  allowPdfYn: YesNo;
+  allowExcelYn: YesNo;
+  dataScope: string;
+  activeYn: YesNo;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type ReportPermissionSearchResponse = {
+  permissions: ReportPermission[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type ReportPermissionsPayload = {
+  permissions: Array<Partial<ReportPermission> & { reportId: string }>;
+  changeReason?: string;
+};
+
+export type BulkReportJobSearchResponse = {
+  jobs: BulkReportJob[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type BulkReportJobResult = {
+  jobId: number;
+  reportId: string;
+  resultFileRef?: string | null;
+  fileName?: string | null;
+  successCount: number;
+  failCount: number;
+  failures: Array<{
+    targetPersonId: number;
+    targetPersonName?: string;
+    errorDetail?: string | null;
+  }>;
+};
+
+export type BulkReportJobPayload = {
+  reportId: string;
+  targetPersonIds: number[];
+  targetHash: string;
+  outputFormat?: ReportOutputFormat;
+  outputBaseDate?: string;
+};
+
+export type BulkReportJob = {
+  jobId: number;
+  reportId: string;
+  reportName: string;
+  requesterId: number;
+  targetHash: string;
+  status: string;
+  progressRate: number;
+  totalCount: number;
+  successCount: number;
+  failCount: number;
+  resultFileRef?: string | null;
+  requestId?: string | null;
+  requestedAt: string;
+  completedAt?: string | null;
+};
+
+export type BulkReportTarget = {
+  jobTargetId: number;
+  jobId: number;
+  targetPersonId: number;
+  targetPersonName: string;
+  targetOrganizationCode: string;
+  resultCode: string;
+  errorDetail?: string | null;
+};
+
+export type BulkReportTargetSearchResponse = {
+  targets: BulkReportTarget[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export const reportManagementApi = {
+  listReports(
+    params: {
+      reportId?: string;
+      businessCategory?: string;
+      activeYn?: YesNo | "";
+      keyword?: string;
+      includeInactive?: boolean;
+      page?: number;
+      size?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.reportId?.trim()) query.set("reportId", params.reportId.trim());
+    if (params.businessCategory?.trim())
+      query.set("businessCategory", params.businessCategory.trim());
+    if (params.activeYn) query.set("activeYn", params.activeYn);
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    if (params.includeInactive) query.set("includeInactive", "true");
+    return apiRequest<ReportSearchResponse>(
+      `/api/business/reports?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  createReportOutput(reportId: string, payload: ReportOutputPayload) {
+    return apiRequest<ReportOutputResult>(
+      `/api/business/reports/${encodeURIComponent(reportId)}/outputs` as `/api/${string}`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  saveReport(payload: Partial<ReportRow> & { reportId: string }) {
+    return apiRequest<ReportRow>("/api/business/reports/save", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  listReportFormVersions(
+    params: { reportId?: string; page?: number; size?: PageSize } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.reportId?.trim()) query.set("reportId", params.reportId.trim());
+    return apiRequest<ReportFormVersionSearchResponse>(
+      `/api/business/report-form-versions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveReportFormVersion(payload: ReportFormVersionPayload) {
+    return apiRequest<ReportFormVersion>(
+      "/api/business/report-form-versions/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  listReportPermissions(
+    params: {
+      granteeType?: string;
+      granteeId?: string;
+      reportId?: string;
+      page?: number;
+      size?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.granteeType?.trim())
+      query.set("granteeType", params.granteeType.trim());
+    if (params.granteeId?.trim())
+      query.set("granteeId", params.granteeId.trim());
+    if (params.reportId?.trim()) query.set("reportId", params.reportId.trim());
+    return apiRequest<ReportPermissionSearchResponse>(
+      `/api/business/report-permissions?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveReportPermissions(payload: ReportPermissionsPayload) {
+    return apiRequest<ReportPermissionSearchResponse>(
+      "/api/business/report-permissions/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  listBulkReportJobs(
+    params: {
+      reportId?: string;
+      status?: string;
+      page?: number;
+      size?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.reportId?.trim()) query.set("reportId", params.reportId.trim());
+    if (params.status?.trim()) query.set("status", params.status.trim());
+    return apiRequest<BulkReportJobSearchResponse>(
+      `/api/business/bulk-report-jobs?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getBulkReportJob(jobId: number) {
+    return apiRequest<BulkReportJob>(
+      `/api/business/bulk-report-jobs/${encodeURIComponent(String(jobId))}` as `/api/${string}`,
+    );
+  },
+  downloadBulkReportJobResult(jobId: number) {
+    return apiRequest<BulkReportJobResult>(
+      `/api/business/bulk-report-jobs/${encodeURIComponent(String(jobId))}/result` as `/api/${string}`,
+    );
+  },
+  createBulkReportJob(payload: BulkReportJobPayload) {
+    return apiRequest<BulkReportJob>("/api/business/bulk-report-jobs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  listReportPrintHistories(
+    params: {
+      reportId?: string;
+      requesterId?: string;
+      fromDate?: string;
+      toDate?: string;
+      page?: number;
+      size?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.reportId?.trim()) query.set("reportId", params.reportId.trim());
+    if (params.requesterId?.trim())
+      query.set("requesterId", params.requesterId.trim());
+    if (params.fromDate?.trim()) query.set("fromDate", params.fromDate.trim());
+    if (params.toDate?.trim()) query.set("toDate", params.toDate.trim());
+    return apiRequest<ReportPrintHistorySearchResponse>(
+      `/api/business/report-print-histories?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  listBulkReportTargets(
+    params: {
+      reportId?: string;
+      evaluationYear?: string;
+      organizationCode?: string;
+      page?: number;
+      size?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    if (params.reportId?.trim()) query.set("reportId", params.reportId.trim());
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.organizationCode?.trim())
+      query.set("organizationCode", params.organizationCode.trim());
+    return apiRequest<BulkReportTargetSearchResponse>(
+      `/api/business/bulk-report-jobs/targets?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};

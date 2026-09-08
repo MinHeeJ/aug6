@@ -419,6 +419,36 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "파일·데이터 관리 > 데이터 이력 관리 > 점수 산출 이력",
   },
   {
+    path: "/admin/reports",
+    label: "보고서 목록 관리",
+    screenId: "SCR-REPORT-LIST-MGMT",
+    menuPath: "보고서 관리 > 보고서 관리 > 보고서 목록 관리",
+  },
+  {
+    path: "/admin/report-form-versions",
+    label: "보고서 양식 관리",
+    screenId: "SCR-REPORT-FORM-VERSION-MGMT",
+    menuPath: "보고서 관리 > 보고서 관리 > 보고서 양식 관리",
+  },
+  {
+    path: "/admin/report-permissions",
+    label: "보고서 권한 관리",
+    screenId: "SCR-REPORT-PERMISSION-MGMT",
+    menuPath: "보고서 관리 > 보고서 관리 > 보고서 권한 관리",
+  },
+  {
+    path: "/admin/report-print-histories",
+    label: "보고서 출력 이력",
+    screenId: "SCR-REPORT-PRINT-HISTORY",
+    menuPath: "보고서 관리 > 보고서 관리 > 보고서 출력 이력",
+  },
+  {
+    path: "/admin/bulk-report-jobs",
+    label: "대량 출력 관리",
+    screenId: "SCR-BULK-REPORT-JOB-MGMT",
+    menuPath: "보고서 관리 > 보고서 관리 > 대량 출력 관리",
+  },
+  {
     path: "/admin/department-chair-confirm-periods",
     label: "학과장 확인기간 관리",
     screenId: "SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT",
@@ -634,11 +664,34 @@ export function canAccessAdminRoute(
       "/admin/final-evaluation-confirmations",
       "/admin/evaluation-snapshots",
       "/admin/score-calculation-histories",
+      "/admin/reports",
+      "/admin/report-form-versions",
+      "/admin/report-permissions",
+      "/admin/report-print-histories",
+      "/admin/bulk-report-jobs",
       "/admin/score-adjustment-histories",
       "/admin/score-recalculation-histories",
       "/admin/school-info",
     ].includes(path)
   ) {
+    return true;
+  }
+  if (
+    user.roles.includes("R04") &&
+    [
+      "/admin/reports",
+      "/admin/report-form-versions",
+      "/admin/report-permissions",
+      "/admin/report-print-histories",
+      "/admin/bulk-report-jobs",
+    ].includes(path)
+  ) {
+    return true;
+  }
+  if (user.roles.includes("R08") && path === "/admin/report-print-histories") {
+    return true;
+  }
+  if (user.roles.includes("R03") && path === "/admin/bulk-report-jobs") {
     return true;
   }
   return hasMenuUrl(user.menus, path);

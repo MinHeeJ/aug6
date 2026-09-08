@@ -49,6 +49,17 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+report:
+  policy:
+    # OQ-54-01: reviewer 결정 전 0은 자동 만료/삭제 미적용을 의미한다.
+    result-file-retention-days: "${REPORT_RESULT_FILE_RETENTION_DAYS:0}"
+    # OQ-54-02: 사용자/조직/역할 권한 병합 정책은 설정으로만 격리한다.
+    permission-merge-strategy: "${REPORT_PERMISSION_MERGE_STRATEGY:ANY_ALLOW}"
+    # OQ-54-03: 권한 밖 대상 일부 포함 시 처리 정책은 reviewer 결정 전 작업 거부를 유지한다.
+    unauthorized-bulk-target-policy: "${REPORT_UNAUTHORIZED_BULK_TARGET_POLICY:REJECT_JOB}"
+    # OQ-54-04: 실패 출력 시도 이력 기록 여부는 확정 전 설정으로만 제어한다.
+    record-failed-print-history: "${REPORT_RECORD_FAILED_PRINT_HISTORY:true}"
+
 ---
 spring:
   config:

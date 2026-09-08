@@ -2,6 +2,8 @@ FROM maven:3.9.8-eclipse-temurin-17-alpine AS build
 WORKDIR /workspace
 
 COPY pom.xml .
+COPY .gitignore .dockerignore ./
+COPY frontend ./frontend
 COPY src ./src
 RUN mvn -q -DskipTests package
 

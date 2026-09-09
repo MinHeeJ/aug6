@@ -7,7 +7,7 @@ import {
   describeLoginFailure,
   validateLoginInput,
 } from "./LoginPage";
-import type { CurrentUser } from "../api/apiClient";
+import { ApiClientError, type CurrentUser } from "../api/apiClient";
 
 describe("LoginPage", () => {
   it("shows field-level validation errors when login id or password is missing", () => {
@@ -15,6 +15,18 @@ describe("LoginPage", () => {
       loginId: "사용자 ID를 입력하세요.",
       password: "비밀번호를 입력하세요.",
     });
+  });
+
+  it("maps pending email login failure to verification guidance without password disclosure", () => {
+    const error = new ApiClientError(403, "이메일 인증을 완료해주세요.", {
+      code: "EMAIL_VERIFICATION_REQUIRED",
+      message: "이메일 인증을 완료해주세요.",
+      fields: [],
+    });
+
+    expect(describeLoginFailure(error)).toContain("이메일 인증을 완료해주세요");
+    expect(describeLoginFailure(error)).toContain("재발송");
+    expect(describeLoginFailure(error)).not.toContain("password");
   });
 
   it("maps authentication failure to a Korean 401 message without hiding the seed account guide", () => {
@@ -28,6 +40,8 @@ describe("LoginPage", () => {
       />,
     );
     expect(html).toContain("시드 관리자 계정");
+    expect(html).toContain("회원가입");
+    expect(html).toContain("/signup");
     expect(html).toContain("loginId: admin");
     expect(html).toContain("password: admin");
     expect(html).not.toContain('name="loginId" value="admin"');
@@ -80,7 +94,7 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(93);
+    expect(ADMIN_ROUTES).toHaveLength(99);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);

@@ -30,10 +30,20 @@ services:
       PRIVACY_HMAC_KEY: ${PRIVACY_HMAC_KEY:-}
       NEIS_OPEN_API_KEY: ${NEIS_OPEN_API_KEY:-}
       NEIS_TIMEOUT: ${NEIS_TIMEOUT:-PT5S}
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-false}
+      MAIL_FROM: ${MAIL_FROM:-noreply@example.edu}
+      MAIL_VERIFICATION_BASE_URL: ${MAIL_VERIFICATION_BASE_URL:-http://localhost:3000}
       TZ: Asia/Seoul
     depends_on:
       database:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     ports:
       - "8080:8080"
     healthcheck:
@@ -42,6 +52,18 @@ services:
       timeout: 5s
       retries: 10
       start_period: 40s
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    expose:
+      - "1025"
+      - "8025"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "1025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   frontend:
     image: common-foundation-frontend:latest

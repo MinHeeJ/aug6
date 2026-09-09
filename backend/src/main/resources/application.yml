@@ -25,6 +25,42 @@ spring:
   jackson:
     time-zone: Asia/Seoul
     default-property-inclusion: non_null
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: true
+          connectiontimeout: ${MAIL_CONNECT_TIMEOUT_MS:5000}
+          timeout: ${MAIL_READ_TIMEOUT_MS:5000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT_MS:5000}
+
+mail:
+  host: "${MAIL_HOST:smtp.gmail.com}"
+  port: ${MAIL_PORT:587}
+  username: "${MAIL_USERNAME:}"
+  password: "${MAIL_PASSWORD:}"
+  smtp-auth: ${MAIL_SMTP_AUTH:true}
+  starttls-enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+  from: "${MAIL_FROM:}"
+  verified-from-alias: ${MAIL_FROM_VERIFIED_ALIAS:false}
+  verification-base-url: "${MAIL_VERIFICATION_BASE_URL:}"
+  connect-timeout: ${MAIL_CONNECT_TIMEOUT:5s}
+  read-timeout: ${MAIL_READ_TIMEOUT:5s}
+  write-timeout: ${MAIL_WRITE_TIMEOUT:5s}
+
+auth:
+  email-verification:
+    resend:
+      same-account-email-throttle-seconds: ${EMAIL_VERIFICATION_RESEND_THROTTLE_SECONDS:60}
+      max-attempts-per-email-per-hour: ${EMAIL_VERIFICATION_RESEND_EMAIL_HOURLY_LIMIT:5}
+      max-attempts-per-ip-per-hour: ${EMAIL_VERIFICATION_RESEND_IP_HOURLY_LIMIT:20}
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml

@@ -6,11 +6,15 @@ import kr.ac.knue.commonfoundation.common.api.ApiResponse;
 import kr.ac.knue.commonfoundation.common.api.UnauthenticatedException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 public class AuthController {
@@ -33,6 +37,26 @@ public class AuthController {
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return ApiResponse.ok(session.user());
+    }
+
+    @PostMapping("/api/auth/signup")
+    public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest request) {
+        return ResponseEntity.status(201).body(ApiResponse.ok(authService.signup(request)));
+    }
+
+    @PostMapping("/api/auth/email-verifications/verify")
+    public ApiResponse<EmailVerificationResponse> verifyEmail(@Valid @RequestBody EmailVerificationRequest request) {
+        return ApiResponse.ok(authService.updateEmailVerification(request));
+    }
+
+    @PostMapping("/api/auth/email-verifications/resend")
+    public ResponseEntity<ApiResponse<EmailVerificationResendResponse>> resendEmailVerification(
+            @Valid @RequestBody EmailVerificationResendRequest request,
+            @RequestHeader(name = "X-Forwarded-For", required = false) String forwardedFor,
+            HttpServletRequest servletRequest
+    ) {
+        String requesterIp = resolveRequesterIp(forwardedFor, servletRequest);
+        return ResponseEntity.accepted().body(ApiResponse.ok(authService.createEmailVerificationResend(request, requesterIp)));
     }
 
     @GetMapping("/api/auth/me")
@@ -58,5 +82,12 @@ public class AuthController {
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return ApiResponse.empty();
+    }
+
+    private String resolveRequesterIp(String forwardedFor, HttpServletRequest servletRequest) {
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return servletRequest == null ? null : servletRequest.getRemoteAddr();
     }
 }

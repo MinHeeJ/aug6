@@ -7,7 +7,7 @@ import {
   describeLoginFailure,
   validateLoginInput,
 } from "./LoginPage";
-import type { CurrentUser } from "../api/apiClient";
+import { ApiClientError, type CurrentUser } from "../api/apiClient";
 
 describe("LoginPage", () => {
   it("shows field-level validation errors when login id or password is missing", () => {
@@ -32,6 +32,19 @@ describe("LoginPage", () => {
     expect(html).toContain("password: admin");
     expect(html).not.toContain('name="loginId" value="admin"');
     expect(html).not.toContain('name="password" type="password" value="admin"');
+  });
+
+  it("shows pending email verification guidance instead of a normal login session failure", () => {
+    const error = new ApiClientError(403, "이메일 인증이 필요합니다.", {
+      code: "EMAIL_VERIFICATION_REQUIRED",
+      message:
+        "이메일 인증이 필요합니다. /api/auth/email-verifications/resend로 인증 메일 재발송을 요청하세요.",
+      fields: [],
+    });
+
+    expect(describeLoginFailure(error)).toContain(
+      "/api/auth/email-verifications/resend",
+    );
   });
 
   it("describes BASIC-19 menu paths with menu screens under roles and privacy screens under system management", () => {
@@ -80,7 +93,7 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(93);
+    expect(ADMIN_ROUTES).toHaveLength(99);
     expect(
       ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);

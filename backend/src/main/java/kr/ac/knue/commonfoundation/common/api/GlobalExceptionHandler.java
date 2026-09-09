@@ -2,6 +2,7 @@ package kr.ac.knue.commonfoundation.common.api;
 
 import java.util.Comparator;
 import java.util.List;
+import kr.ac.knue.commonfoundation.auth.EmailVerificationRequiredException;
 import kr.ac.knue.commonfoundation.schoolinfo.ExternalIntegrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.fail(ApiError.of("UNAUTHENTICATED", exception.getMessage())));
     }
 
+    @ExceptionHandler(EmailVerificationRequiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEmailVerificationRequired(EmailVerificationRequiredException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(exception.apiError()));
+    }
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(ApiError.of("FORBIDDEN", exception.getMessage())));
@@ -63,6 +69,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTooManyRequests(TooManyRequestsException exception) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiResponse.fail(ApiError.of("TOO_MANY_REQUESTS", exception.getMessage())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

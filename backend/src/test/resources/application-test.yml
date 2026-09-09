@@ -1,0 +1,30 @@
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 1000
+          timeout: 1000
+          writetimeout: 1000
+
+mail:
+  host: smtp.gmail.com
+  port: 587
+  username: ""
+  password: ""
+  smtp-auth: true
+  starttls-enable: true
+  from: ""
+  verified-from-alias: false
+  verification-base-url: "https://test.invalid"
+  connect-timeout: 1s
+  read-timeout: 1s
+  write-timeout: 1s

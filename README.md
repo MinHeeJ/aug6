@@ -94,6 +94,37 @@ npx playwright test tests/e2e/common-foundation.spec.ts
 - 사용자 단위 메뉴 DENY 저장 후 메뉴 숨김과 직접 API 403 확인
 - 테스트 종료 시 DENY 권한을 ALLOW로 원복
 
+## BASIC-58 회원가입 이메일 인증 운영 확인
+
+회원가입 인증 메일은 운영자가 설정한 Gmail SMTP 계정으로 발송합니다. 비밀값은 source, Dockerfile, 이미지, 로그, 오류 응답, 문서에 원문으로 남기지 않습니다.
+
+필수 운영 변수는 다음과 같습니다.
+
+```bash
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS_ENABLE=true
+MAIL_FROM=
+MAIL_FROM_VERIFIED_ALIAS=false
+MAIL_VERIFICATION_BASE_URL=
+MAIL_CONNECT_TIMEOUT=5s
+MAIL_READ_TIMEOUT=5s
+MAIL_WRITE_TIMEOUT=5s
+```
+
+- `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_VERIFICATION_BASE_URL`은 Docker Compose 또는 Preview secret으로 backend 컨테이너에 전달해야 합니다.
+- `MAIL_FROM`은 기본적으로 `MAIL_USERNAME`과 같아야 하며, 다를 경우 Google에서 검증된 별칭일 때만 `MAIL_FROM_VERIFIED_ALIAS=true`로 설정합니다.
+- Gmail credential이 없거나 잘못되면 MailHog로 전환하지 않고 신규 가입 계정을 `PENDING_EMAIL` 상태로 유지합니다.
+- 실제 Gmail 외부 발송 완료는 운영자 승인 실제 수신함에서 메일 수신 및 인증 링크 활성화까지 성공한 뒤에만 주장할 수 있습니다.
+
+상세 절차와 현재 검증 상태:
+
+- `docs/operator-gmail-verification-runbook.md`
+- `docs/gmail-external-delivery-status.md`
+
 ## Backend / Frontend 품질 게이트
 
 로컬 의존성 설치가 완료된 환경에서는 다음을 실행합니다.

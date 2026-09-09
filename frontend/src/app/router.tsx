@@ -14,6 +14,8 @@ import {
   LoginPage,
   canAccessAdminRoute,
 } from "../pages/LoginPage";
+import { SignupPage } from "../pages/SignupPage";
+import { EmailVerificationPage } from "../pages/EmailVerificationPage";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
@@ -145,6 +147,48 @@ export function AppRouter() {
   }
 
   if (auth.status === "anonymous") {
+    if (path === "/email-verification") {
+      return (
+        <EmailVerificationPage
+          onVerify={async (token) =>
+            (await authApi.updateEmailVerification(token)).data ?? {
+              accountStatus: "ACTIVE",
+              emailVerifiedYn: "Y",
+            }
+          }
+          onGoLogin={() => {
+            if (typeof window !== "undefined") {
+              window.history.replaceState({}, "", "/login");
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }
+          }}
+        />
+      );
+    }
+    if (path === "/signup") {
+      return (
+        <SignupPage
+          onSignup={async (payload) =>
+            (await authApi.signup(payload)).data ?? {
+              accountStatus: "PENDING_EMAIL",
+              emailVerifiedYn: "N",
+            }
+          }
+          onResend={async (email) =>
+            (await authApi.resendEmailVerification(email)).data ?? {
+              status: "ACCEPTED",
+              message: "인증 메일 재발송 요청을 접수했습니다.",
+            }
+          }
+          onCancel={() => {
+            if (typeof window !== "undefined") {
+              window.history.replaceState({}, "", "/login");
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }
+          }}
+        />
+      );
+    }
     return (
       <LoginPage
         onLogin={auth.login}

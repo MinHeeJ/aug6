@@ -141,7 +141,7 @@ class AuthContractTest {
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
         LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
         when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
-                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자"));
+                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자", "ACTIVE", "Y"));
         when(mapper.findActiveRoleCodes(1L)).thenReturn(List.of("R09"));
         when(permissions.visibleMenus(eq(1L), eq(List.of("R09")))).thenReturn(List.of());
         AuthenticatedSession persistedSession = adapter.authenticate(new LoginRequest("admin", "admin"));
@@ -163,9 +163,33 @@ class AuthContractTest {
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
         LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
         when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
-                "sha256:invalid", "E0001", "시스템 관리자"));
+                "sha256:invalid", "E0001", "시스템 관리자", "ACTIVE", "Y"));
         assertThatThrownBy(() -> adapter.authenticate(new LoginRequest("admin", "wrong")))
                 .isInstanceOf(kr.ac.knue.commonfoundation.common.api.UnauthenticatedException.class);
+        verify(mapper, never()).insertSession(any(String.class), any(Long.class), any(LocalDateTime.class));
+    }
+
+    @Test
+    void pendingEmailLoginReturnsVerificationGuidanceAndDoesNotIssueSessionCookie() throws Exception {
+        when(authService.login(any(LoginRequest.class))).thenThrow(new EmailVerificationRequiredException());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"loginId\":\"newuser\",\"password\":\"Password1\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("EMAIL_VERIFICATION_REQUIRED"))
+                .andExpect(jsonPath("$.error.message").value(org.hamcrest.Matchers.containsString("/api/auth/email-verifications/resend")));
+
+        AuthMapper mapper = mock(AuthMapper.class);
+        kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
+        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
+        when(mapper.findAccountByLoginId("newuser")).thenReturn(new AuthMapper.AccountRow(77L, "newuser",
+                "sha256:19513fdc9da4fb72a4a05eb66917548d3c90ff94d5419e1f2363eea89dfee1dd", null, "newuser", "PENDING_EMAIL", "N"));
+
+        assertThatThrownBy(() -> adapter.authenticate(new LoginRequest("newuser", "Password1")))
+                .isInstanceOf(EmailVerificationRequiredException.class);
         verify(mapper, never()).insertSession(any(String.class), any(Long.class), any(LocalDateTime.class));
     }
 
@@ -197,7 +221,7 @@ class AuthContractTest {
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
         LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
         when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
-                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자"));
+                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자", "ACTIVE", "Y"));
         when(mapper.findActiveRoleCodes(1L)).thenReturn(List.of("R09"));
         when(permissions.visibleMenus(eq(1L), eq(List.of("R09")))).thenReturn(List.of());
 

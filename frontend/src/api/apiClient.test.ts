@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   apiRequest,
   areaElementSystemApi,
+  authApi,
   evaluationAreaApi,
   evaluationElementApi,
   evaluationManagementItemApi,
@@ -24,6 +25,84 @@ describe("apiRequest", () => {
     expect(requestedUrl).toBe("/api/health");
     expect(requestedUrl).not.toContain("localhost");
     expect(requestedUrl).not.toContain("backend:8080");
+  });
+
+  it("posts createSignup through the relative signup endpoint with normalized payload from callers", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        success: true,
+        data: { accountStatus: "PENDING_EMAIL", emailVerifiedYn: "N" },
+        meta: {},
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await authApi.signup({
+      loginId: "newuser",
+      password: "Password1",
+      email: "user@example.com",
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/signup");
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    expect(fetchMock.mock.calls[0][1]?.body).toBe(
+      JSON.stringify({
+        loginId: "newuser",
+        password: "Password1",
+        email: "user@example.com",
+      }),
+    );
+  });
+
+  it("posts updateEmailVerification through the relative verification endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        success: true,
+        data: { accountStatus: "ACTIVE", emailVerifiedYn: "Y" },
+        meta: {},
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const token =
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    await authApi.updateEmailVerification(token);
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/auth/email-verifications/verify",
+    );
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify({ token }));
+  });
+
+  it("posts createEmailVerificationResend through the relative resend endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        success: true,
+        data: {
+          status: "ACCEPTED",
+          message: "인증 메일 재발송 요청을 접수했습니다.",
+        },
+        meta: {},
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await authApi.resendEmailVerification("user@example.com");
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/auth/email-verifications/resend",
+    );
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    expect(fetchMock.mock.calls[0][1]?.body).toBe(
+      JSON.stringify({ email: "user@example.com" }),
+    );
   });
 
   it("passes accessAllowed as a server-side menu permission filter", async () => {

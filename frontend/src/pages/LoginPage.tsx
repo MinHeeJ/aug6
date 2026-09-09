@@ -628,6 +628,12 @@ export function validateLoginInput(
 }
 
 export function describeLoginFailure(caught: unknown): string {
+  if (
+    caught instanceof ApiClientError &&
+    caught.apiError?.code === "EMAIL_VERIFICATION_REQUIRED"
+  ) {
+    return caught.apiError.message;
+  }
   if (caught instanceof ApiClientError && caught.status === 401) {
     return "아이디 또는 비밀번호가 올바르지 않습니다.";
   }
@@ -854,6 +860,17 @@ export function LoginPage({
               disabled={submitting}
             >
               {submitting ? "처리 중" : "로그인"}
+            </button>
+            <button
+              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-md border border-primary bg-transparent px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-white"
+              type="button"
+              data-testid="login-signup-link"
+              onClick={() => {
+                window.history.replaceState({}, "", "/signup");
+                window.dispatchEvent(new PopStateEvent("popstate"));
+              }}
+            >
+              회원가입
             </button>
             <div
               className="mt-4 rounded-md bg-lightprimary p-4 text-sm text-primary"

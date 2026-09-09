@@ -27,6 +27,9 @@ public class LocalAccountAuthenticationAdapter implements AuthenticationPort {
         if (account == null || !matches(request.password(), account.passwordHash())) {
             throw new UnauthenticatedException();
         }
+        if ("PENDING_EMAIL".equals(account.accountStatus()) || "N".equals(account.emailVerifiedYn())) {
+            throw new EmailVerificationRequiredException();
+        }
         String sessionId = UUID.randomUUID().toString().replace("-", "");
         authMapper.insertSession(sessionId, account.userId(), LocalDateTime.now().plusHours(8));
         List<String> roles = authMapper.findActiveRoleCodes(account.userId());

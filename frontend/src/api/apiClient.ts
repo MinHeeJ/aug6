@@ -64,6 +64,30 @@ export const authApi = {
       body: JSON.stringify({ loginId, password }),
     });
   },
+  signup(payload: SignupPayload) {
+    return apiRequest<SignupResult>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateEmailVerification(token: string) {
+    return apiRequest<EmailVerificationResult>(
+      "/api/auth/email-verifications/verify",
+      {
+        method: "POST",
+        body: JSON.stringify({ token }),
+      },
+    );
+  },
+  resendEmailVerification(email: string) {
+    return apiRequest<EmailVerificationResendResult>(
+      "/api/auth/email-verifications/resend",
+      {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      },
+    );
+  },
   me() {
     return apiRequest<CurrentUser>("/api/auth/me");
   },
@@ -73,6 +97,34 @@ export const authApi = {
   health() {
     return apiRequest<HealthStatus>("/api/health");
   },
+};
+
+export type SignupPayload = {
+  loginId: string;
+  password: string;
+  email: string;
+};
+
+export type SignupResult = {
+  userId?: number;
+  loginId?: string;
+  email?: string;
+  accountStatus: "PENDING_EMAIL" | string;
+  emailVerifiedYn: "N" | "Y" | string;
+  mailDeliveryStatus?: string;
+};
+
+export type EmailVerificationResult = {
+  userId?: number;
+  loginId?: string;
+  email?: string;
+  accountStatus: "ACTIVE" | string;
+  emailVerifiedYn: "Y" | "N" | string;
+};
+
+export type EmailVerificationResendResult = {
+  status: "ACCEPTED" | string;
+  message: string;
 };
 
 export type HealthStatus = {

@@ -57,6 +57,26 @@ export async function apiRequest<T>(
   return body;
 }
 
+export type SignupPayload = {
+  loginId: string;
+  password: string;
+  passwordConfirm: string;
+  email: string;
+};
+
+export type SignupResult = {
+  loginId: string;
+  email: string;
+  accountStatus: "PENDING_EMAIL";
+  message: string;
+  resendAvailable: boolean;
+};
+
+export type SignupAvailability = {
+  available: boolean;
+  message: string;
+};
+
 export const authApi = {
   login(loginId: string, password: string) {
     return apiRequest<CurrentUser>("/api/auth/login", {
@@ -72,6 +92,33 @@ export const authApi = {
   },
   health() {
     return apiRequest<HealthStatus>("/api/health");
+  },
+};
+
+export const signupApi = {
+  checkLoginId(loginId: string) {
+    const query = new URLSearchParams({ loginId });
+    return apiRequest<SignupAvailability>(
+      `/api/auth/signup/check-login-id?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  checkEmail(email: string) {
+    const query = new URLSearchParams({ email });
+    return apiRequest<SignupAvailability>(
+      `/api/auth/signup/check-email?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  create(payload: SignupPayload) {
+    return apiRequest<SignupResult>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  resendVerification(email: string) {
+    return apiRequest<{ message?: string }>("/api/auth/resend-verification", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
   },
 };
 

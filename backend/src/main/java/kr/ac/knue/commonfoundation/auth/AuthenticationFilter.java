@@ -32,7 +32,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.equals("/api/health") || path.equals("/api/auth/login")) {
+        if (!path.startsWith("/api/") || path.equals("/api/health") || isPublicAuthPath(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -52,6 +52,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         } catch (RuntimeException exception) {
             writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
         }
+    }
+
+    private boolean isPublicAuthPath(String path) {
+        return path.equals("/api/auth/login")
+                || path.equals("/api/auth/signup")
+                || path.equals("/api/auth/signup/check-login-id")
+                || path.equals("/api/auth/signup/check-email")
+                || path.equals("/api/auth/verify-email")
+                || path.equals("/api/auth/resend-verification");
     }
 
     private boolean requiresMenuPermission(String path) {

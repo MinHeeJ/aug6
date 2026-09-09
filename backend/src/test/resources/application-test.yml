@@ -1,0 +1,19 @@
+spring:
+  mail:
+    host: mailhog
+    port: 1025
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+app:
+  mail:
+    verification:
+      from: noreply@example.edu
+      base-url: http://localhost:3000
+      subject: 이메일 인증을 완료해주세요

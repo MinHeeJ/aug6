@@ -65,6 +65,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
     }
 
+    @ExceptionHandler(CodedResponseException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCodedResponse(CodedResponseException exception) {
+        return ResponseEntity.status(exception.status()).body(ApiResponse.fail(
+                new ApiError(exception.code(), exception.getMessage(), exception.fields())));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException exception) {
         return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.of("BAD_REQUEST", exception.getMessage())));

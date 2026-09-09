@@ -928,7 +928,7 @@ function SearchPanel({
   onCsv,
 }: {
   filters: Record<string, string>;
-  setFilters: (v: Record<string, string>) => void;
+  setFilters: (v: any) => void;
   pageSize: PageSize;
   setPageSize: (v: PageSize) => void;
   onSearch: () => void;

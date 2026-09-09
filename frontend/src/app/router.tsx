@@ -14,6 +14,8 @@ import {
   LoginPage,
   canAccessAdminRoute,
 } from "../pages/LoginPage";
+import { SignupPage } from "../pages/SignupPage";
+import { EmailVerificationResultPage } from "../pages/EmailVerificationResultPage";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
@@ -144,7 +146,14 @@ export function AppRouter() {
     );
   }
 
+  if (path === "/email-verification/result") {
+    return <EmailVerificationResultPage />;
+  }
+
   if (auth.status === "anonymous") {
+    if (path === "/signup") {
+      return <SignupPage />;
+    }
     return (
       <LoginPage
         onLogin={auth.login}

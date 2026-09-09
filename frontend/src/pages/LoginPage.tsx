@@ -628,6 +628,13 @@ export function validateLoginInput(
 }
 
 export function describeLoginFailure(caught: unknown): string {
+  if (
+    caught instanceof ApiClientError &&
+    caught.status === 403 &&
+    caught.apiError?.code === "EMAIL_VERIFICATION_REQUIRED"
+  ) {
+    return "이메일 인증을 완료해주세요. 인증 메일 재발송 후 다시 시도할 수 있습니다.";
+  }
   if (caught instanceof ApiClientError && caught.status === 401) {
     return "아이디 또는 비밀번호가 올바르지 않습니다.";
   }
@@ -865,6 +872,13 @@ export function LoginPage({
               README 또는 quickstart에서 실행·로그인·주요 화면 검증 방법을
               확인합니다.
             </p>
+            <a
+              className="mt-3 inline-flex text-sm font-medium text-primary"
+              data-testid="login-signup-link"
+              href="/signup"
+            >
+              회원가입
+            </a>
           </form>
 
           <aside className="col-span-12 rounded-md border border-ld bg-white p-6 lg:col-span-6">

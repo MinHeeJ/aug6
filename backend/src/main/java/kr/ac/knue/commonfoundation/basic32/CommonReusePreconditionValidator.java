@@ -56,8 +56,7 @@ public class CommonReusePreconditionValidator {
 
     private boolean isBackendBuildContext(Path root) {
         return Files.exists(root.resolve("pom.xml"))
-                && Files.isDirectory(root.resolve("src/main/java/kr/ac/knue/commonfoundation"))
-                && !Files.exists(root.resolve("backend"));
+                && Files.isDirectory(root.resolve("src/main/java/kr/ac/knue/commonfoundation"));
     }
 
     private PreconditionReport validateBackendBuildContext(Path root) {

@@ -25,6 +25,24 @@ spring:
   jackson:
     time-zone: Asia/Seoul
     default-property-inclusion: non_null
+  mail:
+    host: "${MAIL_HOST:localhost}"
+    port: "${MAIL_PORT:1025}"
+    username: "${MAIL_USERNAME:}"
+    password: "${MAIL_PASSWORD:}"
+    properties:
+      mail:
+        smtp:
+          auth: "${MAIL_SMTP_AUTH:false}"
+          starttls:
+            enable: "${MAIL_SMTP_STARTTLS_ENABLE:false}"
+
+app:
+  mail:
+    verification:
+      from: "${MAIL_FROM:noreply@example.edu}"
+      base-url: "${MAIL_VERIFICATION_BASE_URL:http://localhost:3000}"
+      subject: "${MAIL_VERIFICATION_SUBJECT:이메일 인증을 완료해주세요}"
 
 mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -69,6 +87,22 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://database:5432/common_foundation}
     username: ${SPRING_DATASOURCE_USERNAME:common_foundation}
     password: ${SPRING_DATASOURCE_PASSWORD:common_foundation}
+  mail:
+    host: "${MAIL_HOST:mailhog}"
+    port: "${MAIL_PORT:1025}"
+    username: "${MAIL_USERNAME:}"
+    password: "${MAIL_PASSWORD:}"
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+app:
+  mail:
+    verification:
+      base-url: "${MAIL_VERIFICATION_BASE_URL:http://localhost:3000}"
 
 server:
   servlet:
@@ -81,6 +115,22 @@ spring:
   config:
     activate:
       on-profile: prod
+  mail:
+    host: "${MAIL_HOST:}"
+    port: "${MAIL_PORT:587}"
+    username: "${MAIL_USERNAME:}"
+    password: "${MAIL_PASSWORD:}"
+    properties:
+      mail:
+        smtp:
+          auth: "${MAIL_SMTP_AUTH:true}"
+          starttls:
+            enable: "${MAIL_SMTP_STARTTLS_ENABLE:true}"
+
+app:
+  mail:
+    verification:
+      base-url: "${MAIL_VERIFICATION_BASE_URL:https://example.edu}"
 
 server:
   servlet:

@@ -249,6 +249,75 @@ paths:
         - R07
         - R08
         - R09
+  /api/auth/signup/check-login-id:
+    get:
+      operationId: checkSignupLoginId
+      summary: 회원가입 아이디 확인
+      parameters:
+        - { name: loginId, in: query, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9]{3,19}$' } }
+      responses:
+        '200': { description: 사용 가능, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 형식 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 아이디 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-filtering: [loginId]
+      x-related-requirements: [REQ-1754, REQ-1742]
+  /api/auth/signup/check-email:
+    get:
+      operationId: checkSignupEmail
+      summary: 회원가입 이메일 확인
+      parameters:
+        - { name: email, in: query, required: true, schema: { type: string, format: email } }
+      responses:
+        '200': { description: 사용 가능, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 형식 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 이메일 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-filtering: [email]
+      x-related-requirements: [REQ-1754, REQ-1742]
+  /api/auth/signup:
+    post:
+      operationId: createSignup
+      summary: 회원가입 계정 생성
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/SignupRequest' } } } }
+      responses:
+        '201': { description: 회원가입 접수, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 입력 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 아이디 또는 이메일 중복, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1754, REQ-1755, REQ-1756, REQ-1770, REQ-1734, REQ-1735, REQ-1742]
+      x-business-rules: [중복 loginId 가입 차단, 중복 email 가입 차단, email 인증 전 ACTIVE 생성 금지, 신규 가입 기본 role_code=R08]
+      x-side-effects: [users row 생성, user_roles R08 row 생성, email_verification_tokens token_hash row 생성, mail_send_attempts REQUESTED row 생성, JavaMailSender 비동기 발송 요청]
+      x-state-transitions: [users.account_status none -> PENDING_EMAIL, users.email_verified_yn none -> N]
+      x-required-tests: ['happy: 유효한 signup 요청 -> users.account_status=PENDING_EMAIL 및 user_roles.role_code=R08 후속 조회', 'auth: anonymous 외 별도 권한 요구 없음 -> SessionCookie 없이도 201 또는 검증 오류 반환', 'validation: passwordConfirm 불일치 -> 400 ApiError fields.passwordConfirm 반환', 'business: 중복 email 요청 -> 409 DUPLICATE_EMAIL 및 users row 추가 없음', 'side-effect: signup 성공 -> email_verification_tokens.token_hash와 mail_send_attempts.REQUESTED row 생성']
+  /api/auth/verify-email:
+    get:
+      operationId: verifyEmail
+      summary: 이메일 인증 처리
+      parameters:
+        - { name: token, in: query, required: true, schema: { type: string, minLength: 32 } }
+      responses:
+        '302': { description: 프론트엔드 인증 결과 화면으로 이동 }
+        '400': { description: token 누락 또는 무효, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '410': { description: token 만료, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1760, REQ-1761, REQ-1762, REQ-1763, REQ-1736, REQ-1742]
+      x-business-rules: [token은 SHA-256 hash로만 조회, 24시간 만료 token 차단, used token 재사용 차단]
+      x-side-effects: [users.email_verified_yn=Y 업데이트, users.account_status=ACTIVE 업데이트, email_verification_tokens.used_yn=Y 및 used_dt 기록]
+      x-state-transitions: [users.account_status PENDING_EMAIL -> ACTIVE, email_verification_tokens.used_yn N -> Y]
+      x-required-tests: ['happy: 유효한 token 요청 -> users.email_verified_yn=Y 및 account_status=ACTIVE 후속 조회', 'auth: anonymous 링크 접근 허용 -> SessionCookie 없이 302 success redirect 반환', 'validation: token 누락 -> 400 ApiError fields.token 반환', 'business: expired token 요청 -> 410 TOKEN_EXPIRED 및 users.account_status=PENDING_EMAIL 유지', 'side-effect: verify 성공 -> email_verification_tokens.used_dt 기록']
+  /api/auth/resend-verification:
+    post:
+      operationId: resendVerificationEmail
+      summary: 인증 메일 재발송
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VerificationResendRequest' } } } }
+      responses:
+        '200': { description: 재발송 접수 또는 동일 성공 안내, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 이메일 형식 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 이미 인증 완료, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '429': { description: 재요청 제한, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1764, REQ-1765, REQ-1766, REQ-1767, REQ-1768, REQ-1740, REQ-1742]
+      x-business-rules: [PENDING_EMAIL 계정만 새 token 발급, ACTIVE 계정 재발송 차단, 존재하지 않는 email은 동일 성공 메시지 반환, 같은 email 1분 이내 재요청 차단]
+      x-side-effects: [기존 email_verification_tokens 무효화, 새 token_hash row 생성, mail_send_attempts row 생성, JavaMailSender 비동기 발송 요청]
+      x-state-transitions: [email_verification_tokens.used_yn N -> Y on invalidation, email_verification_tokens new row used_yn=N]
+      x-required-tests: ['happy: PENDING_EMAIL email 요청 -> 기존 token used_yn=Y 및 새 token_hash 후속 조회', 'auth: anonymous 재발송 허용 -> SessionCookie 없이 200 또는 검증 오류 반환', 'validation: 잘못된 email 형식 -> 400 ApiError fields.email 반환', 'business: 같은 email 1분 내 재요청 -> 429 RESEND_RATE_LIMITED 및 기존 token 유지', 'side-effect: resend 성공 -> mail_send_attempts.SENT 또는 REQUESTED row 생성']
+
   /api/admin/users:
     get:
       operationId: searchUsers
@@ -7490,6 +7559,20 @@ components:
         decisionResult: { type: string }
         reviewerOpinion: { type: string }
         reasonCode: { type: string }
+    SignupRequest:
+      type: object
+      required: [loginId, password, passwordConfirm, email]
+      properties:
+        loginId: { type: string, pattern: '^[a-z][a-z0-9]{3,19}$', minLength: 4, maxLength: 20 }
+        password: { type: string, minLength: 8 }
+        passwordConfirm: { type: string, minLength: 8 }
+        email: { type: string, format: email, maxLength: 254 }
+    VerificationResendRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+
     ApiResponse:
       type: object
       required: [success, meta]

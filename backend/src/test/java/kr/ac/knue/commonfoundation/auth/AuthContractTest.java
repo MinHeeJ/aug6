@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.LocalDateTime;
 import java.util.List;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
+import kr.ac.knue.commonfoundation.signup.PasswordHashService;
 import kr.ac.knue.commonfoundation.health.HealthController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -139,9 +140,10 @@ class AuthContractTest {
 
         AuthMapper mapper = mock(AuthMapper.class);
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
-        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
+        PasswordHashService passwordHashService = mock(PasswordHashService.class);
+        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions, passwordHashService);
         when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
-                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자"));
+                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자", "Y", "ACTIVE"));
         when(mapper.findActiveRoleCodes(1L)).thenReturn(List.of("R09"));
         when(permissions.visibleMenus(eq(1L), eq(List.of("R09")))).thenReturn(List.of());
         AuthenticatedSession persistedSession = adapter.authenticate(new LoginRequest("admin", "admin"));
@@ -161,12 +163,28 @@ class AuthContractTest {
 
         AuthMapper mapper = mock(AuthMapper.class);
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
-        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
+        PasswordHashService passwordHashService = mock(PasswordHashService.class);
+        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions, passwordHashService);
         when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
-                "sha256:invalid", "E0001", "시스템 관리자"));
+                "sha256:invalid", "E0001", "시스템 관리자", "Y", "ACTIVE"));
         assertThatThrownBy(() -> adapter.authenticate(new LoginRequest("admin", "wrong")))
                 .isInstanceOf(kr.ac.knue.commonfoundation.common.api.UnauthenticatedException.class);
         verify(mapper, never()).insertSession(any(String.class), any(Long.class), any(LocalDateTime.class));
+    }
+
+    @Test
+    void pendingEmailLoginReturnsVerificationRequiredWithoutSessionCookie() throws Exception {
+        when(authService.login(any(LoginRequest.class))).thenThrow(new kr.ac.knue.commonfoundation.common.api.CodedResponseException(
+                org.springframework.http.HttpStatus.FORBIDDEN, "EMAIL_VERIFICATION_REQUIRED",
+                "이메일 인증을 완료해주세요. 인증 메일 재발송 후 다시 시도할 수 있습니다."));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"loginId\":\"test_pending\",\"password\":\"Strong!123\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
+                .andExpect(jsonPath("$.error.code").value("EMAIL_VERIFICATION_REQUIRED"))
+                .andExpect(jsonPath("$.error.message").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Strong!123"))));
     }
 
     @Test
@@ -195,9 +213,10 @@ class AuthContractTest {
     void loginPersistsActiveSessionTableSideEffectAndInvalidLoginKeepsSessionTableUnchanged() {
         AuthMapper mapper = mock(AuthMapper.class);
         kr.ac.knue.commonfoundation.permissions.EffectivePermissionService permissions = mock(kr.ac.knue.commonfoundation.permissions.EffectivePermissionService.class);
-        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions);
+        PasswordHashService passwordHashService = mock(PasswordHashService.class);
+        LocalAccountAuthenticationAdapter adapter = new LocalAccountAuthenticationAdapter(mapper, permissions, passwordHashService);
         when(mapper.findAccountByLoginId("admin")).thenReturn(new AuthMapper.AccountRow(1L, "admin",
-                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자"));
+                "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "E0001", "시스템 관리자", "Y", "ACTIVE"));
         when(mapper.findActiveRoleCodes(1L)).thenReturn(List.of("R09"));
         when(permissions.visibleMenus(eq(1L), eq(List.of("R09")))).thenReturn(List.of());
 

@@ -12,7 +12,9 @@ import org.apache.ibatis.annotations.Update;
 public interface AuthMapper {
     @Select("""
             select u.user_id as "userId", u.login_id as "loginId", u.password_hash as "passwordHash",
-                   u.employee_no as "employeeNo", coalesce(k.name, u.login_id) as "name"
+                   u.employee_no as "employeeNo", coalesce(k.name, u.login_id) as "name",
+                   coalesce(u.email_verified_yn, 'Y') as "emailVerifiedYn",
+                   coalesce(u.account_status, case when u.status = 'INACTIVE' then 'SUSPENDED' else 'ACTIVE' end) as "accountStatus"
             from users u
             left join korus_personnel_snapshots k on k.employee_no = u.employee_no
             where u.login_id = #{loginId} and u.system_use_yn = 'Y' and u.status = 'ACTIVE'
@@ -51,6 +53,6 @@ public interface AuthMapper {
     @Update("update sessions set status = 'LOGGED_OUT', last_accessed_at = CURRENT_TIMESTAMP where session_id = #{sessionId} and status = 'ACTIVE'")
     void logout(@Param("sessionId") String sessionId);
 
-    record AccountRow(Long userId, String loginId, String passwordHash, String employeeNo, String name) {}
+    record AccountRow(Long userId, String loginId, String passwordHash, String employeeNo, String name, String emailVerifiedYn, String accountStatus) {}
     record SessionUserRow(String sessionId, Long userId, String loginId, String employeeNo, String name) {}
 }

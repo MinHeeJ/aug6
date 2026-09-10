@@ -2190,6 +2190,296 @@ export const evaluationManagementItemApi = {
   },
 };
 
+export type EvaluationElementManagementItem = {
+  settingId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  evaluationYear: string;
+  areaCode: string;
+  elementCode: string;
+  managementItemCode: string;
+  managementItemName: string;
+  teacherEditablePart: string;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type EvaluationElementManagementItemSearchResponse = {
+  evaluationElementManagementItems: EvaluationElementManagementItem[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type EvaluationElementManagementItemPayload = {
+  ruleVersionId: number;
+  evaluationYear: string;
+  areaCode: string;
+  elementCode: string;
+  managementItemCode: string;
+  managementItemName: string;
+  teacherEditablePart: string;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const evaluationElementManagementItemApi = {
+  listEvaluationElementManagementItems(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      evaluationYear?: string;
+      areaCode?: string;
+      elementCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+    if (params.elementCode?.trim())
+      query.set("elementCode", params.elementCode.trim());
+    return apiRequest<EvaluationElementManagementItemSearchResponse>(
+      `/api/business/evaluation-element-management-items?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationElementManagementItem(
+    payload: EvaluationElementManagementItemPayload,
+  ) {
+    return apiRequest<EvaluationElementManagementItem>(
+      "/api/business/evaluation-element-management-items/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type ParticipationRateOperationSetting = {
+  settingId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  evaluationYear: string;
+  achievementAreaCode: string;
+  achievementCategoryCode: string;
+  managementItemCode: string;
+  researcherCountBand: string;
+  participationTypeCode: string;
+  distributionRate: number;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type ParticipationRateOperationSettingSearchResponse = {
+  participationRateOperationSettings: ParticipationRateOperationSetting[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type ParticipationRateOperationRatePayload = {
+  researcherCountBand: string;
+  participationTypeCode: string;
+  distributionRate: number;
+};
+
+export type ParticipationRateOperationSettingPayload = {
+  ruleVersionId: number;
+  achievementAreaCode: string;
+  achievementCategoryCode: string;
+  managementItemCode: string;
+  rates: ParticipationRateOperationRatePayload[];
+  changeReason: string;
+};
+
+export type ParticipationRateOperationSettingSaveResponse = {
+  participationRateOperationSettings: ParticipationRateOperationSetting[];
+};
+
+export const participationRateOperationSettingApi = {
+  listParticipationRateOperationSettings(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      achievementAreaCode?: string;
+      achievementCategoryCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.achievementAreaCode?.trim())
+      query.set("achievementAreaCode", params.achievementAreaCode.trim());
+    if (params.achievementCategoryCode?.trim())
+      query.set(
+        "achievementCategoryCode",
+        params.achievementCategoryCode.trim(),
+      );
+    return apiRequest<ParticipationRateOperationSettingSearchResponse>(
+      `/api/business/participation-rate-operation-settings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveParticipationRateOperationSetting(
+    payload: ParticipationRateOperationSettingPayload,
+  ) {
+    return apiRequest<ParticipationRateOperationSettingSaveResponse>(
+      "/api/business/participation-rate-operation-settings/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type ManagementItemEvaluationScore = {
+  settingId: number;
+  ruleVersionId: number;
+  versionCode: string;
+  versionStatus: EvaluationRuleVersionStatus;
+  evaluationYear: string;
+  achievementAreaCode: string;
+  achievementCategoryCode: string;
+  managementItemCode: string;
+  collegeCode: string;
+  evaluationScore: number;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  changeReason?: string;
+  updatedBy?: number;
+  updatedAt?: string;
+};
+
+export type ManagementItemEvaluationScoreSearchResponse = {
+  managementItemEvaluationScores: ManagementItemEvaluationScore[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type ManagementItemEvaluationScorePayload = {
+  ruleVersionId: number;
+  achievementAreaCode: string;
+  achievementCategoryCode: string;
+  managementItemCode: string;
+  collegeCode: string;
+  evaluationScore: number;
+  sortOrder: number;
+  activeYn: ActiveYn;
+  changeReason: string;
+};
+
+export const managementItemEvaluationScoreApi = {
+  listManagementItemEvaluationScores(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      achievementAreaCode?: string;
+      achievementCategoryCode?: string;
+      collegeCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.achievementAreaCode?.trim())
+      query.set("achievementAreaCode", params.achievementAreaCode.trim());
+    if (params.achievementCategoryCode?.trim())
+      query.set(
+        "achievementCategoryCode",
+        params.achievementCategoryCode.trim(),
+      );
+    if (params.collegeCode?.trim())
+      query.set("collegeCode", params.collegeCode.trim());
+    return apiRequest<ManagementItemEvaluationScoreSearchResponse>(
+      `/api/business/management-item-evaluation-scores?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveManagementItemEvaluationScore(
+    payload: ManagementItemEvaluationScorePayload,
+  ) {
+    return apiRequest<ManagementItemEvaluationScore>(
+      "/api/business/management-item-evaluation-scores/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type CourseAreaGroupGrade = {
+  gradeId: number;
+  evaluationYear: string;
+  teacherUserId: number;
+  teacherName: string;
+  collegeCode: string;
+  departmentCode: string;
+  completionTypeCode: string;
+  semesterCode: string;
+  courseAreaCode: string;
+  courseAreaName: string;
+  groupGrade: string;
+  totalScore: number;
+  publishedYn: ActiveYn;
+  finalizationStatus: string;
+  updatedAt?: string;
+};
+
+export type CourseAreaGroupGradeSearchResponse = {
+  courseAreaGroupGrades: CourseAreaGroupGrade[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export const courseAreaGroupGradeApi = {
+  listCourseAreaGroupGrades(
+    params: {
+      page?: number;
+      pageSize?: PageSize;
+      teacherUserId?: number;
+      completionTypeCode?: string;
+      semesterCode?: string;
+      courseAreaCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (
+      params.teacherUserId !== undefined &&
+      Number.isFinite(params.teacherUserId)
+    )
+      query.set("teacherUserId", String(params.teacherUserId));
+    if (params.completionTypeCode?.trim())
+      query.set("completionTypeCode", params.completionTypeCode.trim());
+    if (params.semesterCode?.trim())
+      query.set("semesterCode", params.semesterCode.trim());
+    if (params.courseAreaCode?.trim())
+      query.set("courseAreaCode", params.courseAreaCode.trim());
+    return apiRequest<CourseAreaGroupGradeSearchResponse>(
+      `/api/business/course-area-group-grades?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  getCourseAreaGroupGradeDetail(gradeId: number) {
+    return apiRequest<CourseAreaGroupGrade>(
+      `/api/business/course-area-group-grades/${encodeURIComponent(String(gradeId))}` as `/api/${string}`,
+    );
+  },
+};
+
 export type EvaluationScore = {
   scoreRuleId: number;
   ruleVersionId: number;

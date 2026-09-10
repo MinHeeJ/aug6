@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic59.EvaluationElementManagementItemMapper">
+    <resultMap id="EvaluationElementManagementItemRowMap" type="kr.ac.knue.commonfoundation.basic59.EvaluationElementManagementItemRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="elementCode" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="managementItemName" javaType="string"/>
+            <arg column="teacherEditablePart" javaType="string"/>
+            <arg column="sortOrder" javaType="int"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        settings.setting_id as "settingId",
+        settings.rule_version_id as "ruleVersionId",
+        versions.version_code as "versionCode",
+        versions.version_status as "versionStatus",
+        settings.evaluation_year as "evaluationYear",
+        settings.area_code as "areaCode",
+        settings.element_code as "elementCode",
+        settings.management_item_code as "managementItemCode",
+        settings.management_item_name as "managementItemName",
+        settings.teacher_editable_part as "teacherEditablePart",
+        settings.sort_order as "sortOrder",
+        settings.active_yn as "activeYn",
+        settings.change_reason as "changeReason",
+        settings.updated_by as "updatedBy",
+        settings.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="joins">
+        from evaluation_element_management_item_settings settings
+        inner join evaluation_rule_versions versions on versions.rule_version_id = settings.rule_version_id
+    </sql>
+
+    <sql id="filters">
+        <where>
+            <if test="criteria.normalizedEvaluationYear != null">
+                settings.evaluation_year = #{criteria.normalizedEvaluationYear}
+            </if>
+            <if test="criteria.normalizedAreaCode != null">
+                and settings.area_code = #{criteria.normalizedAreaCode}
+            </if>
+            <if test="criteria.normalizedElementCode != null">
+                and settings.element_code = #{criteria.normalizedElementCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listEvaluationElementManagementItems" resultMap="EvaluationElementManagementItemRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="filters"/>
+        order by settings.evaluation_year desc, settings.area_code, settings.element_code, settings.sort_order, settings.management_item_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countEvaluationElementManagementItems" resultType="long">
+        select count(*)
+        <include refid="joins"/>
+        <include refid="filters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findByBusinessKey" resultMap="EvaluationElementManagementItemRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        where settings.rule_version_id = #{ruleVersionId}
+          and settings.evaluation_year = #{evaluationYear}
+          and settings.area_code = #{areaCode}
+          and settings.element_code = #{elementCode}
+          and settings.management_item_code = #{managementItemCode}
+        order by case when versions.version_status = 'DRAFT' then 0 else 1 end, settings.updated_at desc
+        limit 1
+    </select>
+
+    <select id="upsertEvaluationElementManagementItem" resultMap="EvaluationElementManagementItemRowMap">
+        insert into evaluation_element_management_item_settings (
+            rule_version_id, evaluation_year, area_code, element_code, management_item_code,
+            management_item_name, teacher_editable_part, sort_order, active_yn, change_reason,
+            request_id, created_by, updated_by
+        ) values (
+            #{request.ruleVersionId}, #{request.evaluationYear}, #{request.areaCode}, #{request.elementCode}, #{request.managementItemCode},
+            #{request.managementItemName}, #{request.teacherEditablePart}, #{request.sortOrder}, #{request.activeYn}, #{request.changeReason},
+            #{requestId}, #{updatedBy}, #{updatedBy}
+        )
+        on conflict (rule_version_id, evaluation_year, area_code, element_code, management_item_code)
+        do update set management_item_name = EXCLUDED.management_item_name,
+                      teacher_editable_part = EXCLUDED.teacher_editable_part,
+                      sort_order = EXCLUDED.sort_order,
+                      active_yn = EXCLUDED.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      request_id = EXCLUDED.request_id,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+        returning setting_id as "settingId",
+                  rule_version_id as "ruleVersionId",
+                  (select version_code from evaluation_rule_versions where rule_version_id = evaluation_element_management_item_settings.rule_version_id) as "versionCode",
+                  (select version_status from evaluation_rule_versions where rule_version_id = evaluation_element_management_item_settings.rule_version_id) as "versionStatus",
+                  evaluation_year as "evaluationYear",
+                  area_code as "areaCode",
+                  element_code as "elementCode",
+                  management_item_code as "managementItemCode",
+                  management_item_name as "managementItemName",
+                  teacher_editable_part as "teacherEditablePart",
+                  sort_order as "sortOrder",
+                  active_yn as "activeYn",
+                  change_reason as "changeReason",
+                  updated_by as "updatedBy",
+                  updated_at as "updatedAt"
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

@@ -263,6 +263,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 관리항목 관리",
   },
   {
+    path: "/admin/evaluation-element-management-items",
+    label: "평가요소별 관리항목 관리",
+    screenId: "SCR-EVALUATION-ELEMENT-MGMT-ITEMS",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가요소별 관리항목 관리",
+  },
+  {
+    path: "/admin/participation-rate-operation-settings",
+    label: "참여구분별 배분율 관리",
+    screenId: "SCR-PARTICIPATION-RATE-OPERATION",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 참여구분별 배분율 관리",
+  },
+  {
+    path: "/admin/management-item-evaluation-scores",
+    label: "관리항목별 평가점수 관리",
+    screenId: "SCR-MANAGEMENT-ITEM-EVAL-SCORES",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 관리항목별 평가점수 관리",
+  },
+  {
+    path: "/evaluation/course-area-group-grades",
+    label: "교과영역 그룹평가 성적 조회",
+    screenId: "SCR-COURSE-AREA-GROUP-GRADES",
+    menuPath: "업적 평가 조회 > 교원 성적 조회 > 교과영역 그룹평가 성적 조회",
+  },
+  {
     path: "/admin/area-element-systems",
     label: "영역별 평가요소 체계 관리",
     screenId: "SCR-AREA-ELEMENT-SYSTEM-MGMT",
@@ -672,6 +696,9 @@ export function canAccessAdminRoute(
       "/admin/score-adjustment-histories",
       "/admin/score-recalculation-histories",
       "/admin/school-info",
+      "/admin/evaluation-element-management-items",
+      "/admin/participation-rate-operation-settings",
+      "/admin/management-item-evaluation-scores",
     ].includes(path)
   ) {
     return true;
@@ -684,9 +711,22 @@ export function canAccessAdminRoute(
       "/admin/report-permissions",
       "/admin/report-print-histories",
       "/admin/bulk-report-jobs",
+      "/admin/evaluation-element-management-items",
+      "/admin/participation-rate-operation-settings",
+      "/admin/management-item-evaluation-scores",
+      "/evaluation/course-area-group-grades",
     ].includes(path)
   ) {
     return true;
+  }
+  if (
+    user.roles.includes("R01") &&
+    path === "/evaluation/course-area-group-grades"
+  ) {
+    return true;
+  }
+  if (path === "/evaluation/course-area-group-grades") {
+    return false;
   }
   if (user.roles.includes("R08") && path === "/admin/report-print-histories") {
     return true;

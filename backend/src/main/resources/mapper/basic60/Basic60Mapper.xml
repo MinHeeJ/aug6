@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic60.Basic60Mapper">
+    <resultMap id="OperationalSettingRowMap" type="kr.ac.knue.commonfoundation.basic60.OperationalSettingRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="targetScope" javaType="string"/>
+            <arg column="areaCode" javaType="string"/>
+            <arg column="itemCode" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="elementCode" javaType="string"/>
+            <arg column="managementItemId" javaType="long"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="managementItemName" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="organizationName" javaType="string"/>
+            <arg column="researcherCount" javaType="int"/>
+            <arg column="participationType" javaType="string"/>
+            <arg column="allocationRate" javaType="java.math.BigDecimal"/>
+            <arg column="evaluationScore" javaType="java.math.BigDecimal"/>
+            <arg column="maxScore" javaType="java.math.BigDecimal"/>
+            <arg column="sortOrder" javaType="int"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="teacherEditableYn" javaType="string"/>
+            <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
+            <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
+            <arg column="evaluationConfirmedYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="CourseAreaGroupGradeRowMap" type="kr.ac.knue.commonfoundation.basic60.CourseAreaGroupGradeRow">
+        <constructor>
+            <arg column="resultId" javaType="long"/>
+            <arg column="facultyUserId" javaType="long"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="facultyName" javaType="string"/>
+            <arg column="completionType" javaType="string"/>
+            <arg column="semester" javaType="string"/>
+            <arg column="courseArea" javaType="string"/>
+            <arg column="groupGrade" javaType="java.math.BigDecimal"/>
+            <arg column="detailSummary" javaType="string"/>
+            <arg column="publishedYn" javaType="string"/>
+            <arg column="evaluatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="elementColumns">
+        s.setting_id as "settingId", s.rule_version_id as "ruleVersionId", rv.version_code as "versionCode", rv.version_status as "versionStatus",
+        s.target_scope as "targetScope", s.area_code as "areaCode", s.item_code as "itemCode", s.evaluation_year as "evaluationYear",
+        s.element_code as "elementCode", cast(null as bigint) as "managementItemId", s.management_item_code as "managementItemCode",
+        s.management_item_name as "managementItemName", cast(null as varchar) as "organizationCode", cast(null as varchar) as "organizationName",
+        cast(null as integer) as "researcherCount", cast(null as varchar) as "participationType", cast(null as numeric) as "allocationRate",
+        cast(null as numeric) as "evaluationScore", cast(null as numeric) as "maxScore", s.sort_order as "sortOrder", s.active_yn as "activeYn",
+        s.teacher_editable_yn as "teacherEditableYn", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
+        s.evaluation_confirmed_yn as "evaluationConfirmedYn", s.change_reason as "changeReason", s.updated_by as "updatedBy", s.updated_at as "updatedAt"
+    </sql>
+    <sql id="participationColumns">
+        s.setting_id as "settingId", s.rule_version_id as "ruleVersionId", rv.version_code as "versionCode", rv.version_status as "versionStatus",
+        s.target_scope as "targetScope", s.area_code as "areaCode", s.item_code as "itemCode", s.evaluation_year as "evaluationYear",
+        s.element_code as "elementCode", cast(null as bigint) as "managementItemId", s.management_item_code as "managementItemCode",
+        cast(null as varchar) as "managementItemName", cast(null as varchar) as "organizationCode", cast(null as varchar) as "organizationName",
+        s.researcher_count as "researcherCount", s.participation_type as "participationType", s.allocation_rate as "allocationRate",
+        cast(null as numeric) as "evaluationScore", cast(null as numeric) as "maxScore", cast(null as integer) as "sortOrder", s.active_yn as "activeYn",
+        cast(null as varchar) as "teacherEditableYn", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
+        s.evaluation_confirmed_yn as "evaluationConfirmedYn", s.change_reason as "changeReason", s.updated_by as "updatedBy", s.updated_at as "updatedAt"
+    </sql>
+    <sql id="scoreColumns">
+        s.setting_id as "settingId", s.rule_version_id as "ruleVersionId", rv.version_code as "versionCode", rv.version_status as "versionStatus",
+        s.target_scope as "targetScope", s.area_code as "areaCode", s.item_code as "itemCode", s.evaluation_year as "evaluationYear",
+        s.element_code as "elementCode", cast(null as bigint) as "managementItemId", s.management_item_code as "managementItemCode",
+        cast(null as varchar) as "managementItemName", s.organization_code as "organizationCode", s.organization_name as "organizationName",
+        cast(null as integer) as "researcherCount", cast(null as varchar) as "participationType", cast(null as numeric) as "allocationRate",
+        s.evaluation_score as "evaluationScore", s.max_score as "maxScore", s.sort_order as "sortOrder", s.active_yn as "activeYn",
+        cast(null as varchar) as "teacherEditableYn", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
+        s.evaluation_confirmed_yn as "evaluationConfirmedYn", s.change_reason as "changeReason", s.updated_by as "updatedBy", s.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="settingFilters">
+        <where>
+            <if test="criteria.ruleVersionId != null">s.rule_version_id = #{criteria.ruleVersionId}</if>
+            <if test="criteria.normalizedTargetScope != null">and s.target_scope = #{criteria.normalizedTargetScope}</if>
+            <if test="criteria.normalizedAreaCode != null">and s.area_code = #{criteria.normalizedAreaCode}</if>
+            <if test="criteria.normalizedItemCode != null">and s.item_code = #{criteria.normalizedItemCode}</if>
+            <if test="criteria.evaluationYear != null and criteria.evaluationYear != ''">and s.evaluation_year = #{criteria.evaluationYear}</if>
+            <if test="criteria.normalizedElementCode != null">and s.element_code = #{criteria.normalizedElementCode}</if>
+            <if test="criteria.normalizedManagementItemCode != null">and s.management_item_code = #{criteria.normalizedManagementItemCode}</if>
+            <if test="criteria.normalizedOrganizationCode != null">and s.organization_code = #{criteria.normalizedOrganizationCode}</if>
+            <if test="criteria.researcherCount != null">and s.researcher_count = #{criteria.researcherCount}</if>
+            <if test="criteria.normalizedParticipationType != null">and s.participation_type = #{criteria.normalizedParticipationType}</if>
+            <if test="criteria.activeYn != null and criteria.activeYn != ''">and s.active_yn = #{criteria.activeYn}</if>
+            <if test="criteria.normalizedKeyword != null">
+                and (s.management_item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or s.area_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or s.item_code ilike concat('%', #{criteria.normalizedKeyword}, '%')
+                    or s.element_code ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="listElementSettings" resultMap="OperationalSettingRowMap">
+        select <include refid="elementColumns"/>
+        from evaluation_element_management_item_settings s
+        inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
+        <include refid="settingFilters"/>
+        order by s.evaluation_year desc, s.area_code, s.item_code, s.element_code, s.sort_order, s.management_item_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+    <select id="countElementSettings" resultType="long">
+        select count(*) from evaluation_element_management_item_settings s <include refid="settingFilters"/>
+    </select>
+    <select id="findElementSettingByKey" resultMap="OperationalSettingRowMap">
+        select <include refid="elementColumns"/> from evaluation_element_management_item_settings s
+        inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
+        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.area_code = upper(#{request.areaCode})
+          and s.item_code = upper(#{request.itemCode}) and s.evaluation_year = #{request.evaluationYear} and s.element_code = upper(#{request.elementCode})
+          and s.management_item_code = upper(#{request.managementItemCode})
+    </select>
+    <insert id="upsertElementSetting">
+        insert into evaluation_element_management_item_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, management_item_name, sort_order, active_yn, teacher_editable_yn, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), upper(#{request.managementItemCode}), #{request.managementItemName}, #{request.sortOrder}, #{request.activeYn}, #{request.teacherEditableYn}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code)
+        do update set management_item_name = EXCLUDED.management_item_name, sort_order = EXCLUDED.sort_order, active_yn = EXCLUDED.active_yn,
+                      teacher_editable_yn = EXCLUDED.teacher_editable_yn, effective_start_date = EXCLUDED.effective_start_date, effective_end_date = EXCLUDED.effective_end_date,
+                      change_reason = EXCLUDED.change_reason, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="listParticipationSettings" resultMap="OperationalSettingRowMap">
+        select <include refid="participationColumns"/> from participation_allocation_rate_settings s
+        inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
+        <include refid="settingFilters"/>
+        order by s.evaluation_year desc, s.area_code, s.item_code, s.element_code, s.management_item_code, s.researcher_count, s.participation_type
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+    <select id="countParticipationSettings" resultType="long">
+        select count(*) from participation_allocation_rate_settings s <include refid="settingFilters"/>
+    </select>
+    <select id="findParticipationSettingByKey" resultMap="OperationalSettingRowMap">
+        select <include refid="participationColumns"/> from participation_allocation_rate_settings s
+        inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
+        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.management_item_code = upper(#{request.managementItemCode})
+          and s.researcher_count = #{request.researcherCount} and s.participation_type = upper(#{request.participationType})
+          and s.effective_start_date = #{request.effectiveStartDate} and s.effective_end_date = #{request.effectiveEndDate}
+    </select>
+    <insert id="upsertParticipationSetting">
+        insert into participation_allocation_rate_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, researcher_count, participation_type, allocation_rate, active_yn, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), upper(#{request.managementItemCode}), #{request.researcherCount}, upper(#{request.participationType}), #{request.allocationRate}, #{request.activeYn}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, target_scope, management_item_code, researcher_count, participation_type, effective_start_date, effective_end_date)
+        do update set area_code = EXCLUDED.area_code, item_code = EXCLUDED.item_code, evaluation_year = EXCLUDED.evaluation_year, element_code = EXCLUDED.element_code,
+                      allocation_rate = EXCLUDED.allocation_rate, active_yn = EXCLUDED.active_yn, change_reason = EXCLUDED.change_reason,
+                      updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="listScoreSettings" resultMap="OperationalSettingRowMap">
+        select <include refid="scoreColumns"/> from management_item_evaluation_score_settings s
+        inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
+        <include refid="settingFilters"/>
+        order by s.evaluation_year desc, s.area_code, s.item_code, s.element_code, s.management_item_code, s.organization_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+    <select id="countScoreSettings" resultType="long">
+        select count(*) from management_item_evaluation_score_settings s <include refid="settingFilters"/>
+    </select>
+    <select id="findScoreSettingByKey" resultMap="OperationalSettingRowMap">
+        select <include refid="scoreColumns"/> from management_item_evaluation_score_settings s
+        inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
+        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.management_item_code = upper(#{request.managementItemCode})
+          and s.organization_code = upper(#{request.organizationCode}) and s.effective_start_date = #{request.effectiveStartDate} and s.effective_end_date = #{request.effectiveEndDate}
+    </select>
+    <insert id="upsertScoreSetting">
+        insert into management_item_evaluation_score_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, organization_code, organization_name, evaluation_score, max_score, sort_order, active_yn, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), upper(#{request.managementItemCode}), upper(#{request.organizationCode}), #{request.organizationName}, #{request.evaluationScore}, #{request.maxScore}, #{request.sortOrder}, #{request.activeYn}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        on conflict (rule_version_id, target_scope, management_item_code, organization_code, effective_start_date, effective_end_date)
+        do update set area_code = EXCLUDED.area_code, item_code = EXCLUDED.item_code, evaluation_year = EXCLUDED.evaluation_year, element_code = EXCLUDED.element_code,
+                      organization_name = EXCLUDED.organization_name, evaluation_score = EXCLUDED.evaluation_score, max_score = EXCLUDED.max_score,
+                      sort_order = EXCLUDED.sort_order, active_yn = EXCLUDED.active_yn, change_reason = EXCLUDED.change_reason,
+                      updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
+    </select>
+    <select id="hasConfirmedElementSettingImpact" resultType="boolean">
+        select exists(select 1 from evaluation_element_management_item_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
+    </select>
+    <select id="hasConfirmedParticipationSettingImpact" resultType="boolean">
+        select exists(select 1 from participation_allocation_rate_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
+    </select>
+    <select id="hasConfirmedScoreSettingImpact" resultType="boolean">
+        select exists(select 1 from management_item_evaluation_score_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
+    </select>
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+
+    <sql id="gradeFilters">
+        <where>
+            published_yn = 'Y'
+            <if test="criteria.normalizedCompletionType != null">and completion_type = #{criteria.normalizedCompletionType}</if>
+            <if test="criteria.normalizedSemester != null">and semester = #{criteria.normalizedSemester}</if>
+            <if test="criteria.normalizedCourseArea != null">and course_area = #{criteria.normalizedCourseArea}</if>
+            <if test="criteria.facultyUserId != null">and faculty_user_id = #{criteria.facultyUserId}</if>
+            <if test="criteria.normalizedKeyword != null">
+                and (employee_no ilike concat('%', #{criteria.normalizedKeyword}, '%') or faculty_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+    <select id="listCourseAreaGroupGrades" resultMap="CourseAreaGroupGradeRowMap">
+        select result_id as "resultId", faculty_user_id as "facultyUserId", employee_no as "employeeNo", faculty_name as "facultyName",
+               completion_type as "completionType", semester as "semester", course_area as "courseArea", group_grade as "groupGrade",
+               detail_summary as "detailSummary", published_yn as "publishedYn", evaluated_at as "evaluatedAt"
+        from course_area_group_grade_results
+        <include refid="gradeFilters"/>
+        order by semester desc, completion_type, course_area, employee_no
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+    <select id="countCourseAreaGroupGrades" resultType="long">
+        select count(*) from course_area_group_grade_results <include refid="gradeFilters"/>
+    </select>
+    <insert id="insertGradeQueryAudit">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values ('course_area_group_grade_results', #{targetKey}, 'CREATE', 'QUERY', null, 'READ', #{changedBy}, '교과영역 그룹평가 성적 조회', #{requestId})
+    </insert>
+</mapper>

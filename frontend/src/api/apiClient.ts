@@ -4517,3 +4517,197 @@ export const reportManagementApi = {
     );
   },
 };
+
+export type Basic60OperationalSetting = {
+  settingId: number;
+  ruleVersionId: number;
+  versionCode?: string;
+  ruleVersionStatus?: string;
+  targetScope: string;
+  areaCode: string;
+  itemCode: string;
+  evaluationYear: string;
+  elementCode: string;
+  managementItemCode: string;
+  managementItemName?: string | null;
+  organizationCode?: string | null;
+  organizationName?: string | null;
+  researcherCount?: number | null;
+  participationType?: string | null;
+  allocationRate?: number | null;
+  evaluationScore?: number | null;
+  maxScore?: number | null;
+  sortOrder?: number | null;
+  activeYn: ActiveYn;
+  teacherEditableYn?: ActiveYn | null;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  evaluationConfirmedYn: ActiveYn;
+  changeReason?: string;
+  updatedAt?: string;
+};
+
+export type Basic60SearchParams = {
+  ruleVersionId?: number;
+  targetScope?: string;
+  areaCode?: string;
+  itemCode?: string;
+  evaluationYear?: string;
+  elementCode?: string;
+  managementItemCode?: string;
+  organizationCode?: string;
+  researcherCount?: number;
+  participationType?: string;
+  activeYn?: ActiveYn | "";
+  keyword?: string;
+  page?: number;
+  pageSize?: 20 | 50 | 100;
+};
+
+export type ElementManagementItemSettingsResponse = {
+  evaluationElementManagementItemSettings: Basic60OperationalSetting[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type ParticipationAllocationRateSettingsResponse = {
+  participationAllocationRateSettings: Basic60OperationalSetting[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type ManagementItemEvaluationScoreSettingsResponse = {
+  managementItemEvaluationScoreSettings: Basic60OperationalSetting[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+function buildBasic60Query(params: Basic60SearchParams = {}) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("pageSize", String(params.pageSize ?? 20));
+  if (params.ruleVersionId !== undefined)
+    query.set("ruleVersionId", String(params.ruleVersionId));
+  if (params.targetScope?.trim())
+    query.set("targetScope", params.targetScope.trim());
+  if (params.areaCode?.trim()) query.set("areaCode", params.areaCode.trim());
+  if (params.itemCode?.trim()) query.set("itemCode", params.itemCode.trim());
+  if (params.evaluationYear?.trim())
+    query.set("evaluationYear", params.evaluationYear.trim());
+  if (params.elementCode?.trim())
+    query.set("elementCode", params.elementCode.trim());
+  if (params.managementItemCode?.trim())
+    query.set("managementItemCode", params.managementItemCode.trim());
+  if (params.organizationCode?.trim())
+    query.set("organizationCode", params.organizationCode.trim());
+  if (params.researcherCount !== undefined)
+    query.set("researcherCount", String(params.researcherCount));
+  if (params.participationType?.trim())
+    query.set("participationType", params.participationType.trim());
+  if (params.activeYn) query.set("activeYn", params.activeYn);
+  if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+  return query;
+}
+
+export const basic60Api = {
+  listEvaluationElementManagementItemSettings(
+    params: Basic60SearchParams = {},
+  ) {
+    const query = buildBasic60Query(params);
+    return apiRequest<ElementManagementItemSettingsResponse>(
+      `/api/admin/evaluation-element-management-item-settings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEvaluationElementManagementItemSetting(payload: Record<string, unknown>) {
+    return apiRequest<Basic60OperationalSetting>(
+      "/api/admin/evaluation-element-management-item-settings/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  listParticipationAllocationRateSettings(params: Basic60SearchParams = {}) {
+    const query = buildBasic60Query(params);
+    return apiRequest<ParticipationAllocationRateSettingsResponse>(
+      `/api/admin/participation-allocation-rate-settings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveParticipationAllocationRateSetting(payload: Record<string, unknown>) {
+    return apiRequest<Basic60OperationalSetting>(
+      "/api/admin/participation-allocation-rate-settings/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  listManagementItemEvaluationScoreSettings(params: Basic60SearchParams = {}) {
+    const query = buildBasic60Query(params);
+    return apiRequest<ManagementItemEvaluationScoreSettingsResponse>(
+      `/api/admin/management-item-evaluation-score-settings?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveManagementItemEvaluationScoreSetting(payload: Record<string, unknown>) {
+    return apiRequest<Basic60OperationalSetting>(
+      "/api/admin/management-item-evaluation-score-settings/save",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
+export type CourseAreaGroupGrade = {
+  resultId: number;
+  facultyUserId: number;
+  employeeNo: string;
+  facultyName: string;
+  completionType: string;
+  semester: string;
+  courseArea: string;
+  groupGrade: number;
+  detailSummary: string;
+  publishedYn: ActiveYn;
+  evaluatedAt: string;
+};
+
+export type CourseAreaGroupGradeSearchResponse = {
+  courseAreaGroupGrades: CourseAreaGroupGrade[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export const courseAreaGroupGradeApi = {
+  listCourseAreaGroupGrades(
+    params: {
+      completionType?: string;
+      semester?: string;
+      courseArea?: string;
+      facultyUserId?: number;
+      keyword?: string;
+      page?: number;
+      pageSize?: 20 | 50 | 100;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.completionType?.trim())
+      query.set("completionType", params.completionType.trim());
+    if (params.semester?.trim()) query.set("semester", params.semester.trim());
+    if (params.courseArea?.trim())
+      query.set("courseArea", params.courseArea.trim());
+    if (params.facultyUserId !== undefined)
+      query.set("facultyUserId", String(params.facultyUserId));
+    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+    return apiRequest<CourseAreaGroupGradeSearchResponse>(
+      `/api/faculty/course-area-group-grades?${query.toString()}` as `/api/${string}`,
+    );
+  },
+};

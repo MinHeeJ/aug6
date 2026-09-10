@@ -6067,6 +6067,123 @@ paths:
       security: [ { SessionCookie: [] } ]
       x-roles: [R03, R04, R09]
       x-related-requirements: [REQ-1731, REQ-1725]
+  /api/admin/evaluation-element-management-item-settings:
+    get:
+      operationId: listEvaluationElementManagementItemSettings
+      summary: 평가요소별 관리항목 설정 조회
+      security: [{ SessionCookie: [] }]
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: ruleVersionId, in: query, schema: { type: integer, format: int64 } }
+        - { name: targetScope, in: query, schema: { type: string } }
+        - { name: areaCode, in: query, schema: { type: string } }
+        - { name: itemCode, in: query, schema: { type: string } }
+        - { name: evaluationYear, in: query, schema: { type: string } }
+        - { name: elementCode, in: query, schema: { type: string } }
+        - { name: managementItemCode, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-992, REQ-993, REQ-994, REQ-999]
+      x-business-rules: [작성중 규정버전과 권한 있는 기준정보만 조회한다, 동적 predicate 기반 filter를 사용한다]
+      x-required-tests: ['happy: 평가요소별 관리항목 조회 -> pageSize와 managementItemCode 반환', 'auth: R01 조회 요청 -> 403 ApiError 반환']
+  /api/admin/evaluation-element-management-item-settings/save:
+    post:
+      operationId: saveEvaluationElementManagementItemSetting
+      summary: 평가요소별 관리항목 설정 저장
+      security: [{ SessionCookie: [] }]
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-992, REQ-993, REQ-994, REQ-999]
+      x-business-rules: [확정 규정버전은 소급 변경하지 않는다, 필수 기준정보와 적용기간을 검증한다]
+      x-side-effects: [evaluation_element_management_item_settings row와 변경 메타정보를 같은 transaction에 기록한다]
+      x-state-transitions: ['evaluation_element_management_item_settings: DRAFT -> DRAFT']
+      x-required-tests: ['happy: 유효한 설정 저장 -> 후속 조회에서 managementItemCode 확인', 'auth: R01 저장 요청 -> 403 ApiError 반환', 'validation: 필수 field 누락 -> ApiError.fields 반환', 'business: 확정 규정버전 저장 요청 -> 409 ApiError 반환', 'side-effect: 저장 성공 -> 변경 메타정보 기록']
+  /api/admin/participation-allocation-rate-settings:
+    get:
+      operationId: listParticipationAllocationRateSettings
+      summary: 참여구분별 배분율 설정 조회
+      security: [{ SessionCookie: [] }]
+      x-roles: [R04, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: ruleVersionId, in: query, schema: { type: integer, format: int64 } }
+        - { name: managementItemCode, in: query, schema: { type: string } }
+        - { name: researcherCount, in: query, schema: { type: integer } }
+        - { name: participationType, in: query, schema: { type: string } }
+        - { name: activeYn, in: query, schema: { type: string, enum: [Y, N] } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1000, REQ-1001, REQ-1002, REQ-1003]
+      x-business-rules: [관리항목·연구자수·참여구분별 배분율을 적용기간과 상태 기준으로 조회한다]
+      x-required-tests: ['happy: 배분율 조회 -> researcherCount와 allocationRate 반환', 'auth: R01 조회 요청 -> 403 ApiError 반환']
+  /api/admin/participation-allocation-rate-settings/save:
+    post:
+      operationId: saveParticipationAllocationRateSetting
+      summary: 참여구분별 배분율 설정 저장
+      security: [{ SessionCookie: [] }]
+      x-roles: [R04, R09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 업무 규칙 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1000, REQ-1001, REQ-1002, REQ-1003]
+      x-business-rules: [확정 규정버전은 소급 변경하지 않는다, 배분율은 0 이상 1 이하로 검증한다]
+      x-side-effects: [participation_allocation_rate_settings row와 변경 메타정보를 같은 transaction에 기록한다]
+      x-state-transitions: ['participation_allocation_rate_settings: DRAFT -> DRAFT']
+      x-required-tests: ['happy: 유효한 배분율 저장 -> 후속 조회에서 allocationRate 확인', 'auth: R01 저장 요청 -> 403 ApiError 반환', 'validation: 필수 field 누락 -> ApiError.fields 반환', 'business: 확정 규정버전 저장 요청 -> 409 ApiError 반환', 'side-effect: 저장 성공 -> 변경 메타정보 기록']
+  /api/faculty/course-area-group-grades:
+    get:
+      operationId: listCourseAreaGroupGrades
+      summary: 교과영역 그룹평가 성적 조회
+      security: [{ SessionCookie: [] }]
+      x-roles: [R01, R04, R08, R09]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }
+        - { name: completionType, in: query, schema: { type: string } }
+        - { name: semester, in: query, schema: { type: string } }
+        - { name: courseArea, in: query, schema: { type: string } }
+        - { name: facultyUserId, in: query, schema: { type: integer, format: int64 } }
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1008, REQ-1009, REQ-1010, REQ-1011]
+      x-business-rules: [R01 교원은 본인 성적만 조회한다, 성적 조회 화면에서는 생성·수정·삭제를 제공하지 않는다]
+      x-side-effects: [course_area_group_grade_queries 조회 이력을 request_id와 함께 기록한다]
+      x-state-transitions: ['none']
+      x-required-tests: ['happy: 교원이 본인 그룹평가 성적 조회 -> groupGrade와 detailSummary 반환', 'auth: 다른 교원 facultyUserId 조회 -> 403 ApiError 반환', 'validation: pageSize 허용값 외 요청 -> 400 ApiError.fields.pageSize 반환']
 x-uncovered-requirements:
   - canonical_id: REQ-586
     status: covered

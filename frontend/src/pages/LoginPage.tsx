@@ -263,6 +263,12 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 관리항목 관리",
   },
   {
+    path: "/admin/evaluation-element-management-item-settings",
+    label: "평가요소별 관리항목 설정",
+    screenId: "SCR-EVALUATION-ELEMENT-MANAGEMENT-ITEM-SETTINGS",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가요소별 관리항목 설정",
+  },
+  {
     path: "/admin/area-element-systems",
     label: "영역별 평가요소 체계 관리",
     screenId: "SCR-AREA-ELEMENT-SYSTEM-MGMT",
@@ -341,10 +347,22 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 평가점수 관리",
   },
   {
+    path: "/admin/management-item-evaluation-score-settings",
+    label: "관리항목별 평가점수 설정",
+    screenId: "SCR-MANAGEMENT-ITEM-EVALUATION-SCORE-SETTINGS",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 관리항목별 평가점수 설정",
+  },
+  {
     path: "/admin/participation-rates",
     label: "참여구분·배분율 관리",
     screenId: "SCR-PARTICIPATION-RATE-MGMT",
     menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 참여구분·배분율 관리",
+  },
+  {
+    path: "/admin/participation-allocation-rate-settings",
+    label: "참여구분별 배분율 설정",
+    screenId: "SCR-PARTICIPATION-ALLOCATION-RATE-SETTINGS",
+    menuPath: "평가 기준 관리 > 평가 기준정보 관리 > 참여구분별 배분율 설정",
   },
   {
     path: "/admin/calculation-formulas",
@@ -591,9 +609,15 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   },
   {
     path: "/achievement/personal-scores",
-    label: "개인 업적점수·세부규정 조회",
+    label: "개인별 업적점수 조회",
     screenId: "SCR-PERSONAL-ACHIEVEMENT-SCORE",
-    menuPath: "업적 평가 조회 > 개인 업적점수·세부규정 조회",
+    menuPath: "교원 포털 > 성과 조회 > 개인별 업적점수 조회",
+  },
+  {
+    path: "/faculty/course-area-group-grades",
+    label: "교과영역 그룹평가 성적 조회",
+    screenId: "SCR-COURSE-AREA-GROUP-GRADE-QUERY",
+    menuPath: "교원 포털 > 성적 조회 > 교과영역 그룹평가 성적 조회",
   },
   {
     path: "/admin/research-classification-criteria",
@@ -672,6 +696,10 @@ export function canAccessAdminRoute(
       "/admin/score-adjustment-histories",
       "/admin/score-recalculation-histories",
       "/admin/school-info",
+      "/admin/evaluation-element-management-item-settings",
+      "/admin/management-item-evaluation-score-settings",
+      "/admin/participation-allocation-rate-settings",
+      "/faculty/course-area-group-grades",
     ].includes(path)
   ) {
     return true;
@@ -684,11 +712,27 @@ export function canAccessAdminRoute(
       "/admin/report-permissions",
       "/admin/report-print-histories",
       "/admin/bulk-report-jobs",
+      "/admin/evaluation-element-management-item-settings",
+      "/admin/management-item-evaluation-score-settings",
+      "/admin/participation-allocation-rate-settings",
+      "/faculty/course-area-group-grades",
     ].includes(path)
   ) {
     return true;
   }
-  if (user.roles.includes("R08") && path === "/admin/report-print-histories") {
+  if (
+    user.roles.includes("R01") &&
+    path === "/faculty/course-area-group-grades"
+  ) {
+    return true;
+  }
+  if (
+    user.roles.includes("R08") &&
+    [
+      "/admin/report-print-histories",
+      "/faculty/course-area-group-grades",
+    ].includes(path)
+  ) {
     return true;
   }
   if (user.roles.includes("R03") && path === "/admin/bulk-report-jobs") {

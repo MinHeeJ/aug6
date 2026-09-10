@@ -125,6 +125,12 @@ import {
   ReportPermissionManagementPage,
   ReportPrintHistoryPage,
 } from "../pages/admin/ReportManagementPages";
+import {
+  CourseAreaGroupGradeQueryPage,
+  EvaluationElementManagementItemSettingsPage,
+  ManagementItemEvaluationScoreSettingsPage,
+  ParticipationAllocationRateSettingsPage,
+} from "../pages/admin/Basic60OperationalSettingsPages";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -301,10 +307,18 @@ function renderAdminPage(path: string | undefined) {
       return <EvaluationElementManagementPage />;
     case "/admin/evaluation-management-items":
       return <EvaluationManagementItemManagementPage />;
+    case "/admin/evaluation-element-management-item-settings":
+      return <EvaluationElementManagementItemSettingsPage />;
     case "/admin/evaluation-scores":
       return <EvaluationScoreManagementPage />;
+    case "/admin/management-item-evaluation-score-settings":
+      return <ManagementItemEvaluationScoreSettingsPage />;
     case "/admin/participation-rates":
       return <ParticipationRateManagementPage />;
+    case "/admin/participation-allocation-rate-settings":
+      return <ParticipationAllocationRateSettingsPage />;
+    case "/faculty/course-area-group-grades":
+      return <CourseAreaGroupGradeQueryPage />;
     case "/admin/calculation-formulas":
       return <CalculationFormulaManagementPage />;
     case "/admin/evaluation-rule-sets":

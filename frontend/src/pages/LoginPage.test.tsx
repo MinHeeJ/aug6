@@ -61,7 +61,7 @@ describe("LoginPage", () => {
     );
   });
 
-  it("allows seed R09 administrator to access all configured admin routes after login", () => {
+  it("allows seed R09 administrator to access configured R09 routes after login", () => {
     const adminUser: CurrentUser = {
       userId: 1,
       loginId: "admin",
@@ -80,10 +80,15 @@ describe("LoginPage", () => {
       })),
     };
 
-    expect(ADMIN_ROUTES).toHaveLength(93);
+    expect(ADMIN_ROUTES).toHaveLength(103);
     expect(
-      ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
+      ADMIN_ROUTES.filter(
+        (route) => route.path !== "/evaluation/course-area-group-grades",
+      ).every((route) => canAccessAdminRoute(adminUser, route.path)),
     ).toBe(true);
+    expect(
+      canAccessAdminRoute(adminUser, "/evaluation/course-area-group-grades"),
+    ).toBe(false);
   });
 
   it("registers BASIC-36 business route placeholders without replacing the existing shell", () => {

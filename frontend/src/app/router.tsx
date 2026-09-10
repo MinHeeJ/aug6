@@ -49,6 +49,10 @@ import { EvaluationAreaManagementPage } from "../pages/admin/SCR-EVALUATION-AREA
 import { EvaluationItemManagementPage } from "../pages/admin/SCR-EVALUATION-ITEM-MGMT";
 import { EvaluationElementManagementPage } from "../pages/admin/SCR-EVALUATION-ELEMENT-MGMT";
 import { EvaluationManagementItemManagementPage } from "../pages/admin/SCR-EVALUATION-MANAGEMENT-ITEM-MGMT";
+import { EvaluationElementManagementItemsPage } from "../pages/admin/SCR-EVALUATION-ELEMENT-MGMT-ITEMS";
+import { ParticipationRateOperationSettingsPage } from "../pages/admin/SCR-PARTICIPATION-RATE-OPERATION";
+import { ManagementItemEvaluationScoresPage } from "../pages/admin/SCR-MANAGEMENT-ITEM-EVAL-SCORES";
+import { CourseAreaGroupGradesPage } from "../pages/admin/SCR-COURSE-AREA-GROUP-GRADES";
 import { EvaluationScoreManagementPage } from "../pages/admin/SCR-EVAL-SCORE-MGMT";
 import { ParticipationRateManagementPage } from "../pages/admin/SCR-PARTICIPATION-RATE-MGMT";
 import { CalculationFormulaManagementPage } from "../pages/admin/SCR-CALC-FORMULA-MGMT";
@@ -183,7 +187,7 @@ export function AppRouter() {
     );
   }
 
-  const routedPage = renderAdminPage(adminRoute?.path);
+  const routedPage = renderAdminPage(adminRoute?.path, auth.user);
   if (routedPage) {
     return <AdminShell>{routedPage}</AdminShell>;
   }
@@ -229,7 +233,7 @@ export function AppRouter() {
   );
 }
 
-function renderAdminPage(path: string | undefined) {
+function renderAdminPage(path: string | undefined, user: CurrentUser) {
   switch (path) {
     case "/admin/users":
       return <UserManagementPage />;
@@ -301,6 +305,14 @@ function renderAdminPage(path: string | undefined) {
       return <EvaluationElementManagementPage />;
     case "/admin/evaluation-management-items":
       return <EvaluationManagementItemManagementPage />;
+    case "/admin/evaluation-element-management-items":
+      return <EvaluationElementManagementItemsPage />;
+    case "/admin/participation-rate-operation-settings":
+      return <ParticipationRateOperationSettingsPage />;
+    case "/admin/management-item-evaluation-scores":
+      return <ManagementItemEvaluationScoresPage />;
+    case "/evaluation/course-area-group-grades":
+      return <CourseAreaGroupGradesPage currentUser={user} />;
     case "/admin/evaluation-scores":
       return <EvaluationScoreManagementPage />;
     case "/admin/participation-rates":

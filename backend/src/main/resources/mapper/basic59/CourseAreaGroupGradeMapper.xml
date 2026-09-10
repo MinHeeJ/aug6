@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic59.CourseAreaGroupGradeMapper">
+    <resultMap id="CourseAreaGroupGradeRowMap" type="kr.ac.knue.commonfoundation.basic59.CourseAreaGroupGradeRow">
+        <constructor>
+            <arg column="gradeId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="teacherUserId" javaType="long"/>
+            <arg column="teacherName" javaType="string"/>
+            <arg column="collegeCode" javaType="string"/>
+            <arg column="departmentCode" javaType="string"/>
+            <arg column="completionTypeCode" javaType="string"/>
+            <arg column="semesterCode" javaType="string"/>
+            <arg column="courseAreaCode" javaType="string"/>
+            <arg column="courseAreaName" javaType="string"/>
+            <arg column="groupGrade" javaType="string"/>
+            <arg column="totalScore" javaType="java.math.BigDecimal"/>
+            <arg column="publishedYn" javaType="string"/>
+            <arg column="finalizationStatus" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        grades.grade_id as "gradeId",
+        grades.evaluation_year as "evaluationYear",
+        grades.teacher_user_id as "teacherUserId",
+        users.name as "teacherName",
+        grades.college_code as "collegeCode",
+        grades.department_code as "departmentCode",
+        grades.completion_type_code as "completionTypeCode",
+        grades.semester_code as "semesterCode",
+        grades.course_area_code as "courseAreaCode",
+        grades.course_area_name as "courseAreaName",
+        grades.group_grade as "groupGrade",
+        grades.total_score as "totalScore",
+        grades.published_yn as "publishedYn",
+        grades.finalization_status as "finalizationStatus",
+        grades.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="joins">
+        from course_area_group_evaluation_grades grades
+        inner join users on users.user_id = grades.teacher_user_id
+    </sql>
+
+    <sql id="filters">
+        <where>
+            grades.published_yn = 'Y'
+            <if test="criteria.effectiveTeacherUserId != null">
+                and grades.teacher_user_id = #{criteria.effectiveTeacherUserId}
+            </if>
+            <if test="criteria.normalizedCompletionTypeCode != null">
+                and grades.completion_type_code = #{criteria.normalizedCompletionTypeCode}
+            </if>
+            <if test="criteria.normalizedSemesterCode != null">
+                and grades.semester_code = #{criteria.normalizedSemesterCode}
+            </if>
+            <if test="criteria.normalizedCourseAreaCode != null">
+                and grades.course_area_code = #{criteria.normalizedCourseAreaCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listCourseAreaGroupGrades" resultMap="CourseAreaGroupGradeRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="filters"/>
+        order by grades.evaluation_year desc, grades.teacher_user_id, grades.semester_code, grades.completion_type_code, grades.course_area_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countCourseAreaGroupGrades" resultType="long">
+        select count(*)
+        <include refid="joins"/>
+        <include refid="filters"/>
+    </select>
+
+    <select id="findCourseAreaGroupGradeById" resultMap="CourseAreaGroupGradeRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        where grades.grade_id = #{gradeId}
+        limit 1
+    </select>
+
+    <insert id="insertDataAccessHistory">
+        insert into data_access_histories (target_business, viewer_user_id, target_scope, access_purpose, request_id)
+        values (#{targetBusiness}, #{viewerUserId}, #{targetScope}, #{accessPurpose}, #{requestId})
+    </insert>
+</mapper>

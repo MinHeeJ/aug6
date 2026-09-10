@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic59.ParticipationRateOperationSettingMapper">
+    <resultMap id="ParticipationRateOperationSettingRowMap" type="kr.ac.knue.commonfoundation.basic59.ParticipationRateOperationSettingRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="achievementAreaCode" javaType="string"/>
+            <arg column="achievementCategoryCode" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="researcherCountBand" javaType="string"/>
+            <arg column="participationTypeCode" javaType="string"/>
+            <arg column="distributionRate" javaType="java.math.BigDecimal"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        settings.setting_id as "settingId",
+        settings.rule_version_id as "ruleVersionId",
+        versions.version_code as "versionCode",
+        versions.version_status as "versionStatus",
+        settings.evaluation_year as "evaluationYear",
+        settings.achievement_area_code as "achievementAreaCode",
+        settings.achievement_category_code as "achievementCategoryCode",
+        settings.management_item_code as "managementItemCode",
+        settings.researcher_count_band as "researcherCountBand",
+        settings.participation_type_code as "participationTypeCode",
+        settings.distribution_rate as "distributionRate",
+        settings.active_yn as "activeYn",
+        settings.change_reason as "changeReason",
+        settings.updated_by as "updatedBy",
+        settings.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="joins">
+        from participation_rate_operation_settings settings
+        inner join evaluation_rule_versions versions on versions.rule_version_id = settings.rule_version_id
+    </sql>
+
+    <sql id="filters">
+        <where>
+            <if test="criteria.normalizedAchievementAreaCode != null">
+                settings.achievement_area_code = #{criteria.normalizedAchievementAreaCode}
+            </if>
+            <if test="criteria.normalizedAchievementCategoryCode != null">
+                and settings.achievement_category_code = #{criteria.normalizedAchievementCategoryCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listParticipationRateOperationSettings" resultMap="ParticipationRateOperationSettingRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="filters"/>
+        order by settings.evaluation_year desc, settings.achievement_area_code, settings.achievement_category_code,
+                 settings.management_item_code, settings.researcher_count_band, settings.participation_type_code
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countParticipationRateOperationSettings" resultType="long">
+        select count(*)
+        <include refid="joins"/>
+        <include refid="filters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findRuleVersionEvaluationYear" resultType="string">
+        select to_char(effective_start_date, 'YYYY') from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findByBusinessKey" resultMap="ParticipationRateOperationSettingRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        where settings.rule_version_id = #{ruleVersionId}
+          and settings.evaluation_year = #{evaluationYear}
+          and settings.achievement_area_code = #{achievementAreaCode}
+          and settings.achievement_category_code = #{achievementCategoryCode}
+          and settings.management_item_code = #{managementItemCode}
+          and settings.researcher_count_band = #{researcherCountBand}
+          and settings.participation_type_code = #{participationTypeCode}
+        limit 1
+    </select>
+
+    <select id="upsertParticipationRateOperationSetting" resultMap="ParticipationRateOperationSettingRowMap">
+        insert into participation_rate_operation_settings (
+            rule_version_id, evaluation_year, achievement_area_code, achievement_category_code, management_item_code,
+            researcher_count_band, participation_type_code, distribution_rate, active_yn, change_reason,
+            request_id, created_by, updated_by
+        ) values (
+            #{request.ruleVersionId}, (select to_char(effective_start_date, 'YYYY') from evaluation_rule_versions where rule_version_id = #{request.ruleVersionId}),
+            #{request.achievementAreaCode}, #{request.achievementCategoryCode}, #{request.managementItemCode},
+            #{rate.researcherCountBand}, #{rate.participationTypeCode}, #{rate.distributionRate}, 'Y', #{request.changeReason},
+            #{requestId}, #{updatedBy}, #{updatedBy}
+        )
+        on conflict (rule_version_id, evaluation_year, achievement_area_code, achievement_category_code, management_item_code, researcher_count_band, participation_type_code)
+        do update set distribution_rate = EXCLUDED.distribution_rate,
+                      active_yn = participation_rate_operation_settings.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      request_id = EXCLUDED.request_id,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+        returning setting_id as "settingId",
+                  rule_version_id as "ruleVersionId",
+                  (select version_code from evaluation_rule_versions where rule_version_id = participation_rate_operation_settings.rule_version_id) as "versionCode",
+                  (select version_status from evaluation_rule_versions where rule_version_id = participation_rate_operation_settings.rule_version_id) as "versionStatus",
+                  evaluation_year as "evaluationYear",
+                  achievement_area_code as "achievementAreaCode",
+                  achievement_category_code as "achievementCategoryCode",
+                  management_item_code as "managementItemCode",
+                  researcher_count_band as "researcherCountBand",
+                  participation_type_code as "participationTypeCode",
+                  distribution_rate as "distributionRate",
+                  active_yn as "activeYn",
+                  change_reason as "changeReason",
+                  updated_by as "updatedBy",
+                  updated_at as "updatedAt"
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

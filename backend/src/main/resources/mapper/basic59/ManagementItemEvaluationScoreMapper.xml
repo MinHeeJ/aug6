@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic59.ManagementItemEvaluationScoreMapper">
+    <resultMap id="ManagementItemEvaluationScoreRowMap" type="kr.ac.knue.commonfoundation.basic59.ManagementItemEvaluationScoreRow">
+        <constructor>
+            <arg column="settingId" javaType="long"/>
+            <arg column="ruleVersionId" javaType="long"/>
+            <arg column="versionCode" javaType="string"/>
+            <arg column="versionStatus" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="achievementAreaCode" javaType="string"/>
+            <arg column="achievementCategoryCode" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="collegeCode" javaType="string"/>
+            <arg column="evaluationScore" javaType="java.math.BigDecimal"/>
+            <arg column="sortOrder" javaType="integer"/>
+            <arg column="activeYn" javaType="string"/>
+            <arg column="changeReason" javaType="string"/>
+            <arg column="updatedBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        settings.setting_id as "settingId",
+        settings.rule_version_id as "ruleVersionId",
+        versions.version_code as "versionCode",
+        versions.version_status as "versionStatus",
+        settings.evaluation_year as "evaluationYear",
+        settings.area_code as "achievementAreaCode",
+        items.item_code as "achievementCategoryCode",
+        settings.management_item_code as "managementItemCode",
+        settings.college_code as "collegeCode",
+        settings.evaluation_score as "evaluationScore",
+        settings.sort_order as "sortOrder",
+        settings.active_yn as "activeYn",
+        settings.change_reason as "changeReason",
+        settings.updated_by as "updatedBy",
+        settings.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="joins">
+        from management_item_score_settings settings
+        inner join evaluation_rule_versions versions on versions.rule_version_id = settings.rule_version_id
+        left join evaluation_areas areas on areas.rule_version_id = settings.rule_version_id
+            and areas.area_code = settings.area_code
+        left join evaluation_items items on items.area_id = areas.area_id
+        left join evaluation_elements elements on elements.item_id = items.item_id
+            and elements.evaluation_year = settings.evaluation_year
+        left join evaluation_management_items management_items on management_items.element_id = elements.element_id
+            and management_items.management_item_code = settings.management_item_code
+    </sql>
+
+    <sql id="filters">
+        <where>
+            management_items.management_item_code is not null
+            <if test="criteria.normalizedAchievementAreaCode != null">
+                and settings.area_code = #{criteria.normalizedAchievementAreaCode}
+            </if>
+            <if test="criteria.normalizedAchievementCategoryCode != null">
+                and items.item_code = #{criteria.normalizedAchievementCategoryCode}
+            </if>
+            <if test="criteria.normalizedCollegeCode != null">
+                and settings.college_code = #{criteria.normalizedCollegeCode}
+            </if>
+        </where>
+    </sql>
+
+    <select id="listManagementItemEvaluationScores" resultMap="ManagementItemEvaluationScoreRowMap">
+        select distinct <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="filters"/>
+        order by settings.evaluation_year desc, settings.area_code, items.item_code,
+                 settings.management_item_code, settings.college_code, settings.sort_order
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countManagementItemEvaluationScores" resultType="long">
+        select count(distinct settings.setting_id)
+        <include refid="joins"/>
+        <include refid="filters"/>
+    </select>
+
+    <select id="findRuleVersionStatus" resultType="string">
+        select version_status from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="findRuleVersionEvaluationYear" resultType="string">
+        select to_char(effective_start_date, 'YYYY') from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
+    </select>
+
+    <select id="managementItemMatchesCategory" resultType="boolean">
+        select exists(
+            select 1
+            from evaluation_areas areas
+            inner join evaluation_items items on items.area_id = areas.area_id
+            inner join evaluation_elements elements on elements.item_id = items.item_id
+            inner join evaluation_management_items management_items on management_items.element_id = elements.element_id
+            where areas.rule_version_id = #{ruleVersionId}
+              and areas.area_code = #{achievementAreaCode}
+              and items.item_code = #{achievementCategoryCode}
+              and management_items.management_item_code = #{managementItemCode}
+        )
+    </select>
+
+    <select id="findByBusinessKey" resultMap="ManagementItemEvaluationScoreRowMap">
+        select <include refid="columns"/>
+        <include refid="joins"/>
+        where settings.rule_version_id = #{ruleVersionId}
+          and settings.evaluation_year = #{evaluationYear}
+          and settings.area_code = #{achievementAreaCode}
+          and settings.management_item_code = #{managementItemCode}
+          and settings.college_code = #{collegeCode}
+        limit 1
+    </select>
+
+    <select id="upsertManagementItemEvaluationScore" resultMap="ManagementItemEvaluationScoreRowMap">
+        insert into management_item_score_settings (
+            rule_version_id, evaluation_year, area_code, management_item_code, college_code,
+            evaluation_score, sort_order, active_yn, change_reason, request_id, created_by, updated_by
+        ) values (
+            #{request.ruleVersionId}, (select to_char(effective_start_date, 'YYYY') from evaluation_rule_versions where rule_version_id = #{request.ruleVersionId}),
+            #{request.achievementAreaCode}, #{request.managementItemCode}, #{request.collegeCode},
+            #{request.evaluationScore}, #{request.sortOrder}, #{request.activeYn}, #{request.changeReason},
+            #{requestId}, #{updatedBy}, #{updatedBy}
+        )
+        on conflict (rule_version_id, evaluation_year, area_code, management_item_code, college_code)
+        do update set evaluation_score = EXCLUDED.evaluation_score,
+                      sort_order = EXCLUDED.sort_order,
+                      active_yn = EXCLUDED.active_yn,
+                      change_reason = EXCLUDED.change_reason,
+                      request_id = EXCLUDED.request_id,
+                      updated_at = CURRENT_TIMESTAMP,
+                      updated_by = EXCLUDED.updated_by
+        returning setting_id as "settingId",
+                  rule_version_id as "ruleVersionId",
+                  (select version_code from evaluation_rule_versions where rule_version_id = management_item_score_settings.rule_version_id) as "versionCode",
+                  (select version_status from evaluation_rule_versions where rule_version_id = management_item_score_settings.rule_version_id) as "versionStatus",
+                  evaluation_year as "evaluationYear",
+                  area_code as "achievementAreaCode",
+                  #{request.achievementCategoryCode} as "achievementCategoryCode",
+                  management_item_code as "managementItemCode",
+                  college_code as "collegeCode",
+                  evaluation_score as "evaluationScore",
+                  sort_order as "sortOrder",
+                  active_yn as "activeYn",
+                  change_reason as "changeReason",
+                  updated_by as "updatedBy",
+                  updated_at as "updatedAt"
+    </select>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

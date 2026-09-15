@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic65.TeachingEvaluationAchievementMapper">
+    <resultMap id="TeachingEvaluationAchievementRowMap" type="kr.ac.knue.commonfoundation.basic65.TeachingEvaluationAchievementRow">
+        <constructor>
+            <arg column="achievementId" javaType="long"/>
+            <arg column="facultyUserId" javaType="long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="academicYear" javaType="string"/>
+            <arg column="semester" javaType="string"/>
+            <arg column="courseCode" javaType="string"/>
+            <arg column="courseName" javaType="string"/>
+            <arg column="evaluationScore" javaType="java.math.BigDecimal"/>
+            <arg column="evaluationStatus" javaType="string"/>
+            <arg column="managementItemSettingId" javaType="long"/>
+            <arg column="dynamicFieldsJson" javaType="string"/>
+            <arg column="attachmentRefsJson" javaType="string"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="createdBy" javaType="long"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedBy" javaType="long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        achievement_id as "achievementId", faculty_user_id as "facultyUserId", evaluation_year as "evaluationYear",
+        academic_year as "academicYear", semester, course_code as "courseCode", course_name as "courseName",
+        evaluation_score as "evaluationScore", evaluation_status as "evaluationStatus",
+        management_item_setting_id as "managementItemSettingId", dynamic_fields::text as "dynamicFieldsJson",
+        attachment_refs::text as "attachmentRefsJson", created_at as "createdAt", created_by as "createdBy",
+        updated_at as "updatedAt", updated_by as "updatedBy"
+    </sql>
+
+    <sql id="filters">
+        <where>
+            faculty_user_id = #{facultyUserId}
+            and deleted_yn = 'N'
+            <if test="criteria.evaluationYear != null and criteria.evaluationYear != ''">and evaluation_year = #{criteria.evaluationYear}</if>
+            <if test="criteria.academicYear != null and criteria.academicYear != ''">and academic_year = #{criteria.academicYear}</if>
+            <if test="criteria.semester != null and criteria.semester != ''">and semester = #{criteria.semester}</if>
+            <if test="criteria.evaluationStatus != null and criteria.evaluationStatus != ''">and evaluation_status = #{criteria.evaluationStatus}</if>
+            <if test="criteria.courseKeyword != null and criteria.courseKeyword != ''">
+                and (course_code ilike concat('%', #{criteria.courseKeyword}, '%')
+                    or course_name ilike concat('%', #{criteria.courseKeyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="list" resultMap="TeachingEvaluationAchievementRowMap">
+        select <include refid="columns"/> from teaching_evaluation_achievements
+        <include refid="filters"/>
+        order by updated_at desc, achievement_id desc
+        limit #{criteria.safeSize} offset #{criteria.safePage} * #{criteria.safeSize}
+    </select>
+
+    <select id="count" resultType="long">
+        select count(*) from teaching_evaluation_achievements
+        <include refid="filters"/>
+    </select>
+
+    <select id="findByUniqueKey" resultMap="TeachingEvaluationAchievementRowMap">
+        select <include refid="columns"/> from teaching_evaluation_achievements
+        where faculty_user_id = #{facultyUserId} and academic_year = #{academicYear} and semester = #{semester}
+          and course_code = #{courseCode} and deleted_yn = 'N'
+    </select>
+
+    <insert id="insert">
+        insert into teaching_evaluation_achievements (
+            faculty_user_id, evaluation_year, academic_year, semester, course_code, course_name, evaluation_score,
+            evaluation_status, management_item_setting_id, dynamic_fields, attachment_refs, created_by, updated_by)
+        values (
+            #{facultyUserId}, #{request.evaluationYear}, #{request.academicYear}, #{request.semester}, #{request.courseCode},
+            #{request.courseName}, #{request.evaluationScore}, 'DRAFTING', #{request.managementItemSettingId},
+            cast(#{dynamicFieldsJson} as jsonb), cast(#{attachmentRefsJson} as jsonb), #{facultyUserId}, #{facultyUserId})
+    </insert>
+
+    <select id="findById" resultMap="TeachingEvaluationAchievementRowMap">
+        select <include refid="columns"/> from teaching_evaluation_achievements where achievement_id = #{achievementId}
+    </select>
+
+    <insert id="insertStatusHistory">
+        insert into achievement_status_histories (
+            achievement_type, achievement_id, from_status, to_status, processed_by, reason, request_id, created_by)
+        values ('TEACHING_EVALUATION', #{achievementId}, null, 'DRAFTING', #{processedBy}, #{reason}, #{requestId}, #{processedBy})
+    </insert>
+</mapper>

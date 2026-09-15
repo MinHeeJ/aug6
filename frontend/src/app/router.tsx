@@ -125,6 +125,10 @@ import {
   ReportPermissionManagementPage,
   ReportPrintHistoryPage,
 } from "../pages/admin/ReportManagementPages";
+import { TeachingEvaluationAchievementPage } from "../pages/faculty/SCR-TEACHING-EVALUATION-ACHIEVEMENT";
+import { TeachingAchievementPage } from "../pages/faculty/SCR-TEACHING-ACHIEVEMENT";
+import { StudentGuidanceAchievementPage } from "../pages/faculty/SCR-STUDENT-GUIDANCE-ACHIEVEMENT";
+import { GraduateAchievementPage } from "../pages/faculty/SCR-GRADUATE-ACHIEVEMENT";
 import {
   CourseAreaGroupGradeQueryPage,
   EvaluationElementManagementItemSettingsPage,
@@ -132,12 +136,35 @@ import {
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
 
+const FACULTY_ACHIEVEMENT_ROUTES: Record<
+  string,
+  { label: string; roles: string[] }
+> = {
+  "/faculty/teaching-evaluation-achievements": {
+    label: "강의평가 실적 관리",
+    roles: ["R01", "R02", "R04"],
+  },
+  "/faculty/teaching-achievements": {
+    label: "강의실적 관리",
+    roles: ["R01", "R02", "R04"],
+  },
+  "/faculty/student-guidance-achievements": {
+    label: "학생지도 실적 관리",
+    roles: ["R01", "R02", "R04", "R07"],
+  },
+  "/faculty/graduate-achievements": {
+    label: "석·박사 배출 실적 관리",
+    roles: ["R01", "R02", "R04"],
+  },
+};
+
 export function AppRouter() {
   const auth = useAuth();
   const path = usePathname();
   const adminRoute = ADMIN_ROUTES.find((route) =>
     routeMatchesPath(route.path, path),
   );
+  const facultyAchievementRoute = FACULTY_ACHIEVEMENT_ROUTES[path];
 
   if (auth.status === "loading") {
     return (
@@ -185,6 +212,54 @@ export function AppRouter() {
           title="권한이 없습니다"
           message={`${adminRoute.label} 화면 접근 권한이 없습니다.`}
         />
+      </AdminShell>
+    );
+  }
+
+  if (
+    facultyAchievementRoute &&
+    !auth.user?.roles.some((role) =>
+      facultyAchievementRoute.roles.includes(role),
+    )
+  ) {
+    return (
+      <AdminShell>
+        <PermissionState
+          title="권한이 없습니다"
+          message={`${facultyAchievementRoute.label} 화면 접근 권한이 없습니다.`}
+        />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/faculty/teaching-evaluation-achievements") {
+    return (
+      <AdminShell>
+        <TeachingEvaluationAchievementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/faculty/teaching-achievements") {
+    return (
+      <AdminShell>
+        <TeachingAchievementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/faculty/student-guidance-achievements") {
+    return (
+      <AdminShell>
+        <StudentGuidanceAchievementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/faculty/graduate-achievements") {
+    return (
+      <AdminShell>
+        <GraduateAchievementPage />
       </AdminShell>
     );
   }

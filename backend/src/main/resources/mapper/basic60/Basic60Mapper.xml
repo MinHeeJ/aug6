@@ -34,22 +34,6 @@
         </constructor>
     </resultMap>
 
-    <resultMap id="CourseAreaGroupGradeRowMap" type="kr.ac.knue.commonfoundation.basic60.CourseAreaGroupGradeRow">
-        <constructor>
-            <arg column="resultId" javaType="long"/>
-            <arg column="facultyUserId" javaType="long"/>
-            <arg column="employeeNo" javaType="string"/>
-            <arg column="facultyName" javaType="string"/>
-            <arg column="completionType" javaType="string"/>
-            <arg column="semester" javaType="string"/>
-            <arg column="courseArea" javaType="string"/>
-            <arg column="groupGrade" javaType="java.math.BigDecimal"/>
-            <arg column="detailSummary" javaType="string"/>
-            <arg column="publishedYn" javaType="string"/>
-            <arg column="evaluatedAt" javaType="java.time.LocalDateTime"/>
-        </constructor>
-    </resultMap>
-
     <sql id="elementColumns">
         s.setting_id as "settingId", s.rule_version_id as "ruleVersionId", rv.version_code as "versionCode", rv.version_status as "versionStatus",
         s.target_scope as "targetScope", s.area_code as "areaCode", s.item_code as "itemCode", s.evaluation_year as "evaluationYear",
@@ -199,32 +183,4 @@
         values (#{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId})
     </insert>
 
-    <sql id="gradeFilters">
-        <where>
-            published_yn = 'Y'
-            <if test="criteria.normalizedCompletionType != null">and completion_type = #{criteria.normalizedCompletionType}</if>
-            <if test="criteria.normalizedSemester != null">and semester = #{criteria.normalizedSemester}</if>
-            <if test="criteria.normalizedCourseArea != null">and course_area = #{criteria.normalizedCourseArea}</if>
-            <if test="criteria.facultyUserId != null">and faculty_user_id = #{criteria.facultyUserId}</if>
-            <if test="criteria.normalizedKeyword != null">
-                and (employee_no ilike concat('%', #{criteria.normalizedKeyword}, '%') or faculty_name ilike concat('%', #{criteria.normalizedKeyword}, '%'))
-            </if>
-        </where>
-    </sql>
-    <select id="listCourseAreaGroupGrades" resultMap="CourseAreaGroupGradeRowMap">
-        select result_id as "resultId", faculty_user_id as "facultyUserId", employee_no as "employeeNo", faculty_name as "facultyName",
-               completion_type as "completionType", semester as "semester", course_area as "courseArea", group_grade as "groupGrade",
-               detail_summary as "detailSummary", published_yn as "publishedYn", evaluated_at as "evaluatedAt"
-        from course_area_group_grade_results
-        <include refid="gradeFilters"/>
-        order by semester desc, completion_type, course_area, employee_no
-        limit #{criteria.safeSize} offset #{criteria.offset}
-    </select>
-    <select id="countCourseAreaGroupGrades" resultType="long">
-        select count(*) from course_area_group_grade_results <include refid="gradeFilters"/>
-    </select>
-    <insert id="insertGradeQueryAudit">
-        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
-        values ('course_area_group_grade_results', #{targetKey}, 'CREATE', 'QUERY', null, 'READ', #{changedBy}, '교과영역 그룹평가 성적 조회', #{requestId})
-    </insert>
 </mapper>

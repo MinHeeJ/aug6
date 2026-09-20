@@ -97,20 +97,6 @@ public class Basic60Service {
         return after;
     }
 
-    @Transactional
-    public CourseAreaGroupGradeSearchResponse listCourseAreaGroupGrades(CourseAreaGroupGradeSearchCriteria criteria, CurrentUser user, String requestId) {
-        CourseAreaGroupGradeSearchCriteria effectiveCriteria = criteria;
-        if (user.roles().contains("R01")) {
-            if (criteria.facultyUserId() != null && !Objects.equals(criteria.facultyUserId(), user.userId())) {
-                throw new ForbiddenException();
-            }
-            effectiveCriteria = new CourseAreaGroupGradeSearchCriteria(criteria.page(), criteria.pageSize(), criteria.completionType(), criteria.semester(), criteria.courseArea(), user.userId(), criteria.keyword());
-        }
-        CourseAreaGroupGradeSearchResponse response = new CourseAreaGroupGradeSearchResponse(
-                mapper.listCourseAreaGroupGrades(effectiveCriteria), Math.max(effectiveCriteria.page(), 0), effectiveCriteria.safeSize(), mapper.countCourseAreaGroupGrades(effectiveCriteria));
-        mapper.insertGradeQueryAudit("course_area_group_grade_results:" + user.userId(), user.userId(), requestId);
-        return response;
-    }
 
     private void validateCommon(Long ruleVersionId, String evaluationYear, String activeYn, java.time.LocalDate startDate, java.time.LocalDate endDate, String changeReason) {
         List<ValidationError> fields = new ArrayList<>();

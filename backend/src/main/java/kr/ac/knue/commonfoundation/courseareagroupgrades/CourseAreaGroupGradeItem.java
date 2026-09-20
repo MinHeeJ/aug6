@@ -1,9 +1,11 @@
-package kr.ac.knue.commonfoundation.basic60;
+package kr.ac.knue.commonfoundation.courseareagroupgrades;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-public record CourseAreaGroupGradeRow(
+/**
+ * Read-only result item exposed by the course-area group grade query API.
+ */
+public record CourseAreaGroupGradeItem(
         Long resultId,
         Long facultyUserId,
         String employeeNo,
@@ -12,6 +14,4 @@ public record CourseAreaGroupGradeRow(
         String semester,
         String courseArea,
         BigDecimal groupGrade,
-        String detailSummary,
-        String publishedYn,
-        LocalDateTime evaluatedAt) {}
+        String detailSummary) {}

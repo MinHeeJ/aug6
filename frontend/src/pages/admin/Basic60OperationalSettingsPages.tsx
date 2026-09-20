@@ -1,4 +1,4 @@
-import { RefreshCw, Save, Search } from "lucide-react";
+import { Download, RefreshCw, Save, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   ApiClientError,
@@ -870,7 +870,6 @@ export function CourseAreaGroupGradeQueryPage() {
   const [completionType, setCompletionType] = useState("");
   const [semester, setSemester] = useState("2026-1");
   const [courseArea, setCourseArea] = useState("");
-  const [keyword, setKeyword] = useState("");
   const [pageSize, setPageSize] = useState<20 | 50 | 100>(20);
   const [rows, setRows] = useState<CourseAreaGroupGrade[]>([]);
   const [selected, setSelected] = useState<CourseAreaGroupGrade | null>(null);
@@ -885,13 +884,12 @@ export function CourseAreaGroupGradeQueryPage() {
       setError(null);
       setPermissionDenied(false);
       const response = await courseAreaGroupGradeApi.listCourseAreaGroupGrades({
-        completionType,
-        semester,
-        courseArea,
-        keyword,
+        completionTypeCode: completionType,
+        semesterCode: semester,
+        courseAreaCode: courseArea,
         pageSize,
       });
-      setRows(response.data?.courseAreaGroupGrades ?? []);
+      setRows(response.data?.items ?? []);
       setSelected(null);
       setSuccessMessage("조회가 완료되었습니다");
     } catch (caught) {
@@ -913,6 +911,31 @@ export function CourseAreaGroupGradeQueryPage() {
   useEffect(() => {
     void load();
   }, [pageSize]);
+
+  const download = async () => {
+    try {
+      setError(null);
+      const blob = await courseAreaGroupGradeApi.downloadCourseAreaGroupGrades({
+        completionTypeCode: completionType,
+        semesterCode: semester,
+        courseAreaCode: courseArea,
+        pageSize,
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = "course-area-group-grades.xlsx";
+      anchor.click();
+      URL.revokeObjectURL(objectUrl);
+      setSuccessMessage("Excel 파일을 내려받았습니다.");
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Excel 파일을 내려받지 못했습니다.",
+      );
+    }
+  };
 
   const summary = useMemo(() => selected ?? rows[0] ?? null, [selected, rows]);
 
@@ -978,13 +1001,6 @@ export function CourseAreaGroupGradeQueryPage() {
             fieldErrors={{}}
             onChange={setCourseArea}
           />
-          <TextInput
-            label="조회조건"
-            value={keyword}
-            field="keyword"
-            fieldErrors={{}}
-            onChange={setKeyword}
-          />
           <label className="text-sm font-semibold text-dark">
             표시 건수
             <select
@@ -1009,6 +1025,14 @@ export function CourseAreaGroupGradeQueryPage() {
             data-testid="course-grade-search-button"
           >
             <Search size={16} /> 조회
+          </button>
+          <button
+            type="button"
+            className="mt-7 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white"
+            onClick={() => void download()}
+            data-testid="course-grade-download-button"
+          >
+            <Download size={16} /> Excel 다운로드
           </button>
         </div>
       </section>
@@ -1077,7 +1101,7 @@ export function CourseAreaGroupGradeQueryPage() {
                 label="그룹평가 성적"
                 value={String(summary.groupGrade)}
               />
-              <Detail label="산출근거" value={summary.detailSummary} />
+              <Detail label="산출근거" value={summary.detailSummary ?? "-"} />
             </dl>
           ) : (
             <p className="mt-4 text-sm text-muted">

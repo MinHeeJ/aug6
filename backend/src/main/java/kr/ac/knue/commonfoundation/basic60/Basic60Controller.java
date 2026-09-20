@@ -97,19 +97,6 @@ public class Basic60Controller {
         return ApiResponse.ok(service.saveScoreSetting(request, user.userId(), effectiveRequestId), effectiveRequestId);
     }
 
-    @GetMapping("/api/faculty/course-area-group-grades")
-    public ApiResponse<CourseAreaGroupGradeSearchResponse> listCourseAreaGroupGrades(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String completionType, @RequestParam(required = false) String semester,
-            @RequestParam(required = false) String courseArea, @RequestParam(required = false) Long facultyUserId,
-            @RequestParam(required = false) String keyword, @RequestHeader(value = "X-Request-Id", required = false) String requestId,
-            HttpServletRequest servletRequest) {
-        CurrentUser user = requireGradeReader(servletRequest);
-        validatePageSize(pageSize);
-        String effectiveRequestId = effectiveRequestId(requestId);
-        return ApiResponse.ok(service.listCourseAreaGroupGrades(new CourseAreaGroupGradeSearchCriteria(page, pageSize, completionType, semester, courseArea, facultyUserId, keyword), user, effectiveRequestId), effectiveRequestId);
-    }
-
     private CurrentUser requireSettingsAdmin(HttpServletRequest request) {
         Object user = request.getAttribute("currentUser");
         if (user instanceof CurrentUser currentUser) {
@@ -119,14 +106,6 @@ public class Basic60Controller {
         throw new UnauthenticatedException();
     }
 
-    private CurrentUser requireGradeReader(HttpServletRequest request) {
-        Object user = request.getAttribute("currentUser");
-        if (user instanceof CurrentUser currentUser) {
-            if (currentUser.roles().stream().anyMatch(role -> java.util.Set.of("R01", "R04", "R08", "R09").contains(role))) return currentUser;
-            throw new ForbiddenException();
-        }
-        throw new UnauthenticatedException();
-    }
 
     private void validatePageSize(int pageSize) {
         if (pageSize != 20 && pageSize != 50 && pageSize != 100) {

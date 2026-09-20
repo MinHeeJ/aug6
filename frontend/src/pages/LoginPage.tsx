@@ -672,8 +672,15 @@ export function canAccessAdminRoute(
   user: CurrentUser | null | undefined,
   path: string,
 ): boolean {
-  if (!user) {
+  if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
+  }
+  if (path === "/faculty/course-area-group-grades") {
+    return (
+      user.roles.includes("R01") ||
+      user.roles.includes("R04") ||
+      user.roles.includes("R09")
+    );
   }
   if (
     user.roles.includes("R09") &&

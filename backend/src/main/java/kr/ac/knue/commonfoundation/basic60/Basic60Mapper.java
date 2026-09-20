@@ -35,7 +35,4 @@ public interface Basic60Mapper {
                              @Param("changeReason") String changeReason,
                              @Param("requestId") String requestId);
 
-    List<CourseAreaGroupGradeRow> listCourseAreaGroupGrades(@Param("criteria") CourseAreaGroupGradeSearchCriteria criteria);
-    long countCourseAreaGroupGrades(@Param("criteria") CourseAreaGroupGradeSearchCriteria criteria);
-    void insertGradeQueryAudit(@Param("targetKey") String targetKey, @Param("changedBy") Long changedBy, @Param("requestId") String requestId);
 }

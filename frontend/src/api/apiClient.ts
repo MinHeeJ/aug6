@@ -4671,43 +4671,66 @@ export type CourseAreaGroupGrade = {
   semester: string;
   courseArea: string;
   groupGrade: number;
-  detailSummary: string;
-  publishedYn: ActiveYn;
-  evaluatedAt: string;
+  detailSummary?: string;
 };
 
 export type CourseAreaGroupGradeSearchResponse = {
-  courseAreaGroupGrades: CourseAreaGroupGrade[];
+  items: CourseAreaGroupGrade[];
   page: number;
   pageSize: number;
   totalElements: number;
 };
 
-export const courseAreaGroupGradeApi = {
-  listCourseAreaGroupGrades(
-    params: {
-      completionType?: string;
-      semester?: string;
-      courseArea?: string;
-      facultyUserId?: number;
-      keyword?: string;
-      page?: number;
-      pageSize?: 20 | 50 | 100;
-    } = {},
-  ) {
-    const query = new URLSearchParams();
+export type CourseAreaGroupGradeSearchParams = {
+  completionTypeCode?: string;
+  semesterCode?: string;
+  courseAreaCode?: string;
+  page?: number;
+  pageSize?: 20 | 50 | 100;
+};
+
+function courseAreaGroupGradeQuery(
+  params: CourseAreaGroupGradeSearchParams,
+  includePagination = true,
+) {
+  const query = new URLSearchParams();
+  if (includePagination) {
     query.set("page", String(params.page ?? 0));
     query.set("pageSize", String(params.pageSize ?? 20));
-    if (params.completionType?.trim())
-      query.set("completionType", params.completionType.trim());
-    if (params.semester?.trim()) query.set("semester", params.semester.trim());
-    if (params.courseArea?.trim())
-      query.set("courseArea", params.courseArea.trim());
-    if (params.facultyUserId !== undefined)
-      query.set("facultyUserId", String(params.facultyUserId));
-    if (params.keyword?.trim()) query.set("keyword", params.keyword.trim());
+  }
+  if (params.completionTypeCode?.trim())
+    query.set("completionTypeCode", params.completionTypeCode.trim());
+  if (params.semesterCode?.trim())
+    query.set("semesterCode", params.semesterCode.trim());
+  if (params.courseAreaCode?.trim())
+    query.set("courseAreaCode", params.courseAreaCode.trim());
+  return query;
+}
+
+export const courseAreaGroupGradeApi = {
+  listCourseAreaGroupGrades(params: CourseAreaGroupGradeSearchParams = {}) {
+    const query = courseAreaGroupGradeQuery(params);
     return apiRequest<CourseAreaGroupGradeSearchResponse>(
       `/api/faculty/course-area-group-grades?${query.toString()}` as `/api/${string}`,
     );
+  },
+
+  async downloadCourseAreaGroupGrades(
+    params: CourseAreaGroupGradeSearchParams = {},
+  ) {
+    const query = courseAreaGroupGradeQuery(params, false);
+    const response = await fetch(
+      `/api/faculty/course-area-group-grades/download?${query.toString()}`,
+      {
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      throw new ApiClientError(
+        response.status,
+        "성적 Excel 파일을 내려받지 못했습니다.",
+      );
+    }
+    return response.blob();
   },
 };

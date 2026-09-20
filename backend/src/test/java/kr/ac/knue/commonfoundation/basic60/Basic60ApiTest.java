@@ -141,34 +141,6 @@ class Basic60ApiTest {
                 .andExpect(jsonPath("$.data.evaluationScore").value(10.0));
     }
 
-    @Test
-    void listCourseAreaGroupGradesLimitsR01ToOwnGradesAndReturnsReadOnlyRows() throws Exception {
-        when(service.listCourseAreaGroupGrades(any(), eq(teacher), eq("REQ-B60-GRADE-LIST")))
-                .thenReturn(new CourseAreaGroupGradeSearchResponse(List.of(gradeRow()), 0, 20, 1));
-
-        mockMvc.perform(get("/api/faculty/course-area-group-grades")
-                        .requestAttr("currentUser", teacher)
-                        .cookie(sessionCookie())
-                        .header("X-Request-Id", "REQ-B60-GRADE-LIST")
-                        .param("completionType", "MAJOR")
-                        .param("semester", "2026-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.courseAreaGroupGrades[0].facultyUserId").value(2))
-                .andExpect(jsonPath("$.data.courseAreaGroupGrades[0].completionType").value("MAJOR"))
-                .andExpect(jsonPath("$.data.courseAreaGroupGrades[0].courseArea").value("LECTURE"))
-                .andExpect(jsonPath("$.data.courseAreaGroupGrades[0].groupGrade").value(95.5));
-    }
-
-    @Test
-    void serviceBlocksR01FromQueryingOtherFacultyGrades() {
-        Basic60Mapper mapper = org.mockito.Mockito.mock(Basic60Mapper.class);
-        Basic60Service basic60Service = new Basic60Service(mapper);
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> basic60Service.listCourseAreaGroupGrades(
-                        new CourseAreaGroupGradeSearchCriteria(0, 20, "MAJOR", "2026-1", "LECTURE", 4L, null), teacher, "REQ-B60-GRADE-FORBIDDEN"))
-                .isInstanceOf(kr.ac.knue.commonfoundation.common.api.ForbiddenException.class);
-        verify(mapper, never()).listCourseAreaGroupGrades(any());
-    }
-
     private String elementPayload(Long ruleVersionId) {
         return """
                 {"ruleVersionId":%d,"targetScope":"COLLEGE_EDU","areaCode":"EDUCATION","itemCode":"LECTURE","evaluationYear":"2026","elementCode":"COURSE_GROUP","managementItemCode":"ATTENDANCE","managementItemName":"출석관리","sortOrder":1,"activeYn":"Y","teacherEditableYn":"Y","effectiveStartDate":"2026-01-01","effectiveEndDate":"2026-12-31","changeReason":"항목 설정"}
@@ -185,10 +157,6 @@ class Basic60ApiTest {
 
     private OperationalSettingRow scoreRow() {
         return new OperationalSettingRow(3001L, 10L, "B60-DRAFT-2026", "DRAFT", "COLLEGE_EDU", "EDUCATION", "LECTURE", "2026", "COURSE_GROUP", null, "ATTENDANCE", null, "COL-EDU", "사범대학", null, null, null, BigDecimal.valueOf(10.0), BigDecimal.valueOf(20.0), 1, "Y", null, LocalDate.parse("2026-01-01"), LocalDate.parse("2026-12-31"), "N", "점수 설정", 4L, LocalDateTime.parse("2026-09-10T09:00:00"));
-    }
-
-    private CourseAreaGroupGradeRow gradeRow() {
-        return new CourseAreaGroupGradeRow(4001L, 2L, "E0002", "교원사용자", "MAJOR", "2026-1", "LECTURE", BigDecimal.valueOf(95.5), "전공 강의 그룹평가 상위 등급", "Y", LocalDateTime.parse("2026-09-10T09:00:00"));
     }
 
     private Cookie sessionCookie() {

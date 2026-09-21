@@ -61,7 +61,7 @@ describe("BASIC-60 operational settings pages", () => {
 
   it("renders read-only course area group grade query without mutation CTA", async () => {
     mockFetch({
-      courseAreaGroupGrades: [
+      items: [
         {
           resultId: 1,
           facultyUserId: 2,
@@ -72,8 +72,6 @@ describe("BASIC-60 operational settings pages", () => {
           courseArea: "LECTURE",
           groupGrade: 95.5,
           detailSummary: "전공 강의 그룹평가",
-          publishedYn: "Y",
-          evaluatedAt: "2026-09-10T09:00:00",
         },
       ],
       page: 0,

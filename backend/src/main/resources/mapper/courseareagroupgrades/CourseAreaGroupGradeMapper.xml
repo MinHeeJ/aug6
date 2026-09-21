@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.courseareagroupgrades.CourseAreaGroupGradeMapper">
+    <resultMap id="CourseAreaGroupGradeItemMap" type="kr.ac.knue.commonfoundation.courseareagroupgrades.CourseAreaGroupGradeItem">
+        <constructor>
+            <arg column="resultId" javaType="long"/>
+            <arg column="facultyUserId" javaType="long"/>
+            <arg column="employeeNo" javaType="string"/>
+            <arg column="facultyName" javaType="string"/>
+            <arg column="completionType" javaType="string"/>
+            <arg column="semester" javaType="string"/>
+            <arg column="courseArea" javaType="string"/>
+            <arg column="groupGrade" javaType="java.math.BigDecimal"/>
+            <arg column="detailSummary" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="publishedGradeFilters">
+        <where>
+            published_yn = 'Y'
+            <if test="criteria.completionTypeCode != null">and completion_type = #{criteria.completionTypeCode}</if>
+            <if test="criteria.semesterCode != null">and semester = #{criteria.semesterCode}</if>
+            <if test="criteria.courseAreaCode != null">and course_area = #{criteria.courseAreaCode}</if>
+            <if test="criteria.facultyUserId != null">and faculty_user_id = #{criteria.facultyUserId}</if>
+        </where>
+    </sql>
+
+    <select id="listPublishedGrades" resultMap="CourseAreaGroupGradeItemMap">
+        select result_id as "resultId", faculty_user_id as "facultyUserId", employee_no as "employeeNo",
+               faculty_name as "facultyName", completion_type as "completionType", semester as "semester",
+               course_area as "courseArea", group_grade as "groupGrade", detail_summary as "detailSummary"
+        from course_area_group_grade_results
+        <include refid="publishedGradeFilters"/>
+        order by semester desc, completion_type, course_area, employee_no, result_id
+        limit #{criteria.pageSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countPublishedGrades" resultType="long">
+        select count(*) from course_area_group_grade_results
+        <include refid="publishedGradeFilters"/>
+    </select>
+
+    <insert id="insertQueryAudit">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)
+        values ('course_area_group_grade_results', #{targetKey}, 'CREATE', 'QUERY', null, 'READ', #{changedBy}, '교과영역 그룹평가 성적 조회', #{requestId})
+    </insert>
+</mapper>

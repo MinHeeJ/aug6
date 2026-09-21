@@ -72,7 +72,7 @@ class Basic60ApiTest {
     @Test
     void saveEvaluationElementManagementItemSettingReturnsConflictForConfirmedRuleLock() throws Exception {
         when(service.saveElementSetting(any(), eq(1L), eq("REQ-B60-ELEMENT-CONFLICT")))
-                .thenThrow(new ConflictException("CONFIRMED_RULE_LOCKED: 확정 규정버전은 수정할 수 없습니다."));
+                .thenThrow(new ConflictException("CONFIRMED_RULE_LOCKED", "확정 규정버전은 수정할 수 없습니다."));
 
         mockMvc.perform(post("/api/admin/evaluation-element-management-item-settings/save")
                         .requestAttr("currentUser", systemAdmin)
@@ -81,7 +81,7 @@ class Basic60ApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(elementPayload(11L)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+                .andExpect(jsonPath("$.error.code").value("CONFIRMED_RULE_LOCKED"));
     }
 
     @Test

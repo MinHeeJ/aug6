@@ -262,6 +262,25 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
     });
   };
 
+  const cancelElementEdit = () => {
+    setForm(initialForm);
+    setSelected(null);
+    setFieldErrors({});
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const cancelScoreEdit = () => {
+    if (selected) {
+      selectRow(selected);
+    } else {
+      setForm(initialForm);
+      setFieldErrors({});
+      setError(null);
+      setSuccessMessage(null);
+    }
+  };
+
   const save = async () => {
     const errors = validateSettingForm(config.kind, form);
     setFieldErrors(errors);
@@ -269,7 +288,9 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
       setError("필수 입력값을 확인하세요.");
       return;
     }
-    if (!window.confirm(`${config.title} 값을 저장하시겠습니까?`)) return;
+    const saveAction = config.kind === "participation" ? "일괄 저장" : "저장";
+    if (!window.confirm(`${config.title} 값을 ${saveAction}하시겠습니까?`))
+      return;
     try {
       setSaving(true);
       setError(null);
@@ -375,7 +396,8 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
       <section className="rounded-md border border-ld bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-dark">
-            목록 ({totalElements}건)
+            {config.kind === "participation" ? "배분율 매트릭스" : "목록"} (
+            {totalElements}건)
           </h2>
           <label className="text-sm text-muted">
             표시 건수
@@ -418,6 +440,11 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
         setForm={setForm}
         fieldErrors={fieldErrors}
         onSave={() => void save()}
+        onCancel={
+          config.kind === "element" || config.kind === "participation"
+            ? cancelElementEdit
+            : cancelScoreEdit
+        }
         saving={saving}
       />
     </section>
@@ -632,6 +659,7 @@ function SettingForm({
   setForm,
   fieldErrors,
   onSave,
+  onCancel,
   saving,
 }: {
   kind: SettingKind;
@@ -639,6 +667,7 @@ function SettingForm({
   setForm: (next: FormState) => void;
   fieldErrors: Record<string, string>;
   onSave: () => void;
+  onCancel?: () => void;
   saving: boolean;
 }) {
   const update = (field: keyof FormState) => (value: string) =>
@@ -647,15 +676,33 @@ function SettingForm({
     <section className="rounded-md border border-ld bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-dark">설정 상세</h2>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          onClick={onSave}
-          disabled={saving}
-          data-testid={`${kind}-save-button`}
-        >
-          <Save size={16} /> {saving ? "저장 중" : "저장"}
-        </button>
+        <div className="flex items-center gap-2">
+          {onCancel ? (
+            <button
+              type="button"
+              className="rounded-md border border-ld px-4 py-2 text-sm font-semibold text-dark"
+              onClick={onCancel}
+              disabled={saving}
+              data-testid={`${kind}-cancel-button`}
+            >
+              취소
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            onClick={onSave}
+            disabled={saving}
+            data-testid={`${kind}-save-button`}
+          >
+            <Save size={16} />
+            {saving
+              ? "저장 중"
+              : kind === "participation"
+                ? "일괄 저장"
+                : "저장"}
+          </button>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-4">
         <TextInput

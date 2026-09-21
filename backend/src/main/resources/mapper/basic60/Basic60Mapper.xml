@@ -127,16 +127,16 @@
     <select id="findParticipationSettingByKey" resultMap="OperationalSettingRowMap">
         select <include refid="participationColumns"/> from participation_allocation_rate_settings s
         inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
-        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.management_item_code = upper(#{request.managementItemCode})
-          and s.researcher_count = #{request.researcherCount} and s.participation_type = upper(#{request.participationType})
+        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.area_code = upper(#{request.areaCode})
+          and s.item_code = upper(#{request.itemCode}) and s.evaluation_year = #{request.evaluationYear} and s.element_code = upper(#{request.elementCode})
+          and s.management_item_code = upper(#{request.managementItemCode}) and s.researcher_count = #{request.researcherCount} and s.participation_type = upper(#{request.participationType})
           and s.effective_start_date = #{request.effectiveStartDate} and s.effective_end_date = #{request.effectiveEndDate}
     </select>
     <insert id="upsertParticipationSetting">
         insert into participation_allocation_rate_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, researcher_count, participation_type, allocation_rate, active_yn, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
         values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), upper(#{request.managementItemCode}), #{request.researcherCount}, upper(#{request.participationType}), #{request.allocationRate}, #{request.activeYn}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
-        on conflict (rule_version_id, target_scope, management_item_code, researcher_count, participation_type, effective_start_date, effective_end_date)
-        do update set area_code = EXCLUDED.area_code, item_code = EXCLUDED.item_code, evaluation_year = EXCLUDED.evaluation_year, element_code = EXCLUDED.element_code,
-                      allocation_rate = EXCLUDED.allocation_rate, active_yn = EXCLUDED.active_yn, change_reason = EXCLUDED.change_reason,
+        on conflict (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, researcher_count, participation_type, effective_start_date, effective_end_date)
+        do update set allocation_rate = EXCLUDED.allocation_rate, active_yn = EXCLUDED.active_yn, change_reason = EXCLUDED.change_reason,
                       updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
     </insert>
 
@@ -153,15 +153,16 @@
     <select id="findScoreSettingByKey" resultMap="OperationalSettingRowMap">
         select <include refid="scoreColumns"/> from management_item_evaluation_score_settings s
         inner join evaluation_rule_versions rv on rv.rule_version_id = s.rule_version_id
-        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.management_item_code = upper(#{request.managementItemCode})
-          and s.organization_code = upper(#{request.organizationCode}) and s.effective_start_date = #{request.effectiveStartDate} and s.effective_end_date = #{request.effectiveEndDate}
+        where s.rule_version_id = #{request.ruleVersionId} and s.target_scope = upper(#{request.targetScope}) and s.area_code = upper(#{request.areaCode})
+          and s.item_code = upper(#{request.itemCode}) and s.evaluation_year = #{request.evaluationYear} and s.element_code = upper(#{request.elementCode})
+          and s.management_item_code = upper(#{request.managementItemCode}) and s.organization_code = upper(#{request.organizationCode})
+          and s.effective_start_date = #{request.effectiveStartDate} and s.effective_end_date = #{request.effectiveEndDate}
     </select>
     <insert id="upsertScoreSetting">
         insert into management_item_evaluation_score_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, organization_code, organization_name, evaluation_score, max_score, sort_order, active_yn, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
         values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), upper(#{request.managementItemCode}), upper(#{request.organizationCode}), #{request.organizationName}, #{request.evaluationScore}, #{request.maxScore}, #{request.sortOrder}, #{request.activeYn}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
-        on conflict (rule_version_id, target_scope, management_item_code, organization_code, effective_start_date, effective_end_date)
-        do update set area_code = EXCLUDED.area_code, item_code = EXCLUDED.item_code, evaluation_year = EXCLUDED.evaluation_year, element_code = EXCLUDED.element_code,
-                      organization_name = EXCLUDED.organization_name, evaluation_score = EXCLUDED.evaluation_score, max_score = EXCLUDED.max_score,
+        on conflict (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, organization_code, effective_start_date, effective_end_date)
+        do update set organization_name = EXCLUDED.organization_name, evaluation_score = EXCLUDED.evaluation_score, max_score = EXCLUDED.max_score,
                       sort_order = EXCLUDED.sort_order, active_yn = EXCLUDED.active_yn, change_reason = EXCLUDED.change_reason,
                       updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
     </insert>
@@ -170,13 +171,13 @@
         select version_status from evaluation_rule_versions where rule_version_id = #{ruleVersionId}
     </select>
     <select id="hasConfirmedElementSettingImpact" resultType="boolean">
-        select exists(select 1 from evaluation_element_management_item_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
+        select exists(select 1 from evaluation_element_management_item_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and area_code = upper(#{request.areaCode}) and item_code = upper(#{request.itemCode}) and evaluation_year = #{request.evaluationYear} and element_code = upper(#{request.elementCode}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
     </select>
     <select id="hasConfirmedParticipationSettingImpact" resultType="boolean">
-        select exists(select 1 from participation_allocation_rate_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
+        select exists(select 1 from participation_allocation_rate_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and area_code = upper(#{request.areaCode}) and item_code = upper(#{request.itemCode}) and evaluation_year = #{request.evaluationYear} and element_code = upper(#{request.elementCode}) and management_item_code = upper(#{request.managementItemCode}) and researcher_count = #{request.researcherCount} and participation_type = upper(#{request.participationType}) and effective_start_date = #{request.effectiveStartDate} and effective_end_date = #{request.effectiveEndDate} and evaluation_confirmed_yn = 'Y')
     </select>
     <select id="hasConfirmedScoreSettingImpact" resultType="boolean">
-        select exists(select 1 from management_item_evaluation_score_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and management_item_code = upper(#{request.managementItemCode}) and evaluation_confirmed_yn = 'Y')
+        select exists(select 1 from management_item_evaluation_score_settings where rule_version_id = #{request.ruleVersionId} and target_scope = upper(#{request.targetScope}) and area_code = upper(#{request.areaCode}) and item_code = upper(#{request.itemCode}) and evaluation_year = #{request.evaluationYear} and element_code = upper(#{request.elementCode}) and management_item_code = upper(#{request.managementItemCode}) and organization_code = upper(#{request.organizationCode}) and effective_start_date = #{request.effectiveStartDate} and effective_end_date = #{request.effectiveEndDate} and evaluation_confirmed_yn = 'Y')
     </select>
     <insert id="insertChangeHistory">
         insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id)

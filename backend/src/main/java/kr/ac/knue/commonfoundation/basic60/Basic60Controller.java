@@ -73,6 +73,12 @@ public class Basic60Controller {
         return ApiResponse.ok(service.saveParticipationSetting(request, user.userId(), effectiveRequestId), effectiveRequestId);
     }
 
+    /**
+     * Returns score settings filtered by the caller's supplied operational criteria.
+     *
+     * <p>The controller enforces the existing R04/R09 boundary before delegating to the
+     * persistence adapter, so college score data cannot be discovered by other roles.
+     */
     @GetMapping("/api/admin/management-item-evaluation-score-settings")
     public ApiResponse<OperationalSettingResponses.ManagementItemEvaluationScoreSettingSearchResponse> listManagementItemEvaluationScoreSettings(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int pageSize,
@@ -87,6 +93,12 @@ public class Basic60Controller {
         return ApiResponse.ok(service.listScoreSettings(new OperationalSettingSearchCriteria(page, pageSize, ruleVersionId, targetScope, areaCode, itemCode, evaluationYear, elementCode, null, managementItemCode, organizationCode, null, null, activeYn, keyword)), effectiveRequestId(requestId));
     }
 
+    /**
+     * Persists one management-item score after request validation and the mutable-rule checks.
+     *
+     * <p>The service records the request ID in the audit history so an authorized configuration
+     * change remains traceable across the API and database transaction.
+     */
     @PostMapping("/api/admin/management-item-evaluation-score-settings/save")
     public ApiResponse<OperationalSettingRow> saveManagementItemEvaluationScoreSetting(
             @Valid @RequestBody SaveManagementItemEvaluationScoreSettingRequest request,

@@ -26,6 +26,17 @@ public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String
         return new ApiResponse<>(false, null, error, defaultMeta());
     }
 
+    /**
+     * Creates an error envelope that keeps a caller-provided request correlation identifier.
+     */
+    public static ApiResponse<Void> fail(ApiError error, String requestId) {
+        Map<String, Object> meta = defaultMeta();
+        if (requestId != null && !requestId.trim().isBlank()) {
+            meta.put("requestId", requestId.trim());
+        }
+        return new ApiResponse<>(false, null, error, meta);
+    }
+
     private static Map<String, Object> defaultMeta() {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("timestamp", OffsetDateTime.now().toString());

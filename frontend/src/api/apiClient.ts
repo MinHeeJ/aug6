@@ -4547,6 +4547,43 @@ export type Basic60OperationalSetting = {
   updatedAt?: string;
 };
 
+type Basic60SaveRequestBase = {
+  ruleVersionId: number;
+  targetScope: string;
+  areaCode: string;
+  itemCode: string;
+  evaluationYear: string;
+  elementCode: string;
+  managementItemCode: string;
+  activeYn: ActiveYn;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  changeReason: string;
+};
+
+export type SaveEvaluationElementManagementItemSettingRequest =
+  Basic60SaveRequestBase & {
+    managementItemName: string;
+    sortOrder: number;
+    teacherEditableYn: ActiveYn;
+  };
+
+export type SaveParticipationAllocationRateSettingRequest =
+  Basic60SaveRequestBase & {
+    researcherCount: number;
+    participationType: string;
+    allocationRate: number;
+  };
+
+export type SaveManagementItemEvaluationScoreSettingRequest =
+  Basic60SaveRequestBase & {
+    organizationCode: string;
+    organizationName?: string | null;
+    evaluationScore: number;
+    maxScore?: number | null;
+    sortOrder: number;
+  };
+
 export type Basic60SearchParams = {
   ruleVersionId?: number;
   targetScope?: string;
@@ -4621,7 +4658,9 @@ export const basic60Api = {
       `/api/admin/evaluation-element-management-item-settings?${query.toString()}` as `/api/${string}`,
     );
   },
-  saveEvaluationElementManagementItemSetting(payload: Record<string, unknown>) {
+  saveEvaluationElementManagementItemSetting(
+    payload: SaveEvaluationElementManagementItemSettingRequest,
+  ) {
     return apiRequest<Basic60OperationalSetting>(
       "/api/admin/evaluation-element-management-item-settings/save",
       {
@@ -4636,7 +4675,9 @@ export const basic60Api = {
       `/api/admin/participation-allocation-rate-settings?${query.toString()}` as `/api/${string}`,
     );
   },
-  saveParticipationAllocationRateSetting(payload: Record<string, unknown>) {
+  saveParticipationAllocationRateSetting(
+    payload: SaveParticipationAllocationRateSettingRequest,
+  ) {
     return apiRequest<Basic60OperationalSetting>(
       "/api/admin/participation-allocation-rate-settings/save",
       {
@@ -4651,7 +4692,9 @@ export const basic60Api = {
       `/api/admin/management-item-evaluation-score-settings?${query.toString()}` as `/api/${string}`,
     );
   },
-  saveManagementItemEvaluationScoreSetting(payload: Record<string, unknown>) {
+  saveManagementItemEvaluationScoreSetting(
+    payload: SaveManagementItemEvaluationScoreSettingRequest,
+  ) {
     return apiRequest<Basic60OperationalSetting>(
       "/api/admin/management-item-evaluation-score-settings/save",
       {

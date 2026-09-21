@@ -81,7 +81,8 @@ class Basic60ApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(elementPayload(11L)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+                .andExpect(jsonPath("$.error.code").value("CONFIRMED_RULE_LOCKED"))
+                .andExpect(jsonPath("$.meta.requestId").value("REQ-B60-ELEMENT-CONFLICT"));
     }
 
     @Test

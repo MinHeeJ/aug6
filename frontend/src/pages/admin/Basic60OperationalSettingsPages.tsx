@@ -90,7 +90,7 @@ type FormState = {
   maxScore: string;
   sortOrder: string;
   activeYn: ActiveYn;
-  teacherEditableYn: ActiveYn;
+  teacherEditablePart: string;
   effectiveStartDate: string;
   effectiveEndDate: string;
   changeReason: string;
@@ -129,7 +129,7 @@ const initialForm: FormState = {
   maxScore: "",
   sortOrder: "1",
   activeYn: "Y",
-  teacherEditableYn: "Y",
+  teacherEditablePart: "SELF_REPORT",
   effectiveStartDate: "2026-01-01",
   effectiveEndDate: "2026-12-31",
   changeReason: "",
@@ -164,31 +164,33 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const currentSearchParams = () => ({
+    ruleVersionId: search.ruleVersionId
+      ? Number(search.ruleVersionId)
+      : undefined,
+    targetScope: search.targetScope || undefined,
+    areaCode: search.areaCode || undefined,
+    itemCode: search.itemCode || undefined,
+    evaluationYear: search.evaluationYear || undefined,
+    elementCode: search.elementCode || undefined,
+    managementItemCode: search.managementItemCode || undefined,
+    organizationCode: search.organizationCode || undefined,
+    researcherCount: search.researcherCount
+      ? Number(search.researcherCount)
+      : undefined,
+    participationType: search.participationType || undefined,
+    activeYn: search.activeYn,
+    keyword: search.keyword || undefined,
+    page,
+    pageSize,
+  });
+
   const load = async () => {
     try {
       setLoading(true);
       setError(null);
       setPermissionDenied(false);
-      const params = {
-        ruleVersionId: search.ruleVersionId
-          ? Number(search.ruleVersionId)
-          : undefined,
-        targetScope: search.targetScope || undefined,
-        areaCode: search.areaCode || undefined,
-        itemCode: search.itemCode || undefined,
-        evaluationYear: search.evaluationYear || undefined,
-        elementCode: search.elementCode || undefined,
-        managementItemCode: search.managementItemCode || undefined,
-        organizationCode: search.organizationCode || undefined,
-        researcherCount: search.researcherCount
-          ? Number(search.researcherCount)
-          : undefined,
-        participationType: search.participationType || undefined,
-        activeYn: search.activeYn,
-        keyword: search.keyword || undefined,
-        page,
-        pageSize,
-      };
+      const params = currentSearchParams();
       const response =
         config.kind === "element"
           ? await basic60Api.listEvaluationElementManagementItemSettings(params)
@@ -226,6 +228,34 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
     }
   };
 
+  const download = async () => {
+    try {
+      setError(null);
+      const params = currentSearchParams();
+      const workbook =
+        config.kind === "element"
+          ? await basic60Api.downloadEvaluationElementManagementItemSettings(
+              params,
+            )
+          : config.kind === "participation"
+            ? await basic60Api.downloadParticipationAllocationRateSettings(
+                params,
+              )
+            : await basic60Api.downloadManagementItemEvaluationScoreSettings(
+                params,
+              );
+      const objectUrl = URL.createObjectURL(workbook);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${config.kind}-settings.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(objectUrl);
+      setSuccessMessage("Excel 파일을 내려받았습니다.");
+    } catch (caught) {
+      handleApiError(caught);
+    }
+  };
+
   useEffect(() => {
     void load();
   }, [page, pageSize]);
@@ -255,7 +285,8 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
       maxScore: row.maxScore == null ? "" : String(row.maxScore),
       sortOrder: row.sortOrder == null ? "1" : String(row.sortOrder),
       activeYn: row.activeYn,
-      teacherEditableYn: row.teacherEditableYn ?? "Y",
+      teacherEditablePart:
+        row.teacherEditablePart ?? row.teacherEditableYn ?? "SELF_REPORT",
       effectiveStartDate: row.effectiveStartDate,
       effectiveEndDate: row.effectiveEndDate,
       changeReason: "",
@@ -292,14 +323,28 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
               ...common,
               managementItemName: form.managementItemName.trim(),
               sortOrder: Number(form.sortOrder),
-              teacherEditableYn: form.teacherEditableYn,
+              teacherEditablePart: form.teacherEditablePart.trim(),
             })
           : config.kind === "participation"
             ? await basic60Api.saveParticipationAllocationRateSetting({
-                ...common,
-                researcherCount: Number(form.researcherCount),
-                participationType: form.participationType.trim(),
-                allocationRate: Number(form.allocationRate),
+                ruleVersionId: common.ruleVersionId,
+                targetScope: common.targetScope,
+                changeReason: common.changeReason,
+                items: [
+                  {
+                    areaCode: common.areaCode,
+                    itemCode: common.itemCode,
+                    evaluationYear: common.evaluationYear,
+                    elementCode: common.elementCode,
+                    managementItemCode: common.managementItemCode,
+                    researcherCount: Number(form.researcherCount),
+                    participationType: form.participationType.trim(),
+                    allocationRate: Number(form.allocationRate),
+                    activeYn: common.activeYn,
+                    effectiveStartDate: common.effectiveStartDate,
+                    effectiveEndDate: common.effectiveEndDate,
+                  },
+                ],
               })
             : await basic60Api.saveManagementItemEvaluationScoreSetting({
                 ...common,
@@ -353,7 +398,11 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
       data-screen-id={config.screenId}
       data-testid={config.testId}
     >
-      <Header config={config} onRefresh={() => void load()} />
+      <Header
+        config={config}
+        onRefresh={() => void load()}
+        onDownload={() => void download()}
+      />
       {successMessage ? (
         <SuccessState
           title={successMessage}
@@ -427,9 +476,11 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
 function Header({
   config,
   onRefresh,
+  onDownload,
 }: {
   config: SettingConfig;
   onRefresh: () => void;
+  onDownload: () => void;
 }) {
   return (
     <div className="mb-6 rounded-md bg-lightsecondary p-6 shadow-none">
@@ -441,14 +492,24 @@ function Header({
           </h1>
           <p className="mt-2 text-sm text-muted">{config.description}</p>
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
-          onClick={onRefresh}
-          data-testid={`${config.kind}-refresh-button`}
-        >
-          <RefreshCw size={16} /> 새로고침
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary"
+            onClick={onDownload}
+            data-testid={`${config.kind}-download-button`}
+          >
+            <Download size={16} /> Excel 다운로드
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
+            onClick={onRefresh}
+            data-testid={`${config.kind}-refresh-button`}
+          >
+            <RefreshCw size={16} /> 새로고침
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -608,7 +669,8 @@ function SettingsTable({
               ) : null}
               {kind === "element" ? (
                 <td className="px-3 py-2">
-                  교원입력 {ynLabel(row.teacherEditableYn ?? "N")} /{" "}
+                  교수입력 가능부분{" "}
+                  {row.teacherEditablePart ?? row.teacherEditableYn ?? "-"} /{" "}
                   {row.sortOrder}
                 </td>
               ) : null}
@@ -789,11 +851,12 @@ function SettingForm({
           />
         ) : null}
         {kind === "element" ? (
-          <SelectInput
-            label="교원 입력 가능"
-            value={form.teacherEditableYn}
-            onChange={update("teacherEditableYn")}
-            testId="teacher-editable-select"
+          <TextInput
+            label="교수입력 가능부분 *"
+            value={form.teacherEditablePart}
+            field="teacherEditablePart"
+            fieldErrors={fieldErrors}
+            onChange={update("teacherEditablePart")}
           />
         ) : null}
         <SelectInput
@@ -849,6 +912,8 @@ function validateSettingForm(kind: SettingKind, form: FormState) {
   });
   if (kind === "element" && !form.managementItemName.trim())
     errors.managementItemName = "관리항목명을 입력하세요.";
+  if (kind === "element" && !form.teacherEditablePart.trim())
+    errors.teacherEditablePart = "교수입력 가능부분을 입력하세요.";
   if (kind === "participation") {
     if (!form.researcherCount.trim())
       errors.researcherCount = "연구자 수를 입력하세요.";

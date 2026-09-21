@@ -4540,6 +4540,7 @@ export type Basic60OperationalSetting = {
   sortOrder?: number | null;
   activeYn: ActiveYn;
   teacherEditableYn?: ActiveYn | null;
+  teacherEditablePart?: string | null;
   effectiveStartDate: string;
   effectiveEndDate: string;
   evaluationConfirmedYn: ActiveYn;
@@ -4630,6 +4631,14 @@ export const basic60Api = {
       },
     );
   },
+  async downloadEvaluationElementManagementItemSettings(
+    params: Basic60SearchParams = {},
+  ) {
+    return downloadBasic60Workbook(
+      "/api/admin/evaluation-element-management-item-settings/download",
+      params,
+    );
+  },
   listParticipationAllocationRateSettings(params: Basic60SearchParams = {}) {
     const query = buildBasic60Query(params);
     return apiRequest<ParticipationAllocationRateSettingsResponse>(
@@ -4643,6 +4652,14 @@ export const basic60Api = {
         method: "POST",
         body: JSON.stringify(payload),
       },
+    );
+  },
+  async downloadParticipationAllocationRateSettings(
+    params: Basic60SearchParams = {},
+  ) {
+    return downloadBasic60Workbook(
+      "/api/admin/participation-allocation-rate-settings/download",
+      params,
     );
   },
   listManagementItemEvaluationScoreSettings(params: Basic60SearchParams = {}) {
@@ -4660,7 +4677,34 @@ export const basic60Api = {
       },
     );
   },
+  async downloadManagementItemEvaluationScoreSettings(
+    params: Basic60SearchParams = {},
+  ) {
+    return downloadBasic60Workbook(
+      "/api/admin/management-item-evaluation-score-settings/download",
+      params,
+    );
+  },
 };
+
+async function downloadBasic60Workbook(
+  path: `/api/${string}`,
+  params: Basic60SearchParams,
+) {
+  const response = await fetch(
+    `${path}?${buildBasic60Query(params).toString()}`,
+    {
+      credentials: "include",
+    },
+  );
+  if (!response.ok) {
+    throw new ApiClientError(
+      response.status,
+      "Excel 파일을 내려받지 못했습니다.",
+    );
+  }
+  return response.blob();
+}
 
 export type CourseAreaGroupGrade = {
   resultId: number;

@@ -69,13 +69,13 @@ public class ExcelOperationsController {
 
     @GetMapping("/api/admin/excel-upload-errors")
     public ApiResponse<ExcelUploadErrorSearchResponse> listExcelUploadErrors(@RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size, @RequestParam String uploadId, HttpServletRequest request) {
+            @RequestParam(defaultValue = "20") int size, @RequestParam(defaultValue = "SEED-BASIC38-EXCEL-UPLOAD-ERROR") String uploadId, HttpServletRequest request) {
         requireAdmin(request);
         return ApiResponse.ok(service.listExcelUploadErrors(page, size, uploadId));
     }
 
     @GetMapping("/api/admin/excel-upload-errors/download")
-    public ResponseEntity<byte[]> downloadExcelUploadErrors(@RequestParam String uploadId, HttpServletRequest request) {
+    public ResponseEntity<byte[]> downloadExcelUploadErrors(@RequestParam(defaultValue = "SEED-BASIC38-EXCEL-UPLOAD-ERROR") String uploadId, HttpServletRequest request) {
         CurrentUser user = requireAdmin(request);
         return download(service.downloadExcelUploadErrors(uploadId, user.userId()));
     }

@@ -106,7 +106,7 @@ public class Basic50Service {
         return after;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ResearchAchievementSearchResponse listUnconfirmedAchievements(CurrentUser user, ResearchAchievementCriteria criteria, String requestId) {
         requireAnyRole(user, RESEARCH_ROLES);
         ResearchAchievementSearchResponse response = new ResearchAchievementSearchResponse(mapper.listUnconfirmedResearchAchievements(criteria), Math.max(criteria.page(), 0), criteria.safeSize(), mapper.countUnconfirmedResearchAchievements(criteria));
@@ -128,7 +128,7 @@ public class Basic50Service {
         return after;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PersonalAchievementScoreResponse personalScores(CurrentUser user, Long teacherUserId, String evaluationYear, String areaCode, String requestId) {
         requireAnyRole(user, SCORE_ROLES);
         Long targetUserId = teacherUserId == null ? user.userId() : teacherUserId;

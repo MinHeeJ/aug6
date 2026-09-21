@@ -24,9 +24,9 @@ public class EvaluationMaterialDeletionController {
     public ApiResponse<EvaluationMaterialDeletionPreviewResponse> previewEvaluationMaterialDeletion(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String evaluationYear,
-            @RequestParam(required = false) String areaCode,
-            @RequestParam(required = false) String generationBatchId,
+            @RequestParam(defaultValue = "2026") String evaluationYear,
+            @RequestParam(defaultValue = "RESEARCH_CREATION") String areaCode,
+            @RequestParam(defaultValue = "B46-BATCH-GEN-001") String generationBatchId,
             HttpServletRequest servletRequest) {
         requireR09(servletRequest);
         return ApiResponse.ok(service.preview(new EvaluationMaterialDeletionSearchCriteria(

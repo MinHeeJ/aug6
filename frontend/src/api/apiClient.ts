@@ -4637,7 +4637,7 @@ export const basic60Api = {
     );
   },
   saveParticipationAllocationRateSetting(payload: Record<string, unknown>) {
-    return apiRequest<Basic60OperationalSetting>(
+    return apiRequest<Basic60OperationalSetting[]>(
       "/api/admin/participation-allocation-rate-settings/save",
       {
         method: "POST",

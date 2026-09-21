@@ -86,6 +86,45 @@ describe("LoginPage", () => {
     ).toBe(true);
   });
 
+  it("keeps all three BASIC-60 settings screens reachable only through their existing menu entries", () => {
+    const settingRoutes = [
+      [
+        "/admin/evaluation-element-management-item-settings",
+        "SCR-EVALUATION-ELEMENT-MANAGEMENT-ITEM-SETTINGS",
+      ],
+      [
+        "/admin/participation-allocation-rate-settings",
+        "SCR-PARTICIPATION-ALLOCATION-RATE-SETTINGS",
+      ],
+      [
+        "/admin/management-item-evaluation-score-settings",
+        "SCR-MANAGEMENT-ITEM-EVALUATION-SCORE-SETTINGS",
+      ],
+    ] as const;
+    const businessAdmin: CurrentUser = {
+      userId: 4,
+      loginId: "business-admin",
+      employeeNo: "E0004",
+      name: "업무담당자",
+      roles: ["R04"],
+      menus: settingRoutes.map(([path, screenId], index) => ({
+        menuId: 600 + index,
+        parentMenuId: 500,
+        menuName: "평가 기준 설정",
+        screenId,
+        url: path,
+        displayOrder: index + 1,
+        children: [],
+      })),
+    };
+
+    for (const [path, screenId] of settingRoutes) {
+      const route = ADMIN_ROUTES.find((candidate) => candidate.path === path);
+      expect(route?.screenId).toBe(screenId);
+      expect(canAccessAdminRoute(businessAdmin, path)).toBe(true);
+    }
+  });
+
   it("registers BASIC-36 business route placeholders without replacing the existing shell", () => {
     expect(routePath("/admin/korus-faculty-sync")).toBe(
       "교수업적평가 파일럿 > KORUS 연계 > KORUS 교원 동기화",

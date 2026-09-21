@@ -61,7 +61,7 @@ public class Basic50Controller {
     }
 
     @GetMapping("/api/business/personal-achievement-scores")
-    public ApiResponse<PersonalAchievementScoreResponse> getPersonalAchievementScores(@RequestParam(required = false) Long teacherUserId, @RequestParam String evaluationYear, @RequestParam(required = false) String areaCode, @RequestHeader(value = "X-Request-Id", required = false) String requestId, HttpServletRequest servletRequest) {
+    public ApiResponse<PersonalAchievementScoreResponse> getPersonalAchievementScores(@RequestParam(required = false) Long teacherUserId, @RequestParam(defaultValue = "2026") String evaluationYear, @RequestParam(required = false) String areaCode, @RequestHeader(value = "X-Request-Id", required = false) String requestId, HttpServletRequest servletRequest) {
         String rid = rid(requestId);
         return ApiResponse.ok(service.personalScores(user(servletRequest), teacherUserId, evaluationYear, areaCode, rid), rid);
     }

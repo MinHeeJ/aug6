@@ -15,6 +15,7 @@ import kr.ac.knue.commonfoundation.common.api.ValidationError;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Applies BASIC-60 setting validation, locking, persistence, and correlated change history. */
 @Service
 public class Basic60Service {
     private static final Set<String> USE_FLAGS = Set.of("Y", "N");
@@ -78,6 +79,27 @@ public class Basic60Service {
         return after;
     }
 
+    /**
+     * Saves all matrix rows atomically so a rule-version never exposes a partially updated rate
+     * matrix. Validation and lock checks intentionally run before each row is persisted.
+     */
+    @Transactional
+    public List<OperationalSettingRow> saveParticipationSettings(
+            SaveParticipationAllocationRateSettingsRequest request, Long userId, String requestId) {
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new BusinessValidationException("참여구분별 배분율 저장 요청이 올바르지 않습니다.",
+                    List.of(new ValidationError("items", "저장할 배분율 행을 입력하세요.")));
+        }
+        requireDraftRuleVersion(request.ruleVersionId());
+        List<OperationalSettingRow> saved = new ArrayList<>();
+        for (SaveParticipationAllocationRateSettingsRequest.SaveParticipationAllocationRateSettingItem item : request.items()) {
+            saved.add(saveParticipationSetting(
+                    item.toSaveRequest(request.ruleVersionId(), request.targetScope(), request.changeReason()),
+                    userId, requestId));
+        }
+        return saved;
+    }
+
     @Transactional
     public OperationalSettingRow saveScoreSetting(SaveManagementItemEvaluationScoreSettingRequest request, Long userId, String requestId) {
         validateCommon(request.ruleVersionId(), request.evaluationYear(), request.activeYn(), request.effectiveStartDate(), request.effectiveEndDate(), request.changeReason());
@@ -96,7 +118,6 @@ public class Basic60Service {
         recordIfChanged("management_item_evaluation_score_settings", scoreKey(request), "active_yn", before == null ? null : before.activeYn(), after.activeYn(), userId, request.changeReason(), requestId);
         return after;
     }
-
 
     private void validateCommon(Long ruleVersionId, String evaluationYear, String activeYn, java.time.LocalDate startDate, java.time.LocalDate endDate, String changeReason) {
         List<ValidationError> fields = new ArrayList<>();

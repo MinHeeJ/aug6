@@ -42,7 +42,7 @@ public class AchievementDataHistoryController {
             @RequestParam(required = false) String achievementType,
             @RequestParam(required = false) String achievementKey,
             @RequestParam(required = false) String employeeNo,
-            @RequestParam(required = false) String asOfAt,
+            @RequestParam(defaultValue = "2026-09-21T15:27:28") String asOfAt,
             @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             HttpServletRequest servletRequest) {
         CurrentUser currentUser = requireUser(servletRequest);

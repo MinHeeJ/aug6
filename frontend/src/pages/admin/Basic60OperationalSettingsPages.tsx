@@ -296,10 +296,22 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
             })
           : config.kind === "participation"
             ? await basic60Api.saveParticipationAllocationRateSetting({
-                ...common,
-                researcherCount: Number(form.researcherCount),
-                participationType: form.participationType.trim(),
-                allocationRate: Number(form.allocationRate),
+                ruleVersionId: Number(form.ruleVersionId),
+                targetScope: form.targetScope.trim(),
+                changeReason: form.changeReason.trim(),
+                items: rows.map((row) => ({
+                  areaCode: row.areaCode,
+                  itemCode: row.itemCode,
+                  evaluationYear: row.evaluationYear,
+                  elementCode: row.elementCode,
+                  managementItemCode: row.managementItemCode,
+                  researcherCount: row.researcherCount,
+                  participationType: row.participationType,
+                  allocationRate: row.allocationRate,
+                  activeYn: row.activeYn,
+                  effectiveStartDate: row.effectiveStartDate,
+                  effectiveEndDate: row.effectiveEndDate,
+                })),
               })
             : await basic60Api.saveManagementItemEvaluationScoreSetting({
                 ...common,
@@ -310,7 +322,8 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
                 sortOrder: Number(form.sortOrder),
               });
       setSuccessMessage("저장되었습니다");
-      if (response.data) setSelected(response.data);
+      if (response.data && !Array.isArray(response.data))
+        setSelected(response.data);
       await load();
     } catch (caught) {
       handleApiError(caught);
@@ -409,6 +422,18 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
             selected={selected}
             selectRow={selectRow}
             kind={config.kind}
+            updateAllocationRate={
+              config.kind === "participation"
+                ? (settingId, allocationRate) =>
+                    setRows((current) =>
+                      current.map((row) =>
+                        row.settingId === settingId
+                          ? { ...row, allocationRate }
+                          : row,
+                      ),
+                    )
+                : undefined
+            }
           />
         ) : null}
       </section>
@@ -418,6 +443,17 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
         setForm={setForm}
         fieldErrors={fieldErrors}
         onSave={() => void save()}
+        onCancel={
+          config.kind === "element"
+            ? () => {
+                if (selected) selectRow(selected);
+                else setForm(initialForm);
+                setFieldErrors({});
+                setError(null);
+                setSuccessMessage(null);
+              }
+            : undefined
+        }
         saving={saving}
       />
     </section>
@@ -548,11 +584,13 @@ function SettingsTable({
   selected,
   selectRow,
   kind,
+  updateAllocationRate,
 }: {
   rows: Basic60OperationalSetting[];
   selected: Basic60OperationalSetting | null;
   selectRow: (row: Basic60OperationalSetting) => void;
   kind: SettingKind;
+  updateAllocationRate?: (settingId: number, allocationRate: number) => void;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -597,7 +635,23 @@ function SettingsTable({
               {kind === "participation" ? (
                 <td className="px-3 py-2">
                   {row.researcherCount}명 / {row.participationType} /{" "}
-                  {row.allocationRate}
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    className="ml-1 w-20 rounded border border-ld px-1 py-0.5"
+                    value={row.allocationRate ?? 0}
+                    onClick={(event) => event.stopPropagation()}
+                    onChange={(event) =>
+                      updateAllocationRate?.(
+                        row.settingId,
+                        Number(event.target.value),
+                      )
+                    }
+                    data-testid={`participation-allocation-rate-${row.settingId}`}
+                    aria-label={`${row.managementItemCode} ${row.researcherCount}명 ${row.participationType} 배분율`}
+                  />
                 </td>
               ) : null}
               {kind === "score" ? (
@@ -632,6 +686,7 @@ function SettingForm({
   setForm,
   fieldErrors,
   onSave,
+  onCancel,
   saving,
 }: {
   kind: SettingKind;
@@ -639,6 +694,7 @@ function SettingForm({
   setForm: (next: FormState) => void;
   fieldErrors: Record<string, string>;
   onSave: () => void;
+  onCancel?: () => void;
   saving: boolean;
 }) {
   const update = (field: keyof FormState) => (value: string) =>
@@ -647,15 +703,33 @@ function SettingForm({
     <section className="rounded-md border border-ld bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-dark">설정 상세</h2>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          onClick={onSave}
-          disabled={saving}
-          data-testid={`${kind}-save-button`}
-        >
-          <Save size={16} /> {saving ? "저장 중" : "저장"}
-        </button>
+        <div className="flex items-center gap-2">
+          {onCancel ? (
+            <button
+              type="button"
+              className="rounded-md border border-ld px-4 py-2 text-sm font-semibold text-muted disabled:opacity-50"
+              onClick={onCancel}
+              disabled={saving}
+              data-testid={`${kind}-cancel-button`}
+            >
+              취소
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            onClick={onSave}
+            disabled={saving}
+            data-testid={`${kind}-save-button`}
+          >
+            <Save size={16} />{" "}
+            {saving
+              ? "저장 중"
+              : kind === "participation"
+                ? "일괄 저장"
+                : "저장"}
+          </button>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-4">
         <TextInput

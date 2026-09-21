@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/** HTTP boundary for BASIC-60 operational-setting queries and protected saves. */
 @RestController
 public class Basic60Controller {
     private final Basic60Service service;
@@ -64,13 +65,13 @@ public class Basic60Controller {
     }
 
     @PostMapping("/api/admin/participation-allocation-rate-settings/save")
-    public ApiResponse<OperationalSettingRow> saveParticipationAllocationRateSetting(
-            @Valid @RequestBody SaveParticipationAllocationRateSettingRequest request,
+    public ApiResponse<java.util.List<OperationalSettingRow>> saveParticipationAllocationRateSetting(
+            @Valid @RequestBody SaveParticipationAllocationRateSettingsRequest request,
             @RequestHeader(value = "X-Request-Id", required = false) String requestId,
             HttpServletRequest servletRequest) {
         CurrentUser user = requireSettingsAdmin(servletRequest);
         String effectiveRequestId = effectiveRequestId(requestId);
-        return ApiResponse.ok(service.saveParticipationSetting(request, user.userId(), effectiveRequestId), effectiveRequestId);
+        return ApiResponse.ok(service.saveParticipationSettings(request, user.userId(), effectiveRequestId), effectiveRequestId);
     }
 
     @GetMapping("/api/admin/management-item-evaluation-score-settings")
@@ -117,4 +118,5 @@ public class Basic60Controller {
         if (requestId != null && !requestId.trim().isBlank()) return requestId.trim();
         return UUID.randomUUID().toString();
     }
+
 }

@@ -11,7 +11,7 @@ public record EvaluationMaterialDeletionTarget(
         Long sourceAchievementId,
         String generationBatchId,
         String finalStatus,
-        boolean canDelete,
+        Boolean canDelete,
         String excludedReason,
         LocalDateTime createdAt) {
 }

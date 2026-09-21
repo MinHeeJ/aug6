@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   CourseAreaGroupGradeQueryPage,
   EvaluationElementManagementItemSettingsPage,
+  ManagementItemEvaluationScoreSettingsPage,
+  ParticipationAllocationRateSettingsPage,
 } from "./Basic60OperationalSettingsPages";
 
 function mockFetch(body: unknown) {
@@ -57,6 +59,88 @@ describe("BASIC-60 operational settings pages", () => {
       expect(screen.getByText("ATTENDANCE / 출석관리")).toBeInTheDocument(),
     );
     expect(screen.getByTestId("element-save-button")).toBeInTheDocument();
+  });
+
+  it("renders the participation-allocation matrix route with an editable API-backed rate", async () => {
+    mockFetch({
+      participationAllocationRateSettings: [
+        {
+          settingId: 2,
+          ruleVersionId: 10,
+          ruleVersionStatus: "DRAFT",
+          targetScope: "COLLEGE_RESEARCH",
+          areaCode: "RESEARCH",
+          itemCode: "PAPER",
+          evaluationYear: "2026",
+          elementCode: "AUTHORSHIP",
+          managementItemCode: "PAPER_SCORE",
+          researcherCount: 2,
+          participationType: "LEAD",
+          allocationRate: 0.7,
+          activeYn: "Y",
+          effectiveStartDate: "2026-01-01",
+          effectiveEndDate: "2026-12-31",
+          evaluationConfirmedYn: "N",
+        },
+      ],
+      page: 0,
+      pageSize: 20,
+      totalElements: 1,
+    });
+
+    render(<ParticipationAllocationRateSettingsPage />);
+
+    expect(
+      screen.getByTestId("participation-allocation-rate-settings-page"),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText("PAPER_SCORE 2명 LEAD 배분율")).toHaveValue(
+        0.7,
+      ),
+    );
+    expect(screen.getByTestId("participation-save-button")).toHaveTextContent(
+      "일괄 저장",
+    );
+  });
+
+  it("renders the management-item score route with the college-specific score row", async () => {
+    mockFetch({
+      managementItemEvaluationScoreSettings: [
+        {
+          settingId: 3,
+          ruleVersionId: 10,
+          ruleVersionStatus: "DRAFT",
+          targetScope: "COLLEGE_EDU",
+          areaCode: "EDUCATION",
+          itemCode: "LECTURE",
+          evaluationYear: "2026",
+          elementCode: "COURSE_GROUP",
+          managementItemCode: "ATTENDANCE",
+          organizationCode: "COL-EDU",
+          organizationName: "사범대학",
+          evaluationScore: 12.5,
+          maxScore: 20,
+          sortOrder: 1,
+          activeYn: "Y",
+          effectiveStartDate: "2026-01-01",
+          effectiveEndDate: "2026-12-31",
+          evaluationConfirmedYn: "N",
+        },
+      ],
+      page: 0,
+      pageSize: 20,
+      totalElements: 1,
+    });
+
+    render(<ManagementItemEvaluationScoreSettingsPage />);
+
+    expect(
+      screen.getByTestId("management-item-evaluation-score-settings-page"),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("COL-EDU / 12.5 (상한 20)")).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("score-save-button")).toBeInTheDocument();
   });
 
   it("renders read-only course area group grade query without mutation CTA", async () => {

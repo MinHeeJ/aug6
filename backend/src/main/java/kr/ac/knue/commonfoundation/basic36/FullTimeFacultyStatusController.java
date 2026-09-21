@@ -26,7 +26,7 @@ public class FullTimeFacultyStatusController {
     public ApiResponse<FullTimeFacultyStatusSearchResponse> listFullTimeFacultyStatuses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) Integer baseYear,
+            @RequestParam(defaultValue = "2026") Integer baseYear,
             @RequestParam(required = false) String organizationCode,
             @RequestParam(required = false) String employeeNo,
             @RequestParam(required = false) String name,

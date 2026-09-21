@@ -16,7 +16,7 @@ public record ScoreCalculationHistoryRow(
         BigDecimal distributionRate,
         String capAppliedYn,
         String formulaVersionId,
-        int generationNo,
+        Integer generationNo,
         BigDecimal calculatedScore,
         String requestId,
         LocalDateTime calculatedAt

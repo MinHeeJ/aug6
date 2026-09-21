@@ -62,7 +62,7 @@ public class ReportManagementController {
     }
 
     @GetMapping("/api/business/report-form-versions/current")
-    public ApiResponse<ReportFormVersionRow> getApplicableReportFormVersion(@RequestParam String reportId, @RequestParam(required = false) LocalDate baseDate,
+    public ApiResponse<ReportFormVersionRow> getApplicableReportFormVersion(@RequestParam(defaultValue = "FINAL_EVALUATION") String reportId, @RequestParam(required = false) LocalDate baseDate,
                                                                             @RequestHeader(value = "X-Request-Id", required = false) String requestId, HttpServletRequest request) {
         String rid = rid(requestId);
         return ApiResponse.ok(service.applicableFormVersion(user(request), reportId, baseDate), rid);

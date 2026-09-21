@@ -15,6 +15,9 @@ import kr.ac.knue.commonfoundation.common.api.ValidationError;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Applies BASIC-60 operational-setting validation, rule-version locks, and audit transactions.
+ */
 @Service
 public class Basic60Service {
     private static final Set<String> USE_FLAGS = Set.of("Y", "N");
@@ -38,6 +41,9 @@ public class Basic60Service {
                 mapper.listParticipationSettings(criteria), Math.max(criteria.page(), 0), criteria.safeSize(), mapper.countParticipationSettings(criteria));
     }
 
+    /**
+     * Reads persisted management-item score settings using only supplied search predicates.
+     */
     @Transactional(readOnly = true)
     public OperationalSettingResponses.ManagementItemEvaluationScoreSettingSearchResponse listScoreSettings(OperationalSettingSearchCriteria criteria) {
         return new OperationalSettingResponses.ManagementItemEvaluationScoreSettingSearchResponse(
@@ -49,7 +55,7 @@ public class Basic60Service {
         validateCommon(request.ruleVersionId(), request.evaluationYear(), request.activeYn(), request.effectiveStartDate(), request.effectiveEndDate(), request.changeReason());
         requireDraftRuleVersion(request.ruleVersionId());
         if (Boolean.TRUE.equals(mapper.hasConfirmedElementSettingImpact(request))) {
-            throw new ConflictException("CONFIRMED_DATA_LOCKED: 평가확정 데이터에 영향을 주는 평가요소별 관리항목 설정은 수정할 수 없습니다.");
+            throw new ConflictException("CONFIRMED_DATA_LOCKED", "평가확정 데이터에 영향을 주는 평가요소별 관리항목 설정은 수정할 수 없습니다.");
         }
         OperationalSettingRow before = mapper.findElementSettingByKey(request);
         mapper.upsertElementSetting(request, userId);
@@ -68,7 +74,9 @@ public class Basic60Service {
         throwIfFields(fields, "참여구분별 배분율 저장 요청이 올바르지 않습니다.");
         requireDraftRuleVersion(request.ruleVersionId());
         if (Boolean.TRUE.equals(mapper.hasConfirmedParticipationSettingImpact(request))) {
-            throw new ConflictException("CONFIRMED_DATA_LOCKED: 평가확정 데이터에 영향을 주는 참여구분별 배분율은 수정할 수 없습니다.");
+            throw new ConflictException(
+                    "CONFIRMED_DATA_LOCKED",
+                    "평가확정 데이터에 영향을 주는 참여구분별 배분율은 수정할 수 없습니다.");
         }
         OperationalSettingRow before = mapper.findParticipationSettingByKey(request);
         mapper.upsertParticipationSetting(request, userId);
@@ -78,6 +86,10 @@ public class Basic60Service {
         return after;
     }
 
+    /**
+     * Saves a college-scoped management-item score only when its rule version and affected data
+     * remain mutable, then records each observable value change in the same transaction.
+     */
     @Transactional
     public OperationalSettingRow saveScoreSetting(SaveManagementItemEvaluationScoreSettingRequest request, Long userId, String requestId) {
         validateCommon(request.ruleVersionId(), request.evaluationYear(), request.activeYn(), request.effectiveStartDate(), request.effectiveEndDate(), request.changeReason());
@@ -87,7 +99,9 @@ public class Basic60Service {
         throwIfFields(fields, "관리항목별 평가점수 저장 요청이 올바르지 않습니다.");
         requireDraftRuleVersion(request.ruleVersionId());
         if (Boolean.TRUE.equals(mapper.hasConfirmedScoreSettingImpact(request))) {
-            throw new ConflictException("CONFIRMED_DATA_LOCKED: 평가확정 데이터에 영향을 주는 관리항목별 평가점수는 수정할 수 없습니다.");
+            throw new ConflictException(
+                    "CONFIRMED_DATA_LOCKED",
+                    "평가확정 데이터에 영향을 주는 관리항목별 평가점수는 수정할 수 없습니다.");
         }
         OperationalSettingRow before = mapper.findScoreSettingByKey(request);
         mapper.upsertScoreSetting(request, userId);
@@ -113,7 +127,9 @@ public class Basic60Service {
     private void requireDraftRuleVersion(Long ruleVersionId) {
         String status = mapper.findRuleVersionStatus(ruleVersionId);
         if (status == null) throw new NotFoundException("규정버전을 찾을 수 없습니다.");
-        if (!DRAFT.equals(status)) throw new ConflictException("CONFIRMED_RULE_LOCKED: 확정 또는 폐기된 규정버전은 수정할 수 없습니다.");
+        if (!DRAFT.equals(status)) {
+            throw new ConflictException("CONFIRMED_RULE_LOCKED", "확정 또는 폐기된 규정버전은 수정할 수 없습니다.");
+        }
     }
 
     private void throwIfFields(List<ValidationError> fields, String message) {
@@ -129,6 +145,6 @@ public class Basic60Service {
     }
 
     private String elementKey(SaveEvaluationElementManagementItemSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.areaCode() + ":" + r.itemCode() + ":" + r.evaluationYear() + ":" + r.elementCode() + ":" + r.managementItemCode(); }
-    private String participationKey(SaveParticipationAllocationRateSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.managementItemCode() + ":" + r.researcherCount() + ":" + r.participationType(); }
-    private String scoreKey(SaveManagementItemEvaluationScoreSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.managementItemCode() + ":" + r.organizationCode(); }
+    private String participationKey(SaveParticipationAllocationRateSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.areaCode() + ":" + r.itemCode() + ":" + r.evaluationYear() + ":" + r.elementCode() + ":" + r.managementItemCode() + ":" + r.researcherCount() + ":" + r.participationType() + ":" + r.effectiveStartDate() + ":" + r.effectiveEndDate(); }
+    private String scoreKey(SaveManagementItemEvaluationScoreSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.areaCode() + ":" + r.itemCode() + ":" + r.evaluationYear() + ":" + r.elementCode() + ":" + r.managementItemCode() + ":" + r.organizationCode() + ":" + r.effectiveStartDate() + ":" + r.effectiveEndDate(); }
 }

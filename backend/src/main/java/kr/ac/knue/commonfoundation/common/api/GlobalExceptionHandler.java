@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -28,7 +30,7 @@ public class GlobalExceptionHandler {
                         .thenComparing(FieldError::getField))
                 .map(error -> new ValidationError(error.getField(), error.getDefaultMessage()))
                 .toList();
-        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.validation(fields)));
+        return ResponseEntity.badRequest().body(fail(ApiError.validation(fields)));
     }
 
     private static int validationFieldPriority(FieldError error) {
@@ -37,66 +39,73 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessValidationException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessValidation(BusinessValidationException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail(new ApiError("VALIDATION_ERROR", exception.getMessage(), exception.fields())));
+        return ResponseEntity.badRequest().body(fail(new ApiError("VALIDATION_ERROR", exception.getMessage(), exception.fields())));
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
+        return ResponseEntity.badRequest().body(fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
     }
 
     @ExceptionHandler(UnauthenticatedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthenticated(UnauthenticatedException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.fail(ApiError.of("UNAUTHENTICATED", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(fail(ApiError.of("UNAUTHENTICATED", exception.getMessage())));
     }
 
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException exception) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.fail(ApiError.of("FORBIDDEN", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(fail(ApiError.of("FORBIDDEN", exception.getMessage())));
     }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(NotFoundException exception) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail(ApiError.of("NOT_FOUND", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(fail(ApiError.of("NOT_FOUND", exception.getMessage())));
     }
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(fail(ApiError.of(exception.code(), exception.getMessage())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
+        return ResponseEntity.badRequest().body(fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
     }
 
     @ExceptionHandler(ExternalIntegrationException.class)
     public ResponseEntity<ApiResponse<Void>> handleExternalIntegration(ExternalIntegrationException exception) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(ApiResponse.fail(ApiError.of("EXTERNAL_INTEGRATION_ERROR", exception.getMessage())));
+                .body(fail(ApiError.of("EXTERNAL_INTEGRATION_ERROR", exception.getMessage())));
     }
 
     @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
     public ResponseEntity<ApiResponse<Void>> handleMissingRoute(Exception exception) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail(ApiError.of("NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.")));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(fail(ApiError.of("NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.")));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ApiResponse.fail(ApiError.of("METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다.")));
+                .body(fail(ApiError.of("METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다.")));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException exception) {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body(ApiResponse.fail(ApiError.of("UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다.")));
+                .body(fail(ApiError.of("UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다.")));
+    }
+
+    private ApiResponse<Void> fail(ApiError error) {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        String requestId = attributes == null ? null : attributes.getRequest().getHeader("X-Request-Id");
+        return ApiResponse.fail(error, requestId);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpectedError(Exception exception) {
         log.error("Unexpected system error", exception);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.fail(ApiError.of(
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(fail(ApiError.of(
                 "INTERNAL_ERROR", "오류가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요.")));
     }
 }

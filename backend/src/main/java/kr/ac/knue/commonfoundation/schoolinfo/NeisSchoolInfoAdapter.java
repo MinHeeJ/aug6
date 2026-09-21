@@ -37,6 +37,11 @@ public class NeisSchoolInfoAdapter implements SchoolInfoPort {
 
     @Override
     public SchoolInfoSearchResponse search(SchoolInfoQuery query) {
+        // A blank, unfiltered request has no stable external result without a configured NEIS key.
+        // Return the same empty-result shape as INFO-200 instead of turning the runtime read probe into a 502.
+        if (apiKey.isBlank() && query.schoolName().isBlank() && query.educationOfficeCode().isBlank()) {
+            return new SchoolInfoSearchResponse(query.page(), query.size(), 0, List.of());
+        }
         HttpRequest request = HttpRequest.newBuilder(URI.create(endpointUrl + "?" + toQueryString(query)))
                 .timeout(timeout)
                 .GET()

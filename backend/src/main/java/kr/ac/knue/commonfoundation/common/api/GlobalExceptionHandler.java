@@ -1,5 +1,6 @@
 package kr.ac.knue.commonfoundation.common.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Comparator;
 import java.util.List;
 import kr.ac.knue.commonfoundation.schoolinfo.ExternalIntegrationException;
@@ -17,6 +18,9 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+/**
+ * Translates domain and request validation failures into the application's shared API error envelope.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
@@ -61,8 +65,20 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
+    public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception, HttpServletRequest request) {
+        String code = "CONFLICT";
+        // Operational-setting forms need the specific lock reason to preserve the user's unsaved values.
+        if (request.getRequestURI().equals("/api/admin/evaluation-element-management-item-settings/save")
+                || request.getRequestURI().equals("/api/admin/participation-allocation-rate-settings/save")
+                || request.getRequestURI().equals("/api/admin/management-item-evaluation-score-settings/save")) {
+            if (exception.getMessage().startsWith("CONFIRMED_RULE_LOCKED:")) {
+                code = "CONFIRMED_RULE_LOCKED";
+            } else if (exception.getMessage().startsWith("CONFIRMED_DATA_LOCKED:")) {
+                code = "CONFIRMED_DATA_LOCKED";
+            }
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail(ApiError.of(code, exception.getMessage()), request.getHeader("X-Request-Id")));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

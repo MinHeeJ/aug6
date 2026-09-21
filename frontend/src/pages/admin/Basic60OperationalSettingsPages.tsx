@@ -163,6 +163,8 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [matrixRates, setMatrixRates] = useState<Record<string, string>>({});
+  const [matrixChangeReason, setMatrixChangeReason] = useState("");
 
   const load = async () => {
     try {
@@ -217,6 +219,14 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
                 }
               )?.managementItemEvaluationScoreSettings ?? []);
       setRows(nextRows);
+      setMatrixRates(
+        Object.fromEntries(
+          nextRows.map((row) => [
+            String(row.settingId),
+            row.allocationRate == null ? "" : String(row.allocationRate),
+          ]),
+        ),
+      );
       setTotalElements(data?.totalElements ?? 0);
       setSelected(null);
     } catch (caught) {
@@ -319,6 +329,56 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
     }
   };
 
+  const saveParticipationMatrix = async () => {
+    if (!matrixChangeReason.trim()) {
+      setFieldErrors({ changeReason: "변경 사유를 입력하세요." });
+      setError("변경 사유를 입력한 후 일괄 저장하세요.");
+      return;
+    }
+    const hasInvalidRate = rows.some((row) => {
+      const rate = Number(matrixRates[String(row.settingId)]);
+      return !Number.isFinite(rate) || rate < 0 || rate > 1;
+    });
+    if (hasInvalidRate) {
+      setError("모든 배분율은 0 이상 1 이하로 입력하세요.");
+      return;
+    }
+    if (!window.confirm("참여구분별 배분율 매트릭스를 일괄 저장하시겠습니까?"))
+      return;
+    try {
+      setSaving(true);
+      setError(null);
+      setFieldErrors({});
+      await Promise.all(
+        rows.map((row) =>
+          basic60Api.saveParticipationAllocationRateSetting({
+            ruleVersionId: row.ruleVersionId,
+            targetScope: row.targetScope,
+            areaCode: row.areaCode,
+            itemCode: row.itemCode,
+            evaluationYear: row.evaluationYear,
+            elementCode: row.elementCode,
+            managementItemCode: row.managementItemCode,
+            researcherCount: row.researcherCount,
+            participationType: row.participationType,
+            allocationRate: Number(matrixRates[String(row.settingId)]),
+            activeYn: row.activeYn,
+            effectiveStartDate: row.effectiveStartDate,
+            effectiveEndDate: row.effectiveEndDate,
+            changeReason: matrixChangeReason.trim(),
+          }),
+        ),
+      );
+      setSuccessMessage("배분율 매트릭스가 저장되었습니다.");
+      setMatrixChangeReason("");
+      await load();
+    } catch (caught) {
+      handleApiError(caught);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleApiError = (caught: unknown) => {
     if (caught instanceof ApiClientError) {
       if (caught.status === 403) setPermissionDenied(true);
@@ -404,12 +464,40 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
           />
         ) : null}
         {!loading && rows.length > 0 ? (
-          <SettingsTable
-            rows={rows}
-            selected={selected}
-            selectRow={selectRow}
-            kind={config.kind}
-          />
+          config.kind === "participation" ? (
+            <ParticipationAllocationMatrix
+              rows={rows}
+              matrixRates={matrixRates}
+              setMatrixRates={setMatrixRates}
+              changeReason={matrixChangeReason}
+              setChangeReason={setMatrixChangeReason}
+              fieldErrors={fieldErrors}
+              saving={saving}
+              onSave={() => void saveParticipationMatrix()}
+              onCancel={() => {
+                setMatrixRates(
+                  Object.fromEntries(
+                    rows.map((row) => [
+                      String(row.settingId),
+                      row.allocationRate == null
+                        ? ""
+                        : String(row.allocationRate),
+                    ]),
+                  ),
+                );
+                setMatrixChangeReason("");
+                setFieldErrors({});
+                setError(null);
+              }}
+            />
+          ) : (
+            <SettingsTable
+              rows={rows}
+              selected={selected}
+              selectRow={selectRow}
+              kind={config.kind}
+            />
+          )
         ) : null}
       </section>
       <SettingForm
@@ -418,9 +506,150 @@ function OperationalSettingPage({ config }: { config: SettingConfig }) {
         setForm={setForm}
         fieldErrors={fieldErrors}
         onSave={() => void save()}
+        onCancel={
+          config.kind === "element"
+            ? () => {
+                setForm(initialForm);
+                setSelected(null);
+                setFieldErrors({});
+                setError(null);
+                setSuccessMessage(null);
+              }
+            : undefined
+        }
         saving={saving}
       />
     </section>
+  );
+}
+
+function ParticipationAllocationMatrix({
+  rows,
+  matrixRates,
+  setMatrixRates,
+  changeReason,
+  setChangeReason,
+  fieldErrors,
+  saving,
+  onSave,
+  onCancel,
+}: {
+  rows: Basic60OperationalSetting[];
+  matrixRates: Record<string, string>;
+  setMatrixRates: (rates: Record<string, string>) => void;
+  changeReason: string;
+  setChangeReason: (reason: string) => void;
+  fieldErrors: Record<string, string>;
+  saving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const groupedRows = Array.from(
+    rows.reduce((groups, row) => {
+      const key = [
+        row.ruleVersionId,
+        row.targetScope,
+        row.areaCode,
+        row.itemCode,
+        row.evaluationYear,
+        row.elementCode,
+        row.managementItemCode,
+        row.researcherCount,
+      ].join(":");
+      const group = groups.get(key) ?? {
+        managementItemCode: row.managementItemCode,
+        researcherCount: row.researcherCount,
+        cells: [] as Basic60OperationalSetting[],
+      };
+      group.cells.push(row);
+      groups.set(key, group);
+      return groups;
+    }, new Map<string, { managementItemCode: string; researcherCount: number | null; cells: Basic60OperationalSetting[] }>()),
+  );
+
+  return (
+    <div data-testid="participation-allocation-rate-matrix">
+      <p className="mb-3 text-sm text-muted">
+        관리항목과 연구자 수별 참여구분 배분율을 수정한 뒤 일괄 저장합니다.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-ld text-sm">
+          <thead className="bg-lightsecondary text-left text-muted">
+            <tr>
+              <th className="px-3 py-2">관리항목</th>
+              <th className="px-3 py-2">연구자 수</th>
+              <th className="px-3 py-2">참여구분별 배분율</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-ld">
+            {groupedRows.map((group) => (
+              <tr
+                key={`${group.managementItemCode}:${group.researcherCount}:${group.cells[0].settingId}`}
+                data-testid={`participation-allocation-rate-matrix-row-${group.managementItemCode}-${group.researcherCount}`}
+              >
+                <td className="px-3 py-2">{group.managementItemCode}</td>
+                <td className="px-3 py-2">{group.researcherCount}명</td>
+                <td className="px-3 py-2">
+                  <div className="flex flex-wrap gap-3">
+                    {group.cells.map((cell) => (
+                      <label
+                        key={cell.settingId}
+                        className="flex items-center gap-2"
+                      >
+                        <span>{cell.participationType}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.0001"
+                          value={matrixRates[String(cell.settingId)] ?? ""}
+                          onChange={(event) =>
+                            setMatrixRates({
+                              ...matrixRates,
+                              [String(cell.settingId)]: event.target.value,
+                            })
+                          }
+                          disabled={saving}
+                          className="w-24 rounded-md border border-ld px-2 py-1"
+                          data-testid={`participation-allocation-rate-${cell.settingId}`}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+        <TextInput
+          label="변경 사유 *"
+          value={changeReason}
+          field="changeReason"
+          fieldErrors={fieldErrors}
+          onChange={setChangeReason}
+        />
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-ld bg-white px-4 py-2 text-sm font-semibold text-link"
+          onClick={onCancel}
+          disabled={saving}
+          data-testid="participation-allocation-rate-cancel-button"
+        >
+          취소
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          onClick={onSave}
+          disabled={saving}
+          data-testid="participation-allocation-rate-bulk-save-button"
+        >
+          <Save size={16} /> {saving ? "저장 중" : "일괄 저장"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -632,6 +861,7 @@ function SettingForm({
   setForm,
   fieldErrors,
   onSave,
+  onCancel,
   saving,
 }: {
   kind: SettingKind;
@@ -639,6 +869,7 @@ function SettingForm({
   setForm: (next: FormState) => void;
   fieldErrors: Record<string, string>;
   onSave: () => void;
+  onCancel?: () => void;
   saving: boolean;
 }) {
   const update = (field: keyof FormState) => (value: string) =>
@@ -647,15 +878,28 @@ function SettingForm({
     <section className="rounded-md border border-ld bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-dark">설정 상세</h2>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          onClick={onSave}
-          disabled={saving}
-          data-testid={`${kind}-save-button`}
-        >
-          <Save size={16} /> {saving ? "저장 중" : "저장"}
-        </button>
+        <div className="flex items-center gap-2">
+          {onCancel ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-md border border-ld bg-white px-4 py-2 text-sm font-semibold text-link"
+              onClick={onCancel}
+              disabled={saving}
+              data-testid="element-cancel-button"
+            >
+              취소
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            onClick={onSave}
+            disabled={saving}
+            data-testid={`${kind}-save-button`}
+          >
+            <Save size={16} /> {saving ? "저장 중" : "저장"}
+          </button>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-4">
         <TextInput

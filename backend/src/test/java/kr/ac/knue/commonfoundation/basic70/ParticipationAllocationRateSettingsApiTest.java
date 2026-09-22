@@ -25,12 +25,14 @@ import kr.ac.knue.commonfoundation.basic60.OperationalSettingRow;
 import kr.ac.knue.commonfoundation.basic60.SaveParticipationAllocationRateSettingRequest;
 import kr.ac.knue.commonfoundation.common.api.ConflictException;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -114,6 +116,25 @@ class ParticipationAllocationRateSettingsApiTest {
         verify(service, never()).saveParticipationSetting(any(), any(), any());
     }
 
+    /**
+     * Red contract: validation failures are also request-traceable, so the caller's identifier
+     * must be retained even when bean validation rejects the batch before the service runs.
+     */
+    @Test
+    void batchValidationErrorPreservesTheCallerRequestIdForAuditTraceability() throws Exception {
+        mockMvc.perform(post("/api/admin/participation-allocation-rate-settings/save")
+                        .requestAttr("currentUser", businessAdmin)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-B70-PARTICIPATION-VALIDATION")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(batchPayload(null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[?(@.field == 'ruleVersionId')]").isNotEmpty())
+                .andExpect(jsonPath("$.meta.requestId").value("REQ-B70-PARTICIPATION-VALIDATION"));
+        verify(service, never()).saveParticipationSetting(any(), any(), any());
+    }
+
     @Test
     void confirmedRuleVersionBatchReturnsTheConfirmedRuleLock() throws Exception {
         when(service.saveParticipationSetting(any(), eq(4L), eq("REQ-B70-PARTICIPATION-CONFIRMED")))
@@ -151,6 +172,16 @@ class ParticipationAllocationRateSettingsApiTest {
                 "participation_allocation_rate_settings", "10:COLLEGE_EDU:PAPER_SCORE:3:LEAD",
                 "UPDATE", "allocation_rate", "0.50", "0.70", 4L, "배분율 변경",
                 "REQ-B70-PARTICIPATION-AUDIT");
+    }
+
+    @Test
+    void participationOperationsRemainDeclaredInTheDurableOpenApiFixture() throws Exception {
+        String openApi = new String(new ClassPathResource("contracts/openapi.yaml").getInputStream().readAllBytes());
+        Assertions.assertThat(openApi)
+                .contains("/api/admin/participation-allocation-rate-settings:")
+                .contains("operationId: listParticipationAllocationRateSettings")
+                .contains("/api/admin/participation-allocation-rate-settings/save:")
+                .contains("operationId: saveParticipationAllocationRateSetting");
     }
 
     private OperationalSettingRow participationRow(

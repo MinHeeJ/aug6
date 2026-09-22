@@ -25,12 +25,14 @@ import kr.ac.knue.commonfoundation.basic60.OperationalSettingRow;
 import kr.ac.knue.commonfoundation.basic60.SaveManagementItemEvaluationScoreSettingRequest;
 import kr.ac.knue.commonfoundation.common.api.ConflictException;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -91,6 +93,25 @@ class ManagementItemEvaluationScoreSettingsApiTest {
                 .andExpect(jsonPath("$.data.evaluationScore").value(10.0))
                 .andExpect(jsonPath("$.meta.requestId").value("REQ-B70-SCORE-SAVE"));
         verify(service).saveScoreSetting(any(), eq(1L), eq("REQ-B70-SCORE-SAVE"));
+    }
+
+    /**
+     * Red contract for REQ-1838/REQ-1844: a rejected page-size selection is still a
+     * traceable request, so clients can correlate the validation result with their audit trail.
+     */
+    @Test
+    void scoreListRejectsUnsupportedPageSizeWhilePreservingTheCallerRequestId() throws Exception {
+        mockMvc.perform(get("/api/admin/management-item-evaluation-score-settings")
+                        .requestAttr("currentUser", systemAdmin)
+                        .cookie(sessionCookie())
+                        .header("X-Request-Id", "REQ-B70-SCORE-PAGE-SIZE")
+                        .param("pageSize", "25"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[?(@.field == 'pageSize')]").isNotEmpty())
+                .andExpect(jsonPath("$.meta.requestId").value("REQ-B70-SCORE-PAGE-SIZE"));
+        verify(service, never()).listScoreSettings(any());
     }
 
     @Test
@@ -160,6 +181,16 @@ class ManagementItemEvaluationScoreSettingsApiTest {
         verify(mapper).insertChangeHistory(
                 "management_item_evaluation_score_settings", "10:COLLEGE_EDU:ATTENDANCE:COL-EDU",
                 "UPDATE", "evaluation_score", "10.00", "12.50", 1L, "점수 조정", "REQ-B70-SCORE-AUDIT");
+    }
+
+    @Test
+    void managementItemEvaluationScoreOperationsRemainDeclaredInTheDurableOpenApiFixture() throws Exception {
+        String openApi = new String(new ClassPathResource("contracts/openapi.yaml").getInputStream().readAllBytes());
+        Assertions.assertThat(openApi)
+                .contains("/api/admin/management-item-evaluation-score-settings:")
+                .contains("operationId: listManagementItemEvaluationScoreSettings")
+                .contains("/api/admin/management-item-evaluation-score-settings/save:")
+                .contains("operationId: saveManagementItemEvaluationScoreSetting");
     }
 
     private OperationalSettingRow scoreRow(String evaluationScore, String maxScore, String activeYn) {

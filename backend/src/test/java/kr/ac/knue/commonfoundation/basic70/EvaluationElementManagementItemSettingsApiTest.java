@@ -21,10 +21,12 @@ import kr.ac.knue.commonfoundation.basic60.Basic60Mapper;
 import kr.ac.knue.commonfoundation.basic60.Basic60Service;
 import kr.ac.knue.commonfoundation.basic60.OperationalSettingResponses;
 import kr.ac.knue.commonfoundation.basic60.OperationalSettingRow;
+import kr.ac.knue.commonfoundation.basic60.OperationalSettingSearchCriteria;
 import kr.ac.knue.commonfoundation.basic60.SaveEvaluationElementManagementItemSettingRequest;
 import kr.ac.knue.commonfoundation.common.api.ConflictException;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -51,25 +53,39 @@ class EvaluationElementManagementItemSettingsApiTest {
     @Test
     void listEvaluationElementManagementItemSettingsReturnsTheB60SeedWithinItsActiveScope() throws Exception {
         when(service.listElementSettings(any())).thenReturn(new OperationalSettingResponses.EvaluationElementManagementItemSettingSearchResponse(
-                List.of(elementSeedRow()), 0, 20, 1));
+                List.of(elementSeedRow()), 1, 50, 1));
 
         mockMvc.perform(get("/api/admin/evaluation-element-management-item-settings")
                         .requestAttr("currentUser", businessAdmin)
                         .cookie(sessionCookie())
                         .header("X-Request-Id", "REQ-B70-ELEMENT-LIST")
+                        .param("page", "1")
                         .param("targetScope", "COLLEGE_EDU")
                         .param("areaCode", "EDUCATION")
                         .param("evaluationYear", "2026")
                         .param("activeYn", "Y")
-                        .param("pageSize", "20"))
+                        .param("pageSize", "50"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.evaluationElementManagementItemSettings[0].managementItemCode").value("ATTENDANCE"))
                 .andExpect(jsonPath("$.data.evaluationElementManagementItemSettings[0].targetScope").value("COLLEGE_EDU"))
                 .andExpect(jsonPath("$.data.evaluationElementManagementItemSettings[0].activeYn").value("Y"))
                 .andExpect(jsonPath("$.data.evaluationElementManagementItemSettings[0].teacherEditablePart").value("SELF_REPORT"))
-                .andExpect(jsonPath("$.data.pageSize").value(20))
+                .andExpect(jsonPath("$.data.page").value(1))
+                .andExpect(jsonPath("$.data.pageSize").value(50))
                 .andExpect(jsonPath("$.meta.requestId").value("REQ-B70-ELEMENT-LIST"));
+
+        ArgumentCaptor<OperationalSettingSearchCriteria> criteria = ArgumentCaptor.forClass(OperationalSettingSearchCriteria.class);
+        verify(service).listElementSettings(criteria.capture());
+        org.assertj.core.api.Assertions.assertThat(criteria.getValue())
+                .extracting(
+                        OperationalSettingSearchCriteria::page,
+                        OperationalSettingSearchCriteria::pageSize,
+                        OperationalSettingSearchCriteria::targetScope,
+                        OperationalSettingSearchCriteria::areaCode,
+                        OperationalSettingSearchCriteria::evaluationYear,
+                        OperationalSettingSearchCriteria::activeYn)
+                .containsExactly(1, 50, "COLLEGE_EDU", "EDUCATION", "2026", "Y");
     }
 
     @Test
@@ -111,6 +127,20 @@ class EvaluationElementManagementItemSettingsApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.error.fields[?(@.field == 'teacherEditablePart')]").isNotEmpty());
+        verify(service, never()).saveElementSetting(any(), any(), any());
+    }
+
+    @Test
+    void saveEvaluationElementManagementItemSettingReportsTheRuleVersionFieldWhenItIsMissing() throws Exception {
+        mockMvc.perform(post("/api/admin/evaluation-element-management-item-settings/save")
+                        .requestAttr("currentUser", systemAdmin)
+                        .cookie(sessionCookie())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(elementPayloadWithoutRuleVersion()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.fields[?(@.field == 'ruleVersionId')]").isNotEmpty());
         verify(service, never()).saveElementSetting(any(), any(), any());
     }
 
@@ -159,6 +189,12 @@ class EvaluationElementManagementItemSettingsApiTest {
         return """
                 {"ruleVersionId":10,"targetScope":"COLLEGE_EDU","areaCode":"EDUCATION","itemCode":"LECTURE","evaluationYear":"2026","elementCode":"COURSE_GROUP","managementItemCode":"ATTENDANCE","managementItemName":"출석관리","sortOrder":1,"activeYn":"Y","teacherEditablePart":"%s","effectiveStartDate":"2026-01-01","effectiveEndDate":"2026-12-31","changeReason":"관리항목 변경"}
                 """.formatted(teacherEditablePart);
+    }
+
+    private String elementPayloadWithoutRuleVersion() {
+        return """
+                {"targetScope":"COLLEGE_EDU","areaCode":"EDUCATION","itemCode":"LECTURE","evaluationYear":"2026","elementCode":"COURSE_GROUP","managementItemCode":"ATTENDANCE","managementItemName":"출석관리","sortOrder":1,"activeYn":"Y","teacherEditablePart":"SELF_REPORT","effectiveStartDate":"2026-01-01","effectiveEndDate":"2026-12-31","changeReason":"관리항목 변경"}
+                """;
     }
 
     private OperationalSettingRow elementSeedRow() {

@@ -25,6 +25,7 @@
             <arg column="sortOrder" javaType="int"/>
             <arg column="activeYn" javaType="string"/>
             <arg column="teacherEditableYn" javaType="string"/>
+            <arg column="teacherEditablePart" javaType="string"/>
             <arg column="effectiveStartDate" javaType="java.time.LocalDate"/>
             <arg column="effectiveEndDate" javaType="java.time.LocalDate"/>
             <arg column="evaluationConfirmedYn" javaType="string"/>
@@ -41,7 +42,7 @@
         s.management_item_name as "managementItemName", cast(null as varchar) as "organizationCode", cast(null as varchar) as "organizationName",
         cast(null as integer) as "researcherCount", cast(null as varchar) as "participationType", cast(null as numeric) as "allocationRate",
         cast(null as numeric) as "evaluationScore", cast(null as numeric) as "maxScore", s.sort_order as "sortOrder", s.active_yn as "activeYn",
-        s.teacher_editable_yn as "teacherEditableYn", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
+        s.teacher_editable_yn as "teacherEditableYn", s.teacher_editable_part as "teacherEditablePart", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
         s.evaluation_confirmed_yn as "evaluationConfirmedYn", s.change_reason as "changeReason", s.updated_by as "updatedBy", s.updated_at as "updatedAt"
     </sql>
     <sql id="participationColumns">
@@ -51,7 +52,7 @@
         cast(null as varchar) as "managementItemName", cast(null as varchar) as "organizationCode", cast(null as varchar) as "organizationName",
         s.researcher_count as "researcherCount", s.participation_type as "participationType", s.allocation_rate as "allocationRate",
         cast(null as numeric) as "evaluationScore", cast(null as numeric) as "maxScore", cast(null as integer) as "sortOrder", s.active_yn as "activeYn",
-        cast(null as varchar) as "teacherEditableYn", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
+        cast(null as varchar) as "teacherEditableYn", cast(null as varchar) as "teacherEditablePart", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
         s.evaluation_confirmed_yn as "evaluationConfirmedYn", s.change_reason as "changeReason", s.updated_by as "updatedBy", s.updated_at as "updatedAt"
     </sql>
     <sql id="scoreColumns">
@@ -61,7 +62,7 @@
         cast(null as varchar) as "managementItemName", s.organization_code as "organizationCode", s.organization_name as "organizationName",
         cast(null as integer) as "researcherCount", cast(null as varchar) as "participationType", cast(null as numeric) as "allocationRate",
         s.evaluation_score as "evaluationScore", s.max_score as "maxScore", s.sort_order as "sortOrder", s.active_yn as "activeYn",
-        cast(null as varchar) as "teacherEditableYn", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
+        cast(null as varchar) as "teacherEditableYn", cast(null as varchar) as "teacherEditablePart", s.effective_start_date as "effectiveStartDate", s.effective_end_date as "effectiveEndDate",
         s.evaluation_confirmed_yn as "evaluationConfirmedYn", s.change_reason as "changeReason", s.updated_by as "updatedBy", s.updated_at as "updatedAt"
     </sql>
 
@@ -106,11 +107,11 @@
           and s.management_item_code = upper(#{request.managementItemCode})
     </select>
     <insert id="upsertElementSetting">
-        insert into evaluation_element_management_item_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, management_item_name, sort_order, active_yn, teacher_editable_yn, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
-        values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), upper(#{request.managementItemCode}), #{request.managementItemName}, #{request.sortOrder}, #{request.activeYn}, #{request.teacherEditableYn}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
+        insert into evaluation_element_management_item_settings (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code, management_item_name, sort_order, active_yn, teacher_editable_yn, teacher_editable_part, effective_start_date, effective_end_date, change_reason, created_by, updated_by)
+        values (#{request.ruleVersionId}, upper(#{request.targetScope}), upper(#{request.areaCode}), upper(#{request.itemCode}), #{request.evaluationYear}, upper(#{request.elementCode}), #{request.managementItemCode}, #{request.managementItemName}, #{request.sortOrder}, #{request.activeYn}, case when upper(trim(#{request.teacherEditablePart})) = 'NONE' then 'N' else 'Y' end, #{request.teacherEditablePart}, #{request.effectiveStartDate}, #{request.effectiveEndDate}, #{request.changeReason}, #{updatedBy}, #{updatedBy})
         on conflict (rule_version_id, target_scope, area_code, item_code, evaluation_year, element_code, management_item_code)
         do update set management_item_name = EXCLUDED.management_item_name, sort_order = EXCLUDED.sort_order, active_yn = EXCLUDED.active_yn,
-                      teacher_editable_yn = EXCLUDED.teacher_editable_yn, effective_start_date = EXCLUDED.effective_start_date, effective_end_date = EXCLUDED.effective_end_date,
+                      teacher_editable_yn = EXCLUDED.teacher_editable_yn, teacher_editable_part = EXCLUDED.teacher_editable_part, effective_start_date = EXCLUDED.effective_start_date, effective_end_date = EXCLUDED.effective_end_date,
                       change_reason = EXCLUDED.change_reason, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
     </insert>
 

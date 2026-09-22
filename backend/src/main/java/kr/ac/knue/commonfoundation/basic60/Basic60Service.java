@@ -1,11 +1,17 @@
 package kr.ac.knue.commonfoundation.basic60;
 
 import java.math.BigDecimal;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import kr.ac.knue.commonfoundation.auth.CurrentUser;
 import kr.ac.knue.commonfoundation.common.api.BusinessValidationException;
 import kr.ac.knue.commonfoundation.common.api.ConflictException;
@@ -15,6 +21,9 @@ import kr.ac.knue.commonfoundation.common.api.ValidationError;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Applies version, confirmed-result, validation, and audit guards to operational evaluation settings.
+ */
 @Service
 public class Basic60Service {
     private static final Set<String> USE_FLAGS = Set.of("Y", "N");
@@ -44,6 +53,25 @@ public class Basic60Service {
                 mapper.listScoreSettings(criteria), Math.max(criteria.page(), 0), criteria.safeSize(), mapper.countScoreSettings(criteria));
     }
 
+    /** Builds an XLSX export from exactly the same filtered element-setting slice used by the list endpoint. */
+    @Transactional(readOnly = true)
+    public byte[] downloadElementSettings(OperationalSettingSearchCriteria criteria) {
+        return createWorkbook("평가요소별 관리항목 설정", listElementSettings(criteria).evaluationElementManagementItemSettings());
+    }
+
+    /** Builds an XLSX export from exactly the same filtered participation-setting slice used by the list endpoint. */
+    @Transactional(readOnly = true)
+    public byte[] downloadParticipationSettings(OperationalSettingSearchCriteria criteria) {
+        return createWorkbook("참여구분별 배분율 설정", listParticipationSettings(criteria).participationAllocationRateSettings());
+    }
+
+    /** Builds an XLSX export from exactly the same filtered score-setting slice used by the list endpoint. */
+    @Transactional(readOnly = true)
+    public byte[] downloadScoreSettings(OperationalSettingSearchCriteria criteria) {
+        return createWorkbook("관리항목별 평가점수 설정", listScoreSettings(criteria).managementItemEvaluationScoreSettings());
+    }
+
+    /** Saves one management-item setting only when its rule version remains editable. */
     @Transactional
     public OperationalSettingRow saveElementSetting(SaveEvaluationElementManagementItemSettingRequest request, Long userId, String requestId) {
         validateCommon(request.ruleVersionId(), request.evaluationYear(), request.activeYn(), request.effectiveStartDate(), request.effectiveEndDate(), request.changeReason());
@@ -55,6 +83,7 @@ public class Basic60Service {
         mapper.upsertElementSetting(request, userId);
         OperationalSettingRow after = mapper.findElementSettingByKey(request);
         recordIfChanged("evaluation_element_management_item_settings", elementKey(request), "management_item_name", before == null ? null : before.managementItemName(), after.managementItemName(), userId, request.changeReason(), requestId);
+        recordIfChanged("evaluation_element_management_item_settings", elementKey(request), "teacher_editable_part", before == null ? null : before.teacherEditablePart(), after.teacherEditablePart(), userId, request.changeReason(), requestId);
         recordIfChanged("evaluation_element_management_item_settings", elementKey(request), "active_yn", before == null ? null : before.activeYn(), after.activeYn(), userId, request.changeReason(), requestId);
         return after;
     }
@@ -131,4 +160,34 @@ public class Basic60Service {
     private String elementKey(SaveEvaluationElementManagementItemSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.areaCode() + ":" + r.itemCode() + ":" + r.evaluationYear() + ":" + r.elementCode() + ":" + r.managementItemCode(); }
     private String participationKey(SaveParticipationAllocationRateSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.managementItemCode() + ":" + r.researcherCount() + ":" + r.participationType(); }
     private String scoreKey(SaveManagementItemEvaluationScoreSettingRequest r) { return r.ruleVersionId() + ":" + r.targetScope() + ":" + r.managementItemCode() + ":" + r.organizationCode(); }
+
+    /** Creates a dependency-free XLSX workbook so exports remain available in the shared application runtime. */
+    private byte[] createWorkbook(String sheetName, List<OperationalSettingRow> rows) {
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream(); ZipOutputStream zip = new ZipOutputStream(output)) {
+            put(zip, "[Content_Types].xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/><Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/></Types>");
+            put(zip, "_rels/.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>");
+            put(zip, "xl/workbook.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"" + xml(sheetName) + "\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
+            put(zip, "xl/_rels/workbook.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>");
+            put(zip, "xl/worksheets/sheet1.xml", worksheet(rows));
+            zip.finish();
+            return output.toByteArray();
+        } catch (IOException exception) {
+            throw new UncheckedIOException("운영 설정 Excel 파일을 생성하지 못했습니다.", exception);
+        }
+    }
+
+    private String worksheet(List<OperationalSettingRow> rows) {
+        StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>");
+        xml.append("<row r=\"1\">").append(cell("규정버전")).append(cell("적용대상")).append(cell("평가영역")).append(cell("평가항목")).append(cell("평가요소")).append(cell("관리항목")).append(cell("소속대학")).append(cell("연구자 수")).append(cell("참여구분")).append(cell("배분율")).append(cell("평가점수")).append(cell("상한점수")).append(cell("사용여부")).append(cell("적용시작일")).append(cell("적용종료일")).append("</row>");
+        for (int index = 0; index < rows.size(); index++) {
+            OperationalSettingRow row = rows.get(index);
+            xml.append("<row r=\"").append(index + 2).append("\">")
+                    .append(cell(row.versionCode())).append(cell(row.targetScope())).append(cell(row.areaCode())).append(cell(row.itemCode())).append(cell(row.elementCode())).append(cell(row.managementItemCode())).append(cell(row.organizationCode())).append(cell(row.researcherCount())).append(cell(row.participationType())).append(cell(row.allocationRate())).append(cell(row.evaluationScore())).append(cell(row.maxScore())).append(cell(row.activeYn())).append(cell(row.effectiveStartDate())).append(cell(row.effectiveEndDate())).append("</row>");
+        }
+        return xml.append("</sheetData></worksheet>").toString();
+    }
+
+    private String cell(Object value) { return "<c t=\"inlineStr\"><is><t>" + xml(value == null ? "" : value.toString()) + "</t></is></c>"; }
+    private String xml(String value) { return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;"); }
+    private void put(ZipOutputStream zip, String name, String value) throws IOException { zip.putNextEntry(new ZipEntry(name)); zip.write(value.getBytes(StandardCharsets.UTF_8)); zip.closeEntry(); }
 }

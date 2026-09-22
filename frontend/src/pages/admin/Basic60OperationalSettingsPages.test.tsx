@@ -202,5 +202,82 @@ describe("BASIC-60 operational settings pages", () => {
 
     rerender(<ManagementItemEvaluationScoreSettingsPage />);
     expect(screen.getByTestId("score-download-button")).toBeEnabled();
+    expect(screen.getByLabelText("표시 건수")).toHaveValue("20");
+    expect(screen.getByRole("option", { name: "50건" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "100건" })).toBeInTheDocument();
+  });
+
+  it("confirms a BASIC-70 settings save, shows a toast, and refreshes the current list", async () => {
+    const row = {
+      settingId: 1,
+      ruleVersionId: 10,
+      ruleVersionStatus: "DRAFT",
+      targetScope: "COLLEGE_EDU",
+      areaCode: "EDUCATION",
+      itemCode: "LECTURE",
+      evaluationYear: "2026",
+      elementCode: "COURSE_GROUP",
+      managementItemCode: "ATTENDANCE",
+      managementItemName: "출석관리",
+      sortOrder: 1,
+      activeYn: "Y",
+      teacherEditablePart: "SELF_REPORT",
+      effectiveStartDate: "2026-01-01",
+      effectiveEndDate: "2026-12-31",
+      evaluationConfirmedYn: "N",
+    };
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const isSave = init?.method === "POST";
+      return {
+        ok: true,
+        headers: new Headers({ "content-type": "application/json" }),
+        json: async () => ({
+          success: true,
+          data: isSave
+            ? row
+            : {
+                evaluationElementManagementItemSettings: [row],
+                page: 0,
+                pageSize: 20,
+                totalElements: 1,
+              },
+          meta: { requestId: "B70-UI-SAVE" },
+        }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const confirmation = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<EvaluationElementManagementItemSettingsPage />);
+    await waitFor(() =>
+      expect(screen.getByTestId("element-settings-row")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId("element-settings-row"));
+    fireEvent.change(screen.getByLabelText("변경 사유 *"), {
+      target: { value: "BASIC-70 저장 검증" },
+    });
+    fireEvent.click(screen.getByTestId("element-save-button"));
+
+    expect(confirmation).toHaveBeenCalledWith(
+      "평가요소별 관리항목 설정 값을 저장하시겠습니까?",
+    );
+    await waitFor(() =>
+      expect(screen.getByText("저장되었습니다")).toBeInTheDocument(),
+    );
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url, init]) =>
+          String(url).includes(
+            "/api/admin/evaluation-element-management-item-settings",
+          ) && (init as RequestInit | undefined)?.method === "POST",
+      ),
+    ).toHaveLength(1);
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes(
+          "/api/admin/evaluation-element-management-item-settings?",
+        ),
+      ).length,
+    ).toBeGreaterThanOrEqual(2);
   });
 });

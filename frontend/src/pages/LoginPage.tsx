@@ -683,6 +683,15 @@ export function canAccessAdminRoute(
     );
   }
   if (
+    [
+      "/admin/evaluation-element-management-item-settings",
+      "/admin/management-item-evaluation-score-settings",
+      "/admin/participation-allocation-rate-settings",
+    ].includes(path)
+  ) {
+    return user.roles.includes("R04") || user.roles.includes("R09");
+  }
+  if (
     user.roles.includes("R09") &&
     [
       "/admin/department-chair-confirmations",

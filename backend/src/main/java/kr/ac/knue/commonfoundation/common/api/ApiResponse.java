@@ -5,6 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Provides the shared success and failure envelope, including request correlation metadata.
+ */
 public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String, Object> meta) {
     public static <T> ApiResponse<T> ok(T data) {
         return new ApiResponse<>(true, data, null, defaultMeta());
@@ -24,6 +27,17 @@ public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String
 
     public static ApiResponse<Void> fail(ApiError error) {
         return new ApiResponse<>(false, null, error, defaultMeta());
+    }
+
+    /**
+     * Builds an error envelope while retaining a client-supplied request identifier for audit correlation.
+     */
+    public static ApiResponse<Void> fail(ApiError error, String requestId) {
+        Map<String, Object> meta = defaultMeta();
+        if (requestId != null && !requestId.trim().isBlank()) {
+            meta.put("requestId", requestId.trim());
+        }
+        return new ApiResponse<>(false, null, error, meta);
     }
 
     private static Map<String, Object> defaultMeta() {

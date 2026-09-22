@@ -145,6 +145,43 @@ describe("LoginPage", () => {
     );
   });
 
+  it("shows each BASIC-70 setting route only when both the seeded menu and R04/R09 role allow it", () => {
+    const settingPaths = [
+      "/admin/evaluation-element-management-item-settings",
+      "/admin/participation-allocation-rate-settings",
+      "/admin/management-item-evaluation-score-settings",
+    ];
+    const menus = settingPaths.map((path, index) => ({
+      menuId: 710 + index,
+      menuName: `설정 메뉴 ${index + 1}`,
+      screenId: ADMIN_ROUTES.find((route) => route.path === path)?.screenId,
+      url: path,
+      displayOrder: index + 1,
+      children: [],
+    }));
+    const businessAdmin: CurrentUser = {
+      userId: 4,
+      loginId: "business-admin",
+      employeeNo: "E0004",
+      name: "업무담당자",
+      roles: ["R04"],
+      menus,
+    };
+    const teacherWithMenu: CurrentUser = {
+      ...businessAdmin,
+      userId: 2,
+      loginId: "teacher",
+      roles: ["R01"],
+    };
+
+    expect(
+      settingPaths.every((path) => canAccessAdminRoute(businessAdmin, path)),
+    ).toBe(true);
+    expect(
+      settingPaths.every((path) => !canAccessAdminRoute(teacherWithMenu, path)),
+    ).toBe(true);
+  });
+
   it("allows domain-data researcher profile detail URLs through the placeholder pattern", () => {
     const researcherUser: CurrentUser = {
       userId: 2,

@@ -127,6 +127,66 @@ export const schoolInfoApi = {
   },
 };
 
+export type EducationAchievement = {
+  achievementId: number;
+  managementItemCode: string;
+  occurredOn: string;
+  detailContent: string;
+  status: string;
+};
+
+export type EducationAchievementPage = {
+  items: EducationAchievement[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export const educationAchievementApi = {
+  listLectureEvaluations(page = 0, size = 20) {
+    return apiRequest<EducationAchievementPage>(
+      `/api/business/lecture-evaluations?page=${page}&size=${size}`,
+    );
+  },
+  saveLectureEvaluation(
+    payload: Pick<
+      EducationAchievement,
+      "managementItemCode" | "occurredOn" | "detailContent"
+    >,
+  ) {
+    return apiRequest<EducationAchievement>(
+      "/api/business/lecture-evaluations",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+  listGraduateAchievements(page = 0, size = 20) {
+    return apiRequest<EducationAchievementPage>(
+      `/api/business/graduate-achievements?page=${page}&size=${size}`,
+    );
+  },
+  async uploadStudentGuidance(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch(
+      "/api/business/student-guidance-achievements/excel/uploads",
+      { method: "POST", credentials: "include", body: form },
+    );
+    const body = (await response.json()) as ApiResponse<{
+      totalCount: number;
+      successCount: number;
+      failureCount: number;
+      errorFileRef?: string | null;
+    }>;
+    if (!response.ok || !body.success)
+      throw new ApiClientError(
+        response.status,
+        body.error?.message ?? "Excel 업로드에 실패했습니다.",
+        body.error,
+      );
+    return body;
+  },
+};
+
 export type MenuItem = {
   menuId: number;
   parentMenuId?: number;

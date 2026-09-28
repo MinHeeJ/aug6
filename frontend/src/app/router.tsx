@@ -131,6 +131,10 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import {
+  EducationAchievementPage,
+  StudentGuidanceExcelPage,
+} from "../pages/admin/EducationAchievementPages";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -319,6 +323,14 @@ function renderAdminPage(path: string | undefined) {
       return <ParticipationAllocationRateSettingsPage />;
     case "/faculty/course-area-group-grades":
       return <CourseAreaGroupGradeQueryPage />;
+    case "/faculty/lecture-evaluations":
+    case "/faculty/lecture-achievements":
+      return <EducationAchievementPage kind="lecture" />;
+    case "/faculty/student-guidance-achievements":
+    case "/faculty/student-guidance-achievements/excel":
+      return <StudentGuidanceExcelPage />;
+    case "/faculty/graduate-achievements":
+      return <EducationAchievementPage kind="graduate" />;
     case "/admin/calculation-formulas":
       return <CalculationFormulaManagementPage />;
     case "/admin/evaluation-rule-sets":

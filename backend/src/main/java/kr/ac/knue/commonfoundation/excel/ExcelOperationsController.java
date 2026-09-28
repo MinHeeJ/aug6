@@ -30,7 +30,8 @@ public class ExcelOperationsController {
     public ApiResponse<ExcelTemplateSearchResponse> listUploadTemplates(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String businessType,
             @RequestParam(required = false) String effectiveDate, HttpServletRequest request) {
-        requireAdmin(request);
+        if ("STUDENT_GUIDANCE_ACHIEVEMENT".equals(businessType)) requireAdminOrStudentGuidance(request);
+        else requireAdmin(request);
         return ApiResponse.ok(service.listUploadTemplates(page, size, businessType, effectiveDate));
     }
 
@@ -42,20 +43,20 @@ public class ExcelOperationsController {
 
     @GetMapping("/api/admin/excel-upload-templates/{templateId}/file")
     public ResponseEntity<byte[]> downloadUploadTemplate(@PathVariable String templateId, HttpServletRequest request) {
-        CurrentUser user = requireAdmin(request);
+        CurrentUser user = service.isStudentGuidanceTemplate(templateId) ? requireAdminOrStudentGuidance(request) : requireAdmin(request);
         return download(service.downloadUploadTemplate(templateId, user.userId()));
     }
 
     @PostMapping(value = "/api/admin/excel-uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ExcelUploadResult> createExcelUpload(@RequestParam String businessType,
             @RequestParam(required = false) String templateId, @RequestPart("file") MultipartFile file, HttpServletRequest request) {
-        CurrentUser user = requireAdmin(request);
+        CurrentUser user = "STUDENT_GUIDANCE_ACHIEVEMENT".equals(businessType) ? requireAdminOrStudentGuidance(request) : requireAdmin(request);
         return ApiResponse.ok(service.createExcelUpload(businessType, templateId, file, user.userId()));
     }
 
     @PostMapping("/api/admin/excel-uploads/{uploadId}/commit")
     public ApiResponse<ExcelUploadCommitResult> commitExcelUpload(@PathVariable String uploadId, HttpServletRequest request) {
-        CurrentUser user = requireAdmin(request);
+        CurrentUser user = service.isStudentGuidanceUpload(uploadId) ? requireAdminOrStudentGuidance(request) : requireAdmin(request);
         return ApiResponse.ok(service.commitExcelUpload(uploadId, user.userId()));
     }
 
@@ -63,20 +64,22 @@ public class ExcelOperationsController {
     public ApiResponse<ExcelUploadHistorySearchResponse> listExcelUploadHistories(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String uploadId,
             @RequestParam(required = false) String originalFileName, HttpServletRequest request) {
-        requireAdmin(request);
+        if (uploadId != null && service.isStudentGuidanceUpload(uploadId)) requireAdminOrStudentGuidance(request);
+        else requireAdmin(request);
         return ApiResponse.ok(service.listExcelUploadHistories(page, size, uploadId, originalFileName));
     }
 
     @GetMapping("/api/admin/excel-upload-errors")
     public ApiResponse<ExcelUploadErrorSearchResponse> listExcelUploadErrors(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size, @RequestParam String uploadId, HttpServletRequest request) {
-        requireAdmin(request);
+        if (service.isStudentGuidanceUpload(uploadId)) requireAdminOrStudentGuidance(request);
+        else requireAdmin(request);
         return ApiResponse.ok(service.listExcelUploadErrors(page, size, uploadId));
     }
 
     @GetMapping("/api/admin/excel-upload-errors/download")
     public ResponseEntity<byte[]> downloadExcelUploadErrors(@RequestParam String uploadId, HttpServletRequest request) {
-        CurrentUser user = requireAdmin(request);
+        CurrentUser user = service.isStudentGuidanceUpload(uploadId) ? requireAdminOrStudentGuidance(request) : requireAdmin(request);
         return download(service.downloadExcelUploadErrors(uploadId, user.userId()));
     }
 
@@ -91,6 +94,14 @@ public class ExcelOperationsController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(file.originalFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
                 .contentType(MediaType.parseMediaType(file.contentType()))
                 .body(file.content());
+    }
+
+    /** Allows the existing administrator role and the dedicated R07 bulk-upload role only. */
+    private CurrentUser requireAdminOrStudentGuidance(HttpServletRequest request) {
+        Object user = request.getAttribute("currentUser");
+        if (!(user instanceof CurrentUser currentUser)) throw new UnauthenticatedException();
+        if (currentUser.roles() == null || (!currentUser.roles().contains("R09") && !currentUser.roles().contains("R07"))) throw new ForbiddenException();
+        return currentUser;
     }
 
     private CurrentUser requireAdmin(HttpServletRequest request) {

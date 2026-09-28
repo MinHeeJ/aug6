@@ -131,6 +131,10 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { LectureEvaluationAchievementPage } from "../pages/faculty/SCR-LECTURE-EVALUATION-ACHIEVEMENT";
+import { LectureAchievementPage } from "../pages/faculty/SCR-LECTURE-ACHIEVEMENT";
+import { DegreeCompletionAchievementPage } from "../pages/faculty/SCR-DEGREE-COMPLETION-ACHIEVEMENT";
+import { StudentGuidanceAchievementPage } from "../pages/faculty/SCR-STUDENT-GUIDANCE-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -319,6 +323,14 @@ function renderAdminPage(path: string | undefined) {
       return <ParticipationAllocationRateSettingsPage />;
     case "/faculty/course-area-group-grades":
       return <CourseAreaGroupGradeQueryPage />;
+    case "/faculty/education/lecture-evaluation-achievements":
+      return <LectureEvaluationAchievementPage />;
+    case "/faculty/education/lecture-achievements":
+      return <LectureAchievementPage />;
+    case "/faculty/education/student-guidance-achievements":
+      return <StudentGuidanceAchievementPage />;
+    case "/faculty/education/degree-completion-achievements":
+      return <DegreeCompletionAchievementPage />;
     case "/admin/calculation-formulas":
       return <CalculationFormulaManagementPage />;
     case "/admin/evaluation-rule-sets":

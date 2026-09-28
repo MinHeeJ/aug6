@@ -2911,6 +2911,85 @@ export const achievementVerificationApi = {
   },
 };
 
+export type EducationAchievementType =
+  | "LECTURE_EVALUATION"
+  | "LECTURE_ACHIEVEMENT"
+  | "STUDENT_GUIDANCE"
+  | "DEGREE_COMPLETION";
+
+export type EducationAchievement = {
+  achievementId: number;
+  achievementType: EducationAchievementType;
+  achievementStatus: string;
+  evaluationYear: string;
+  ownerUserId: number;
+  managementItemCode?: string | null;
+  managementItemValue?: string | null;
+  achievementTitle: string;
+  occurrenceDate: string;
+  evaluationConfirmedYn: "Y" | "N";
+  updatedAt: string;
+  degreeCompletionStudentDetails?: Array<DegreeCompletionStudentDetailPayload>;
+  studentGuidanceDetails?: Array<StudentGuidanceDetailPayload>;
+};
+
+export type EducationAchievementSearchResponse = {
+  items: EducationAchievement[];
+  page: number;
+  size: PageSize;
+  totalElements: number;
+};
+
+export type DegreeCompletionStudentDetailPayload = {
+  degreeType: "MASTER" | "DOCTOR" | "DOCTORATE";
+  studentName: string;
+  thesisTitle: string;
+  degreeAwardedOn: string;
+};
+
+export type StudentGuidanceDetailPayload = {
+  studentGuidanceDetailId?: number;
+  studentName: string;
+  guidanceStartDate: string;
+  guidanceEndDate: string;
+  studentCount: number;
+};
+
+export type SaveEducationAchievementPayload = {
+  achievementId?: number;
+  achievementType: EducationAchievementType;
+  managementItemCode: string;
+  occurrenceDate: string;
+  degreeCompletionStudentDetails?: DegreeCompletionStudentDetailPayload[];
+  studentGuidanceDetails?: StudentGuidanceDetailPayload[];
+};
+
+export const educationAchievementApi = {
+  listEducationAchievements(params: {
+    achievementType: EducationAchievementType;
+    page?: number;
+    size?: PageSize;
+  }) {
+    const query = new URLSearchParams({
+      achievementType: params.achievementType,
+      page: String(params.page ?? 0),
+      size: String(params.size ?? 20),
+    });
+    return apiRequest<EducationAchievementSearchResponse>(
+      `/api/business/education-achievements?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  saveEducationAchievement(payload: SaveEducationAchievementPayload) {
+    return apiRequest<EducationAchievement>(
+      "/api/business/education-achievements",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type GrantPaymentApprovalTarget = {
   approvalId: number;
   grantApplicationId: number;

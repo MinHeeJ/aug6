@@ -44,7 +44,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         try {
             CurrentUser user = authService.currentUser(sessionId);
             request.setAttribute("currentUser", user);
-            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), permissionRoute(request, user))) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
                 return;
             }
@@ -56,6 +56,27 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
     private boolean requiresMenuPermission(String path) {
         return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
+    }
+
+    /**
+     * R07 has a menu grant only for the student-guidance bulk workflow. The controller still
+     * verifies the specific template or upload before allowing an Excel operation.
+     */
+    private String permissionRoute(HttpServletRequest request, CurrentUser user) {
+        String path = request.getRequestURI();
+        if (user.roles().contains("R07") && isStudentGuidanceExcelPath(path)) {
+            return "/faculty/education/student-guidance-achievements";
+        }
+        return pathToUiRoute(path);
+    }
+
+    private boolean isStudentGuidanceExcelPath(String path) {
+        return path.equals("/api/admin/excel-upload-templates")
+                || path.matches("/api/admin/excel-upload-templates/[^/]+/file")
+                || path.equals("/api/admin/excel-uploads")
+                || path.matches("/api/admin/excel-uploads/[^/]+/commit")
+                || path.equals("/api/admin/excel-upload-errors")
+                || path.equals("/api/admin/excel-upload-errors/download");
     }
 
     private String pathToUiRoute(String apiPath) {
@@ -77,6 +98,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";
+        }
+        // Education-achievement APIs share the lecture-evaluation menu permission for this Phase 2 slice.
+        if (apiPath.equals("/api/business/education-achievements")
+                || apiPath.matches("/api/business/education-achievements/[^/]+(?:/transition)?")) {
+            return "/faculty/education/lecture-evaluation-achievements";
         }
         if (apiPath.equals("/api/admin/business-status-codes")) {
             return "/admin/business-status-codes";

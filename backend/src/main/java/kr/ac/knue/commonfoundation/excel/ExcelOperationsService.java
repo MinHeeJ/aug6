@@ -3,6 +3,7 @@ package kr.ac.knue.commonfoundation.excel;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -23,6 +24,19 @@ public class ExcelOperationsService {
 
     public ExcelOperationsService(ExcelOperationsMapper mapper) {
         this.mapper = mapper;
+    }
+
+    /** Identifies the dedicated student-guidance template before granting the R07 bulk workflow. */
+    @Transactional(readOnly = true)
+    public boolean isStudentGuidanceTemplate(String templateId) {
+        ExcelTemplateRow template = mapper.findUploadTemplate(templateId);
+        return template != null && "STUDENT_GUIDANCE_ACHIEVEMENT".equals(template.businessType());
+    }
+
+    /** Identifies a student-guidance upload so R07 cannot access another business upload. */
+    @Transactional(readOnly = true)
+    public boolean isStudentGuidanceUpload(String uploadId) {
+        return "STUDENT_GUIDANCE_ACHIEVEMENT".equals(mapper.findUploadBusinessType(uploadId));
     }
 
     @Transactional(readOnly = true)
@@ -87,6 +101,25 @@ public class ExcelOperationsService {
             throw new BusinessValidationException("엑셀 업로드 요청이 올바르지 않습니다.", List.of(new ValidationError("file", "기존 첨부파일 정책의 Excel 허용 확장자만 업로드할 수 있습니다.")));
         }
         String uploadId = "UP-" + UUID.randomUUID();
+        String normalizedBusinessType = businessType.trim();
+        if ("STUDENT_GUIDANCE_ACHIEVEMENT".equals(normalizedBusinessType)) {
+            ExcelTemplateRow template = blankToNull(templateId) == null ? null : mapper.findUploadTemplate(templateId.trim());
+            if (template == null || !normalizedBusinessType.equals(template.businessType())) {
+                throw new BusinessValidationException("학생지도 업로드 양식이 올바르지 않습니다.", List.of(new ValidationError("templateId", "학생지도 현행 업로드 양식을 선택하세요.")));
+            }
+            StudentGuidanceInspection inspection = inspectStudentGuidanceUpload(uploadId, file, userId);
+            int total = inspection.rows().size();
+            int errorCount = (int) inspection.rows().stream().filter(StudentGuidanceUploadRow::invalid).count();
+            int successCount = total - errorCount;
+            String status = errorCount == 0 ? "VALIDATED" : "REJECTED";
+            mapper.insertUploadFile(uploadId, normalizedBusinessType, templateId.trim(), "upload-file-" + uploadId, originalName, userId, status);
+            for (StudentGuidanceUploadRow row : inspection.rows()) {
+                mapper.insertStagingRow("STG-" + UUID.randomUUID(), uploadId, row.rowNumber(), row.payload(), row.invalid() ? "ERROR" : "NORMAL");
+            }
+            for (ExcelUploadErrorRow error : inspection.errors()) mapper.insertUploadError(error);
+            mapper.upsertUploadHistory(uploadId, total, successCount, errorCount, 0, 0, 1_000, userId);
+            return new ExcelUploadResult(uploadId, normalizedBusinessType, originalName, status, total, successCount, errorCount, 0, 0, inspection.errors());
+        }
         List<ExcelUploadErrorRow> errors = inspectUpload(uploadId, file);
         int total = Math.max(1, countDataRows(file));
         int errorCount = errors.size();
@@ -109,6 +142,10 @@ public class ExcelOperationsService {
         if (blankToNull(uploadId) == null || mapper.existsUpload(uploadId) == 0) throw new NotFoundException("업로드 파일을 찾을 수 없습니다.");
         if (mapper.countUploadErrorsForCommit(uploadId) > 0) throw new ConflictException("오류 행이 있어 전체 반영을 차단했습니다.");
         int savedCount = mapper.countNormalStagingRows(uploadId);
+        if ("STUDENT_GUIDANCE_ACHIEVEMENT".equals(mapper.findUploadBusinessType(uploadId))) {
+            mapper.commitStudentGuidanceRows(uploadId, userId);
+            mapper.insertStudentGuidanceManagementValues(uploadId, userId);
+        }
         mapper.markUploadCommitted(uploadId);
         mapper.upsertUploadHistory(uploadId, savedCount, savedCount, 0, 0, savedCount, 1_000, userId);
         mapper.deleteNormalStagingRows(uploadId);
@@ -175,6 +212,64 @@ public class ExcelOperationsService {
         }
         if (!fields.isEmpty()) throw new BusinessValidationException("업로드 양식 저장 요청이 올바르지 않습니다.", fields);
     }
+
+    /** Validates the student-guidance template rows before any achievement data is written. */
+    private StudentGuidanceInspection inspectStudentGuidanceUpload(String uploadId, MultipartFile file, Long userId) {
+        List<StudentGuidanceUploadRow> rows = new ArrayList<>();
+        List<ExcelUploadErrorRow> errors = new ArrayList<>();
+        Set<String> duplicateKeys = new HashSet<>();
+        try {
+            List<String> lines = new String(file.getBytes(), StandardCharsets.UTF_8).lines().filter(line -> !line.isBlank()).toList();
+            if (lines.size() < 2) throw new IllegalArgumentException("업로드할 데이터 행이 없습니다.");
+            String[] headers = lines.get(0).split(",", -1);
+            for (int rowIndex = 1; rowIndex < lines.size(); rowIndex++) {
+                String[] values = lines.get(rowIndex).split(",", -1);
+                String managementItemCode = csvValue(headers, values, "관리항목코드");
+                String occurrenceDate = csvValue(headers, values, "발생일");
+                String studentName = csvValue(headers, values, "지도학생");
+                String guidanceStartDate = csvValue(headers, values, "지도시작일");
+                String guidanceEndDate = csvValue(headers, values, "지도종료일");
+                String studentCount = csvValue(headers, values, "학생수");
+                int spreadsheetRow = rowIndex + 1;
+                String errorColumn = null;
+                String reason = null;
+                try {
+                    if (blankToNull(managementItemCode) == null || blankToNull(occurrenceDate) == null || blankToNull(studentName) == null || blankToNull(guidanceStartDate) == null || blankToNull(guidanceEndDate) == null || blankToNull(studentCount) == null) {
+                        errorColumn = "필수항목"; reason = "관리항목코드, 발생일, 지도학생, 지도기간, 학생수는 모두 필수입니다.";
+                    } else {
+                        LocalDate start = LocalDate.parse(guidanceStartDate); LocalDate end = LocalDate.parse(guidanceEndDate);
+                        if (end.isBefore(start)) { errorColumn = "지도종료일"; reason = "지도 종료일은 시작일보다 빠를 수 없습니다."; }
+                        else if (Integer.parseInt(studentCount) <= 0) { errorColumn = "학생수"; reason = "학생수는 1명 이상이어야 합니다."; }
+                        else {
+                            String duplicateKey = studentName.trim() + "|" + guidanceStartDate + "|" + guidanceEndDate;
+                            if (!duplicateKeys.add(duplicateKey) || mapper.countStudentGuidanceDuplicate(studentName.trim(), guidanceStartDate, guidanceEndDate, userId) > 0) { errorColumn = "지도학생"; reason = "중복 학생지도 데이터는 자동 갱신할 수 없습니다."; }
+                        }
+                    }
+                } catch (RuntimeException invalidValue) { errorColumn = "입력값"; reason = "날짜는 YYYY-MM-DD 형식이고 학생수는 양의 정수여야 합니다."; }
+                boolean invalid = errorColumn != null;
+                if (invalid) errors.add(new ExcelUploadErrorRow("ERR-" + UUID.randomUUID(), uploadId, spreadsheetRow, errorColumn, "", "INVALID_VALUE", reason, "양식의 오류 행을 수정한 후 다시 업로드하세요."));
+                rows.add(new StudentGuidanceUploadRow(spreadsheetRow, guidancePayload(managementItemCode, occurrenceDate, studentName, guidanceStartDate, guidanceEndDate, studentCount), invalid));
+            }
+        } catch (Exception failure) {
+            errors.add(new ExcelUploadErrorRow("ERR-" + UUID.randomUUID(), uploadId, 1, "파일", "", "INVALID_TEMPLATE", "학생지도 CSV 양식의 헤더와 데이터 행을 확인하세요.", "템플릿을 다시 다운로드하여 사용하세요."));
+            rows.add(new StudentGuidanceUploadRow(1, "{}", true));
+        }
+        return new StudentGuidanceInspection(rows, errors);
+    }
+
+    private String csvValue(String[] headers, String[] values, String name) {
+        for (int index = 0; index < headers.length; index++) if (name.equals(headers[index].trim())) return index < values.length ? values[index].trim() : "";
+        return "";
+    }
+
+    private String guidancePayload(String managementItemCode, String occurrenceDate, String studentName, String guidanceStartDate, String guidanceEndDate, String studentCount) {
+        return "{\"managementItemCode\":\"" + json(managementItemCode) + "\",\"occurrenceDate\":\"" + json(occurrenceDate) + "\",\"studentName\":\"" + json(studentName) + "\",\"guidanceStartDate\":\"" + json(guidanceStartDate) + "\",\"guidanceEndDate\":\"" + json(guidanceEndDate) + "\",\"studentCount\":\"" + json(studentCount) + "\"}";
+    }
+
+    private String json(String value) { return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\""); }
+
+    private record StudentGuidanceInspection(List<StudentGuidanceUploadRow> rows, List<ExcelUploadErrorRow> errors) { }
+    private record StudentGuidanceUploadRow(int rowNumber, String payload, boolean invalid) { }
 
     private List<ExcelUploadErrorRow> inspectUpload(String uploadId, MultipartFile file) {
         try {

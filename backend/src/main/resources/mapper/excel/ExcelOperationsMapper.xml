@@ -129,6 +129,60 @@
         select count(*) from excel_upload_files where upload_id = #{uploadId} and status != 'DELETED'
     </select>
 
+    <select id="findUploadBusinessType" resultType="string">
+        select business_type from excel_upload_files where upload_id = #{uploadId} and status != 'DELETED'
+    </select>
+
+    <select id="countStudentGuidanceDuplicate" resultType="int">
+        select count(*)
+        from education_achievements a
+        join student_guidance_details d on d.achievement_id = a.achievement_id
+        where a.achievement_type = 'STUDENT_GUIDANCE' and a.deleted_yn = 'N'
+          and a.owner_user_id = #{ownerUserId} and d.student_name = #{studentName}
+          and d.guidance_start_date = CAST(#{guidanceStartDate} AS date)
+          and d.guidance_end_date = CAST(#{guidanceEndDate} AS date)
+    </select>
+
+    <insert id="commitStudentGuidanceRows">
+        with source as (
+            select row_number,
+                   row_payload -&gt;&gt; 'managementItemCode' as management_item_code,
+                   row_payload -&gt;&gt; 'occurrenceDate' as occurrence_date,
+                   row_payload -&gt;&gt; 'studentName' as student_name,
+                   row_payload -&gt;&gt; 'guidanceStartDate' as guidance_start_date,
+                   row_payload -&gt;&gt; 'guidanceEndDate' as guidance_end_date,
+                   row_payload -&gt;&gt; 'studentCount' as student_count
+            from excel_upload_staging_rows
+            where upload_id = #{uploadId} and validation_status = 'NORMAL'
+        ), created as (
+            insert into education_achievements (
+                achievement_key, achievement_type, evaluation_year, owner_user_id, management_number,
+                achievement_title, occurred_on, created_by, updated_by, change_reason
+            )
+            select 'SG-UPLOAD-' || #{uploadId} || '-' || row_number, 'STUDENT_GUIDANCE',
+                   to_char(CAST(occurrence_date AS date), 'YYYY'), #{userId}, #{uploadId} || ':' || row_number,
+                   student_name || ' 학생지도', CAST(occurrence_date AS date), #{userId}, #{userId}, '학생지도 Excel 일괄등록'
+            from source
+            returning achievement_id, management_number
+        )
+        insert into student_guidance_details (
+            achievement_id, student_name, guidance_start_date, guidance_end_date, student_count, created_by, updated_by
+        )
+        select created.achievement_id, source.student_name, CAST(source.guidance_start_date AS date),
+               CAST(source.guidance_end_date AS date), CAST(source.student_count AS integer), #{userId}, #{userId}
+        from created join source on created.management_number = #{uploadId} || ':' || source.row_number
+    </insert>
+
+    <insert id="insertStudentGuidanceManagementValues">
+        insert into education_achievement_management_values (
+            achievement_id, management_item_code, value_text, created_by, updated_by
+        )
+        select a.achievement_id, s.row_payload -&gt;&gt; 'managementItemCode', s.row_payload -&gt;&gt; 'managementItemCode', #{userId}, #{userId}
+        from excel_upload_staging_rows s
+        join education_achievements a on a.management_number = #{uploadId} || ':' || s.row_number
+        where s.upload_id = #{uploadId} and s.validation_status = 'NORMAL'
+    </insert>
+
     <update id="markUploadCommitted">
         update excel_upload_files set validation_status = 'COMMITTED' where upload_id = #{uploadId}
     </update>

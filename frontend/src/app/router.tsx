@@ -131,6 +131,10 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { GraduateDegreeAchievementPage } from "../pages/achievement/GraduateDegreeAchievementPage";
+import { LectureEvaluationAchievementPage } from "../pages/achievement/LectureEvaluationAchievementPage";
+import { LecturePerformanceAchievementPage } from "../pages/achievement/LecturePerformanceAchievementPage";
+import { StudentGuidanceAchievementPage } from "../pages/achievement/StudentGuidanceAchievementPage";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -174,6 +178,78 @@ export function AppRouter() {
           title="인증 오류"
           message={auth.error ?? "인증 처리 중 오류가 발생했습니다."}
         />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievement/lecture-evaluations") {
+    if (!canAccessEducationAchievement(auth.user, path)) {
+      return (
+        <AdminShell>
+          <PermissionState
+            title="권한이 없습니다"
+            message="강의평가 실적 관리 화면 접근 권한이 없습니다."
+          />
+        </AdminShell>
+      );
+    }
+    return (
+      <AdminShell>
+        <LectureEvaluationAchievementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievement/student-guidance") {
+    if (!canAccessEducationAchievement(auth.user, path)) {
+      return (
+        <AdminShell>
+          <PermissionState
+            title="권한이 없습니다"
+            message="학생지도 실적 관리 화면 접근 권한이 없습니다."
+          />
+        </AdminShell>
+      );
+    }
+    return (
+      <AdminShell>
+        <StudentGuidanceAchievementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievement/lecture-performances") {
+    if (!canAccessLecturePerformanceAchievement(auth.user)) {
+      return (
+        <AdminShell>
+          <PermissionState
+            title="권한이 없습니다"
+            message="강의실적 관리 화면 접근 권한이 없습니다."
+          />
+        </AdminShell>
+      );
+    }
+    return (
+      <AdminShell>
+        <LecturePerformanceAchievementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievement/graduate-degrees") {
+    if (!canAccessGraduateDegreeAchievement(auth.user)) {
+      return (
+        <AdminShell>
+          <PermissionState
+            title="권한이 없습니다"
+            message="석·박사 배출 실적 관리 화면 접근 권한이 없습니다."
+          />
+        </AdminShell>
+      );
+    }
+    return (
+      <AdminShell>
+        <GraduateDegreeAchievementPage />
       </AdminShell>
     );
   }
@@ -529,4 +605,44 @@ function routeMatchesPath(routePath: string, actualPath: string): boolean {
     `^${routePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\{[^/]+\\\}/g, "[^/]+")}$`,
   );
   return pattern.test(actualPath);
+}
+
+function canAccessEducationAchievement(
+  user: CurrentUser | null,
+  route: string,
+): boolean {
+  if (!user) {
+    return false;
+  }
+  const permittedRoles =
+    route === "/achievement/student-guidance"
+      ? ["R01", "R02", "R04", "R07"]
+      : ["R01", "R02", "R04"];
+  return (
+    user.roles.some((role) => permittedRoles.includes(role)) &&
+    containsMenuRoute(user.menus, route)
+  );
+}
+
+function canAccessLecturePerformanceAchievement(
+  user: CurrentUser | null,
+): boolean {
+  return canAccessEducationAchievement(
+    user,
+    "/achievement/lecture-performances",
+  );
+}
+
+function canAccessGraduateDegreeAchievement(user: CurrentUser | null): boolean {
+  return canAccessEducationAchievement(user, "/achievement/graduate-degrees");
+}
+
+function containsMenuRoute(
+  menus: CurrentUser["menus"],
+  targetRoute: string,
+): boolean {
+  return menus.some(
+    (menu) =>
+      menu.url === targetRoute || containsMenuRoute(menu.children, targetRoute),
+  );
 }

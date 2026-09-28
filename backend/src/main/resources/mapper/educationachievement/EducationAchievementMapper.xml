@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.educationachievement.EducationAchievementMapper">
+    <resultMap id="EducationAchievementRowMap" type="kr.ac.knue.commonfoundation.educationachievement.EducationAchievementRow">
+        <constructor>
+            <arg column="achievementId" javaType="long"/>
+            <arg column="facultyUserId" javaType="long"/>
+            <arg column="achievementType" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="occurrenceDate" javaType="java.time.LocalDate"/>
+            <arg column="certificationStatus" javaType="string"/>
+            <arg column="attachmentToken" javaType="string"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="DegreeCompletionDetailMap" type="kr.ac.knue.commonfoundation.educationachievement.DegreeCompletionDetail">
+        <constructor>
+            <arg column="degreeType" javaType="string"/>
+            <arg column="studentName" javaType="string"/>
+            <arg column="thesisTitle" javaType="string"/>
+            <arg column="degreeAwardedDate" javaType="java.time.LocalDate"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="StudentGuidanceDetailMap" type="kr.ac.knue.commonfoundation.educationachievement.StudentGuidanceDetail">
+        <constructor><arg column="guidanceStudentName" javaType="string"/><arg column="guidanceStartDate" javaType="java.time.LocalDate"/><arg column="guidanceEndDate" javaType="java.time.LocalDate"/><arg column="studentCount" javaType="int"/></constructor>
+    </resultMap>
+    <sql id="columns">
+        ea.achievement_id as "achievementId", ea.faculty_user_id as "facultyUserId",
+        ea.achievement_type as "achievementType", ea.management_item_code as "managementItemCode",
+        ea.occurrence_date as "occurrenceDate", ea.certification_status as "certificationStatus",
+        ea.attachment_token as "attachmentToken"
+    </sql>
+    <sql id="filters">
+        where ea.achievement_type = #{achievementType}
+          and ea.deleted_yn = 'N'
+          <if test="facultyUserId != null">and ea.faculty_user_id = #{facultyUserId}</if>
+    </sql>
+    <select id="list" resultMap="EducationAchievementRowMap">
+        select <include refid="columns"/> from education_achievements ea <include refid="filters"/>
+        order by ea.occurrence_date desc, ea.achievement_id desc limit #{limit} offset #{offset}
+    </select>
+    <select id="count" resultType="long">
+        select count(*) from education_achievements ea <include refid="filters"/>
+    </select>
+    <select id="findById" resultMap="EducationAchievementRowMap">
+        select <include refid="columns"/> from education_achievements ea
+        where ea.achievement_id = #{achievementId} and ea.deleted_yn = 'N'
+    </select>
+    <select id="insert" resultMap="EducationAchievementRowMap">
+        insert into education_achievements (faculty_user_id, achievement_type, management_item_code, occurrence_date,
+            created_by, updated_by, change_reason)
+        values (#{facultyUserId}, #{request.achievementType}, #{request.managementItemCode}, #{request.occurrenceDate},
+            #{changedBy}, #{changedBy}, #{changeReason})
+        returning achievement_id as "achievementId", faculty_user_id as "facultyUserId", achievement_type as "achievementType",
+            management_item_code as "managementItemCode", occurrence_date as "occurrenceDate",
+            certification_status as "certificationStatus", attachment_token as "attachmentToken"
+    </select>
+    <update id="update">
+        update education_achievements
+        set management_item_code = #{request.managementItemCode}, occurrence_date = #{request.occurrenceDate},
+            updated_by = #{changedBy}, updated_at = current_timestamp, change_reason = #{changeReason}
+        where achievement_id = #{request.achievementId} and deleted_yn = 'N'
+    </update>
+    <select id="findDegreeCompletionDetails" resultMap="DegreeCompletionDetailMap">
+        select degree_type as "degreeType", student_name as "studentName", thesis_title as "thesisTitle",
+               degree_awarded_date as "degreeAwardedDate"
+        from degree_completion_student_details
+        where achievement_id = #{achievementId}
+        order by degree_completion_detail_id
+    </select>
+    <delete id="deleteDegreeCompletionDetails">
+        delete from degree_completion_student_details where achievement_id = #{achievementId}
+    </delete>
+    <insert id="insertDegreeCompletionDetail">
+        insert into degree_completion_student_details (
+            achievement_id, degree_type, student_name, thesis_title, degree_awarded_date, created_by, updated_by
+        ) values (
+            #{achievementId}, #{detail.degreeType}, #{detail.studentName}, #{detail.thesisTitle},
+            #{detail.degreeAwardedDate}, #{changedBy}, #{changedBy}
+        )
+    </insert>
+    <select id="findStudentGuidanceDetails" resultMap="StudentGuidanceDetailMap">
+        select student_name as "guidanceStudentName", guidance_start_date as "guidanceStartDate", guidance_end_date as "guidanceEndDate", student_count as "studentCount" from student_guidance_details where achievement_id = #{achievementId} order by guidance_detail_id
+    </select>
+    <delete id="deleteStudentGuidanceDetails">delete from student_guidance_details where achievement_id = #{achievementId}</delete>
+    <insert id="insertStudentGuidanceDetail">
+        insert into student_guidance_details (achievement_id, student_name, guidance_start_date, guidance_end_date, student_count, created_by, updated_by) values (#{achievementId}, #{detail.guidanceStudentName}, #{detail.guidanceStartDate}, #{detail.guidanceEndDate}, #{detail.studentCount}, #{changedBy}, #{changedBy})
+    </insert>
+    <select id="hasActiveEducationInputPeriod" resultType="int">
+        select count(*) from input_period_settings
+        where area_code = 'EDUCATION' and active_yn = 'Y'
+          and start_at &lt;= current_timestamp and end_at &gt;= current_timestamp
+    </select>
+    <update id="updateStatus">
+        update education_achievements set certification_status = #{toStatus}, updated_by = #{changedBy}, updated_at = current_timestamp
+        where achievement_id = #{achievementId} and certification_status = #{fromStatus} and deleted_yn = 'N'
+    </update>
+    <update id="logicalDelete">
+        update education_achievements
+        set deleted_yn = 'Y', deleted_at = current_timestamp, deleted_by = #{changedBy},
+            delete_reason = #{deleteReason}, certification_status = 'DELETED', updated_at = current_timestamp,
+            updated_by = #{changedBy}, change_reason = #{deleteReason}
+        where achievement_id = #{achievementId} and deleted_yn = 'N'
+    </update>
+    <select id="allowedTransition" resultType="int">
+        select count(*) from business_status_transitions
+        where business_type = 'FACULTY_ACHIEVEMENT' and definition_version = 'DRAFT'
+          and from_status_code = #{fromStatus} and to_status_code = #{toStatus} and executor_role_code = #{roleCode}
+    </select>
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id)
+        values ('FACULTY_ACHIEVEMENT', #{targetKey}, #{changeType}, 'certification_status', #{beforeValue}, #{afterValue},
+            #{changedBy}, #{changeReason}, #{requestId})
+    </insert>
+    <insert id="insertStatusHistory">
+        insert into education_achievement_status_histories (achievement_id, from_status_code, to_status_code, changed_by, change_reason)
+        values (#{achievementId}, #{fromStatus}, #{toStatus}, #{changedBy}, #{changeReason})
+    </insert>
+</mapper>

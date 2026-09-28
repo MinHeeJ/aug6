@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.educationachievements.EducationAchievementMapper">
+  <sql id="achievementColumns">achievement_id AS "achievementId", management_item_code AS "managementItemCode", occurred_on AS "occurredOn", detail_content AS "detailContent", status, deleted_yn = 'Y' AS deleted</sql>
+  <select id="listByType" resultType="kr.ac.knue.commonfoundation.educationachievements.EducationAchievement">
+    SELECT <include refid="achievementColumns"/> FROM education_achievements
+    WHERE achievement_type = #{achievementType} AND deleted_yn = 'N'
+    <if test="facultyUserId != null">AND faculty_user_id = #{facultyUserId}</if>
+    ORDER BY achievement_id DESC LIMIT #{size} OFFSET #{offset}
+  </select>
+  <select id="countByType" resultType="long">SELECT COUNT(*) FROM education_achievements WHERE achievement_type = #{achievementType} AND deleted_yn = 'N'<if test="facultyUserId != null"> AND faculty_user_id = #{facultyUserId}</if></select>
+  <insert id="insertAchievement">INSERT INTO education_achievements (achievement_type, faculty_user_id, management_item_code, occurred_on, detail_content, status, created_by, updated_by) VALUES (#{achievementType}, #{facultyUserId}, #{managementItemCode}, #{occurredOn}, #{detailContent}, 'DRAFT', #{facultyUserId}, #{facultyUserId})</insert>
+  <select id="findLatestByType" resultType="kr.ac.knue.commonfoundation.educationachievements.EducationAchievement">SELECT <include refid="achievementColumns"/> FROM education_achievements WHERE faculty_user_id = #{facultyUserId} AND achievement_type = #{achievementType} AND deleted_yn = 'N' ORDER BY achievement_id DESC LIMIT 1</select>
+  <select id="findById" resultType="kr.ac.knue.commonfoundation.educationachievements.EducationAchievement">SELECT <include refid="achievementColumns"/> FROM education_achievements WHERE achievement_id = #{achievementId} AND deleted_yn = 'N'<if test="facultyUserId != null"> AND faculty_user_id = #{facultyUserId}</if></select>
+  <update id="updateAchievement">UPDATE education_achievements SET management_item_code = #{managementItemCode}, occurred_on = #{occurredOn}, detail_content = #{detailContent}, updated_at = CURRENT_TIMESTAMP, updated_by = #{facultyUserId} WHERE achievement_id = #{achievementId} AND faculty_user_id = #{facultyUserId} AND deleted_yn = 'N'</update>
+  <insert id="insertChangeHistory">INSERT INTO data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason, request_id) VALUES (#{targetBusiness}, #{targetKey}, 'CREATE', NULL, NULL, 'education achievement saved', #{changedBy}, 'BASIC-72 저장', #{requestId})</insert>
+  <insert id="insertUploadHistory">INSERT INTO student_guidance_upload_histories (uploaded_by, file_name, total_count, success_count, failure_count, error_file_ref, status) VALUES (#{uploadedBy}, #{fileName}, #{totalCount}, #{successCount}, #{failureCount}, #{errorFileRef}, 'VALIDATED')</insert>
+  <select id="findLatestUploadHistoryId" resultType="long">SELECT upload_history_id FROM student_guidance_upload_histories WHERE uploaded_by = #{uploadedBy} ORDER BY upload_history_id DESC LIMIT 1</select>
+</mapper>

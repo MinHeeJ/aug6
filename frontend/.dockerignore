@@ -1,10 +1,6 @@
-.git
 node_modules
 .next
 dist
 build
 coverage
-.vite
-.cache
-*.log
-*.local
+.git

@@ -1,7 +1,10 @@
 package kr.ac.knue.commonfoundation.common.api;
 
+/** Signals a conflict with a stable business code suitable for API clients. */
 public class ConflictException extends RuntimeException {
-    public ConflictException(String message) {
-        super(message);
-    }
+    private final String code;
+
+    public ConflictException(String message) { this("CONFLICT", message); }
+    public ConflictException(String code, String message) { super(message); this.code = code; }
+    public String code() { return code; }
 }

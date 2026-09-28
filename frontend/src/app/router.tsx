@@ -125,6 +125,7 @@ import {
   ReportPermissionManagementPage,
   ReportPrintHistoryPage,
 } from "../pages/admin/ReportManagementPages";
+import { EducationAchievementPage } from "../pages/faculty/EducationAchievementPage";
 import {
   CourseAreaGroupGradeQueryPage,
   EvaluationElementManagementItemSettingsPage,
@@ -317,6 +318,38 @@ function renderAdminPage(path: string | undefined) {
       return <ParticipationRateManagementPage />;
     case "/admin/participation-allocation-rate-settings":
       return <ParticipationAllocationRateSettingsPage />;
+    case "/faculty/education/lecture-evaluation-achievements":
+      return (
+        <EducationAchievementPage
+          type="LECTURE_EVALUATION"
+          title="강의평가 실적 관리"
+          screenId="SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT"
+        />
+      );
+    case "/faculty/education/lecture-achievements":
+      return (
+        <EducationAchievementPage
+          type="LECTURE_PERFORMANCE"
+          title="강의실적 관리"
+          screenId="SCR-LECTURE-ACHIEVEMENT-MGMT"
+        />
+      );
+    case "/faculty/education/student-guidance-achievements":
+      return (
+        <EducationAchievementPage
+          type="STUDENT_GUIDANCE"
+          title="학생지도 실적 관리"
+          screenId="SCR-STUDENT-GUIDANCE-ACHIEVEMENT-MGMT"
+        />
+      );
+    case "/faculty/education/master-doctorate-graduation-achievements":
+      return (
+        <EducationAchievementPage
+          type="GRADUATE_DEGREE_COMPLETION"
+          title="석·박사 배출 실적 관리"
+          screenId="SCR-MASTER-DOCTORATE-GRADUATION-ACHIEVEMENT-MGMT"
+        />
+      );
     case "/faculty/course-area-group-grades":
       return <CourseAreaGroupGradeQueryPage />;
     case "/admin/calculation-formulas":

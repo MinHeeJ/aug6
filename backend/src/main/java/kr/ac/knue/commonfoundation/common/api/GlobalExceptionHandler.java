@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of(exception.code(), exception.getMessage())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -2,6 +2,7 @@ package kr.ac.knue.commonfoundation.common.api;
 
 import java.util.Comparator;
 import java.util.List;
+import kr.ac.knue.commonfoundation.educationachievement.ConfirmedDataLockedException;
 import kr.ac.knue.commonfoundation.schoolinfo.ExternalIntegrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(NotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail(ApiError.of("NOT_FOUND", exception.getMessage())));
+    }
+
+    @ExceptionHandler(ConfirmedDataLockedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConfirmedDataLocked(ConfirmedDataLockedException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail(ApiError.of("CONFIRMED_DATA_LOCKED", exception.getMessage())));
     }
 
     @ExceptionHandler(ConflictException.class)

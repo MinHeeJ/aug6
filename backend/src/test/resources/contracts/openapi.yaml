@@ -6516,6 +6516,33 @@ paths:
         '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
       x-related-requirements: [REQ-1801, REQ-1795, REQ-1803]
 
+  /api/admin/evaluation-element-management-item-settings/download:
+    get:
+      operationId: downloadEvaluationElementManagementItemSettings
+      summary: 관리항목 설정 Excel 다운로드
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, minimum: 0 } }, { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } } ]
+      responses: { '200': { description: Excel 다운로드 성공, content: { application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-related-requirements: [REQ-1816, REQ-1838, REQ-1839]
+  /api/admin/participation-allocation-rate-settings/download:
+    get:
+      operationId: downloadParticipationAllocationRateSettings
+      summary: 참여구분 배분율 Excel 다운로드
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, minimum: 0 } }, { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } } ]
+      responses: { '200': { description: Excel 다운로드 성공, content: { application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-related-requirements: [REQ-1821, REQ-1838, REQ-1839]
+  /api/admin/management-item-evaluation-score-settings/download:
+    get:
+      operationId: downloadManagementItemEvaluationScoreSettings
+      summary: 관리항목 평가점수 Excel 다운로드
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R04, R09]
+      parameters: [ { name: page, in: query, schema: { type: integer, minimum: 0 } }, { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } } ]
+      responses: { '200': { description: Excel 다운로드 성공, content: { application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      x-related-requirements: [REQ-1826, REQ-1838, REQ-1839]
 x-uncovered-requirements:
   - canonical_id: REQ-1633
     status: screen-only
@@ -8017,6 +8044,106 @@ x-uncovered-requirements:
   - canonical_id: REQ-1793
     status: out-of-scope
     evidence: "BASIC-60: FR-024 조회 전용 계약으로 성적 생성·수정·삭제 operation을 만들지 않는다."
+  - canonical_id: REQ-1831
+    status: screen-only
+    evidence: BASIC-70 화면 기반 운영값 변경은(는) ui-supporting 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1832
+    status: data-constraint
+    evidence: BASIC-70 평가규정 버전 상태은(는) data-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1833
+    status: covered
+    evidence: BASIC-70 역할·데이터 범위 통제은(는) api-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1834
+    status: covered
+    evidence: BASIC-70 복합 접근조건 통제은(는) api-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1835
+    status: covered
+    evidence: BASIC-70 평가확정 변경 차단은(는) api-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1836
+    status: screen-only
+    evidence: BASIC-70 권한 없는 메뉴 미표시은(는) ui-supporting 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1837
+    status: covered
+    evidence: BASIC-70 이중 권한 검증은(는) api-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1840
+    status: screen-only
+    evidence: BASIC-70 필수 입력 차단은(는) ui-supporting 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1841
+    status: screen-only
+    evidence: BASIC-70 확인·결과 안내은(는) ui-supporting 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1842
+    status: non-functional
+    evidence: BASIC-70 표준 UI 적용은(는) non-functional 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1843
+    status: covered
+    evidence: BASIC-70 서버 입력 검증은(는) api-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1844
+    status: non-functional
+    evidence: BASIC-70 요청 식별자 추적은(는) architecture-runtime 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1845
+    status: data-constraint
+    evidence: BASIC-70 메뉴 ID 중복 방지은(는) data-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1846
+    status: data-constraint
+    evidence: BASIC-70 메뉴 ID 연속 채번은(는) data-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1847
+    status: data-constraint
+    evidence: BASIC-70 3건 이상 시드은(는) seed-test-fixture 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1848
+    status: data-constraint
+    evidence: BASIC-70 정상·경계·권한 시드은(는) seed-test-fixture 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1849
+    status: non-functional
+    evidence: BASIC-70 조회 3초 목표은(는) non-functional 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1850
+    status: non-functional
+    evidence: BASIC-70 시큐어 코딩은(는) non-functional 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1851
+    status: non-functional
+    evidence: BASIC-70 개인정보 보호은(는) non-functional 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1852
+    status: non-functional
+    evidence: BASIC-70 브라우저 호환은(는) non-functional 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1853
+    status: non-functional
+    evidence: BASIC-70 기존 저장소 적용은(는) architecture-runtime 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1854
+    status: non-functional
+    evidence: BASIC-70 기존 공통기능 재사용은(는) architecture-runtime 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1855
+    status: out-of-scope
+    evidence: BASIC-70 중복 공통체계 금지은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1856
+    status: out-of-scope
+    evidence: BASIC-70 공통 선행조건 실패 보고은(는) OQ 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1857
+    status: data-constraint
+    evidence: BASIC-70 증분 Flyway migration은(는) data-contract 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1858
+    status: non-functional
+    evidence: BASIC-70 기존 application 확장은(는) architecture-runtime 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1859
+    status: non-functional
+    evidence: BASIC-70 기존 Principal·역할 재사용은(는) architecture-runtime 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1860
+    status: non-functional
+    evidence: BASIC-70 회귀·health 보존은(는) non-functional 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1861
+    status: out-of-scope
+    evidence: BASIC-70 분류 체계 변경 제외은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1862
+    status: out-of-scope
+    evidence: BASIC-70 규칙 구조 변경 제외은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1863
+    status: out-of-scope
+    evidence: BASIC-70 FR-024 분리 제외은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1864
+    status: out-of-scope
+    evidence: BASIC-70 개별 업적 입력 제외은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+  - canonical_id: REQ-1865
+    status: out-of-scope
+    evidence: BASIC-70 외부 연계 제외은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
+
 components:
   securitySchemes:
     SessionCookie:

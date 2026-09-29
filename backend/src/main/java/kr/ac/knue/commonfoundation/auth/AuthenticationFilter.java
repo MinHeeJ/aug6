@@ -44,7 +44,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         try {
             CurrentUser user = authService.currentUser(sessionId);
             request.setAttribute("currentUser", user);
-            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            if (requiresMenuPermission(path) && !isBasic77FeatureApi(path)
+                    && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
                 return;
             }
@@ -56,6 +57,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
     private boolean requiresMenuPermission(String path) {
         return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
+    }
+
+    /**
+     * BASIC-77 endpoints have controller-level role guards but no menu records in the shared menu
+     * registry yet. Applying the generic menu lookup to their raw API paths therefore rejects an
+     * authenticated authorized user before the feature guard runs.
+     */
+    private boolean isBasic77FeatureApi(String path) {
+        return path.startsWith("/api/business/degree-completion-achievements")
+                || path.startsWith("/api/business/lecture-achievements")
+                || path.startsWith("/api/business/lecture-evaluation-achievements")
+                || path.startsWith("/api/business/student-guidance-achievements");
     }
 
     private String pathToUiRoute(String apiPath) {

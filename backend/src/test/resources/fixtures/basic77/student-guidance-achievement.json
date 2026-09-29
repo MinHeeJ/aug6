@@ -1,0 +1,18 @@
+{
+  "managementNo": "B77-SG-001",
+  "managementItemCode": "EDU_STUDENT_GUIDANCE",
+  "occurredDate": "2026-03-15",
+  "guidanceStartDate": "2026-03-01",
+  "guidanceEndDate": "2026-06-30",
+  "studentCount": 2,
+  "students": [
+    {
+      "studentNo": "S2026001",
+      "studentName": "김학생"
+    },
+    {
+      "studentNo": "S2026002",
+      "studentName": "이학생"
+    }
+  ]
+}

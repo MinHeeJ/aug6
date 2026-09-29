@@ -131,6 +131,8 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { StudentGuidanceExcelUploadPage } from "../pages/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
+import { DegreeCompletionAchievementPage } from "../pages/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -189,7 +191,7 @@ export function AppRouter() {
     );
   }
 
-  const routedPage = renderAdminPage(adminRoute?.path);
+  const routedPage = renderAdminPage(path);
   if (routedPage) {
     return <AdminShell>{routedPage}</AdminShell>;
   }
@@ -393,6 +395,10 @@ function renderAdminPage(path: string | undefined) {
       return <AchievementDataHistoryPage />;
     case "/admin/achievement-data-as-of":
       return <AchievementDataAsOfPage />;
+    case "/achievements/education/student-guidance-uploads":
+      return <StudentGuidanceExcelUploadPage />;
+    case "/achievements/education/masters-doctoral-graduations":
+      return <DegreeCompletionAchievementPage />;
     case "/admin/excel-upload-templates":
       return <UploadTemplateManagementPage />;
     case "/admin/excel-uploads":

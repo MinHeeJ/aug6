@@ -631,6 +631,24 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-UNCONFIRMED-RESEARCH-ACHIEVEMENT",
     menuPath: "업적 평가 관리 > 연구실적 관리 > 미확인 연구실적 목록",
   },
+  {
+    path: "/achievements/education/lecture-evaluations",
+    label: "강의평가 실적 관리",
+    screenId: "SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의평가 실적 관리",
+  },
+  {
+    path: "/achievements/education/lecture-achievements",
+    label: "강의실적 관리",
+    screenId: "SCR-LECTURE-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의실적 관리",
+  },
+  {
+    path: "/achievements/education/masters-doctoral-graduations",
+    label: "석·박사 배출 실적 관리",
+    screenId: "SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 석·박사 배출 실적 관리",
+  },
 ];
 
 export type LoginValidationErrors = Partial<
@@ -678,6 +696,18 @@ export function canAccessAdminRoute(
   if (path === "/faculty/course-area-group-grades") {
     return (
       user.roles.includes("R01") ||
+      user.roles.includes("R04") ||
+      user.roles.includes("R09")
+    );
+  }
+  if (
+    path === "/achievements/education/lecture-evaluations" ||
+    path === "/achievements/education/lecture-achievements" ||
+    path === "/achievements/education/masters-doctoral-graduations"
+  ) {
+    return (
+      user.roles.includes("R01") ||
+      user.roles.includes("R02") ||
       user.roles.includes("R04") ||
       user.roles.includes("R09")
     );

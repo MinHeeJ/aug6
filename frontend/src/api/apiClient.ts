@@ -2285,6 +2285,77 @@ export const evaluationScoreApi = {
   },
 };
 
+export type LectureEvaluationAchievement = {
+  achievementId: number;
+  managementNo: string;
+  evaluationYear: string;
+  teacherUserId: number;
+  teacherName: string;
+  managementItemCode: string;
+  occurredDate: string;
+  certificationStatus: string;
+  hasAttachment: boolean;
+};
+
+export type LectureEvaluationAchievementSearchResponse = {
+  lectureEvaluationAchievements: LectureEvaluationAchievement[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+
+export type LectureEvaluationAchievementSaveResponse = {
+  lectureEvaluationAchievement: LectureEvaluationAchievement;
+  warnings: string[];
+};
+
+export const lectureEvaluationAchievementApi = {
+  list(
+    params: {
+      evaluationYear?: string;
+      managementNo?: string;
+      teacherName?: string;
+      managementItemCode?: string;
+      occurredDateFrom?: string;
+      occurredDateTo?: string;
+      certificationStatus?: string;
+      page?: number;
+      pageSize?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.managementNo?.trim())
+      query.set("managementNo", params.managementNo.trim());
+    if (params.teacherName?.trim())
+      query.set("teacherName", params.teacherName.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    if (params.occurredDateFrom)
+      query.set("occurredDateFrom", params.occurredDateFrom);
+    if (params.occurredDateTo)
+      query.set("occurredDateTo", params.occurredDateTo);
+    if (params.certificationStatus?.trim())
+      query.set("certificationStatus", params.certificationStatus.trim());
+    return apiRequest<LectureEvaluationAchievementSearchResponse>(
+      `/api/business/lecture-evaluation-achievements?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  save(payload: {
+    managementItemCode: string;
+    occurredDate: string;
+    achievementDetail: unknown;
+  }) {
+    return apiRequest<LectureEvaluationAchievementSaveResponse>(
+      "/api/business/lecture-evaluation-achievements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+};
+
 export type ParticipationRate = Omit<
   EvaluationScore,
   | "scoreRuleId"
@@ -2317,6 +2388,125 @@ export type ParticipationRatePayload = {
   effectiveEndDate: string;
   activeYn: ActiveYn;
   changeReason: string;
+};
+
+export type LectureAchievement = LectureEvaluationAchievement;
+export type LectureAchievementSearchResponse = {
+  lectureAchievements: LectureAchievement[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+export type LectureAchievementSaveResponse = {
+  lectureAchievement: LectureAchievement;
+  warnings: string[];
+};
+export const lectureAchievementApi = {
+  list(
+    params: {
+      evaluationYear?: string;
+      managementNo?: string;
+      teacherName?: string;
+      managementItemCode?: string;
+      occurredDateFrom?: string;
+      occurredDateTo?: string;
+      certificationStatus?: string;
+      page?: number;
+      pageSize?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.managementNo?.trim())
+      query.set("managementNo", params.managementNo.trim());
+    if (params.teacherName?.trim())
+      query.set("teacherName", params.teacherName.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    if (params.occurredDateFrom)
+      query.set("occurredDateFrom", params.occurredDateFrom);
+    if (params.occurredDateTo)
+      query.set("occurredDateTo", params.occurredDateTo);
+    if (params.certificationStatus?.trim())
+      query.set("certificationStatus", params.certificationStatus.trim());
+    return apiRequest<LectureAchievementSearchResponse>(
+      `/api/business/lecture-achievements?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  save(payload: {
+    managementItemCode: string;
+    occurredDate: string;
+    achievementDetail: unknown;
+  }) {
+    return apiRequest<LectureAchievementSaveResponse>(
+      "/api/business/lecture-achievements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+};
+
+export type DegreeCompletionStudent = {
+  degreeCompletionStudentId?: number;
+  degreeType: "MASTER" | "DOCTOR";
+  studentName: string;
+  thesisTitle: string;
+  degreeAwardedDate: string;
+};
+export type DegreeCompletionAchievement = LectureEvaluationAchievement & {
+  students: DegreeCompletionStudent[];
+};
+export type DegreeCompletionAchievementSearchResponse = {
+  degreeCompletionAchievements: DegreeCompletionAchievement[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+export const degreeCompletionAchievementApi = {
+  list(
+    params: {
+      evaluationYear?: string;
+      managementNo?: string;
+      teacherName?: string;
+      managementItemCode?: string;
+      certificationStatus?: string;
+      page?: number;
+      pageSize?: PageSize;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("pageSize", String(params.pageSize ?? 20));
+    if (params.evaluationYear?.trim())
+      query.set("evaluationYear", params.evaluationYear.trim());
+    if (params.managementNo?.trim())
+      query.set("managementNo", params.managementNo.trim());
+    if (params.teacherName?.trim())
+      query.set("teacherName", params.teacherName.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    if (params.certificationStatus?.trim())
+      query.set("certificationStatus", params.certificationStatus.trim());
+    return apiRequest<DegreeCompletionAchievementSearchResponse>(
+      `/api/business/degree-completion-achievements?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  save(payload: {
+    managementItemCode: string;
+    occurredDate?: string;
+    achievementDetail: unknown;
+    students: DegreeCompletionStudent[];
+  }) {
+    return apiRequest<{
+      degreeCompletionAchievement: DegreeCompletionAchievement;
+      warnings: string[];
+    }>("/api/business/degree-completion-achievements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 export const participationRateApi = {

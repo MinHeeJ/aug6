@@ -55,7 +55,20 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean requiresMenuPermission(String path) {
-        return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
+        if (path.startsWith("/api/admin/")) {
+            return true;
+        }
+        // Education-achievement APIs enforce their x-roles contract in the owning services.
+        // They intentionally do not depend on optional menu seed rows, which are presentation metadata.
+        return path.startsWith("/api/business/") && !isEducationAchievementPath(path);
+    }
+
+    private boolean isEducationAchievementPath(String path) {
+        return path.equals("/api/business/lecture-evaluation-achievements")
+                || path.equals("/api/business/lecture-achievements")
+                || path.equals("/api/business/student-guidance-achievements")
+                || path.startsWith("/api/business/student-guidance-achievements/")
+                || path.equals("/api/business/degree-completion-achievements");
     }
 
     private String pathToUiRoute(String apiPath) {
@@ -77,6 +90,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";
+        }
+        if (apiPath.equals("/api/business/lecture-evaluation-achievements")) {
+            return "/achievements/education/lecture-evaluations";
         }
         if (apiPath.equals("/api/admin/business-status-codes")) {
             return "/admin/business-status-codes";

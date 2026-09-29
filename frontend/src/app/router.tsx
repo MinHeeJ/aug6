@@ -131,6 +131,9 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { LectureEvaluationAchievementManagementPage } from "../pages/admin/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { LectureAchievementManagementPage } from "../pages/admin/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/admin/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -429,6 +432,12 @@ function renderAdminPage(path: string | undefined) {
       return <ResearchClassificationCriterionPage />;
     case "/admin/unconfirmed-research-achievements":
       return <UnconfirmedResearchAchievementPage />;
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
+    case "/achievements/education/lecture-achievements":
+      return <LectureAchievementManagementPage />;
+    case "/achievements/education/masters-doctoral-graduations":
+      return <MastersDoctoralGraduationAchievementManagementPage />;
     case "/admin/reports":
       return <ReportListManagementPage />;
     case "/admin/report-form-versions":

@@ -131,6 +131,10 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
+import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -185,6 +189,41 @@ export function AppRouter() {
           title="권한이 없습니다"
           message={`${adminRoute.label} 화면 접근 권한이 없습니다.`}
         />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/lecture-evaluations") {
+    return (
+      <AdminShell>
+        <LectureEvaluationAchievementManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/lecture-achievements") {
+    return (
+      <AdminShell>
+        <LectureAchievementManagementPage />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/student-guidance-uploads") {
+    return (
+      <AdminShell>
+        <StudentGuidanceExcelUploadPage />
+      </AdminShell>
+    );
+  }
+
+  if (
+    path === "/achievements/education/degree-completion-achievements" ||
+    path === "/achievements/education/masters-doctoral-graduations"
+  ) {
+    return (
+      <AdminShell>
+        <MastersDoctoralGraduationAchievementManagementPage />
       </AdminShell>
     );
   }

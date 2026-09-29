@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.faculty.achievement.DegreeCompletionAchievementMapper">
+    <resultMap id="degreeCompletionRow" type="kr.ac.knue.commonfoundation.faculty.achievement.DegreeCompletionAchievementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="occurred_date" javaType="java.time.LocalDate"/>
+            <arg column="certification_status" javaType="java.lang.String"/>
+            <arg column="attachment_available" javaType="_boolean"/>
+            <arg column="students" javaType="java.util.List" typeHandler="kr.ac.knue.commonfoundation.faculty.achievement.DegreeCompletionStudentsJsonTypeHandler"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="degreeCompletionProjection">
+        SELECT a.achievement_id,
+               a.achievement_number AS management_no,
+               a.evaluation_year,
+               a.management_item_code,
+               a.occurred_date,
+               a.certification_status,
+               (a.attachment_ref IS NOT NULL) AS attachment_available,
+               COALESCE(jsonb_agg(jsonb_build_object(
+                   'degreeType', s.degree_type,
+                   'studentName', s.student_name,
+                   'thesisTitle', s.thesis_title,
+                   'degreeAwardedDate', s.degree_awarded_date
+               ) ORDER BY s.degree_awarded_date, s.degree_completion_student_id)
+               FILTER (WHERE s.degree_completion_student_id IS NOT NULL), '[]'::jsonb) AS students
+        FROM degree_completion_achievements a
+        LEFT JOIN degree_completion_students s ON s.achievement_id = a.achievement_id
+        LEFT JOIN korus_personnel_snapshots kps ON kps.employee_no = a.employee_no
+    </sql>
+
+    <select id="list" resultMap="degreeCompletionRow">
+        <include refid="degreeCompletionProjection"/>
+        <where>
+            a.deleted_yn = 'N'
+            <if test="criteria.managementNo != null and criteria.managementNo != ''">
+                AND a.achievement_number = #{criteria.managementNo}
+            </if>
+            <if test="criteria.certificationStatus != null and criteria.certificationStatus != ''">
+                AND a.certification_status = #{criteria.certificationStatus}
+            </if>
+            <if test="criteria.teacherName != null and criteria.teacherName != ''">
+                AND kps.name ILIKE CONCAT('%', #{criteria.teacherName}, '%')
+            </if>
+        </where>
+        GROUP BY a.achievement_id
+        ORDER BY a.occurred_date DESC, a.achievement_id DESC
+        LIMIT #{criteria.pageSize} OFFSET #{criteria.page} * #{criteria.pageSize}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM degree_completion_achievements a
+        LEFT JOIN korus_personnel_snapshots kps ON kps.employee_no = a.employee_no
+        <where>
+            a.deleted_yn = 'N'
+            <if test="criteria.managementNo != null and criteria.managementNo != ''">
+                AND a.achievement_number = #{criteria.managementNo}
+            </if>
+            <if test="criteria.certificationStatus != null and criteria.certificationStatus != ''">
+                AND a.certification_status = #{criteria.certificationStatus}
+            </if>
+            <if test="criteria.teacherName != null and criteria.teacherName != ''">
+                AND kps.name ILIKE CONCAT('%', #{criteria.teacherName}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findByManagementNo" resultMap="degreeCompletionRow">
+        <include refid="degreeCompletionProjection"/>
+        WHERE a.achievement_number = #{managementNo} AND a.deleted_yn = 'N'
+        GROUP BY a.achievement_id
+    </select>
+
+    <insert id="insertAchievement">
+        INSERT INTO degree_completion_achievements (
+            achievement_number, employee_no, evaluation_year, management_item_code, occurred_date,
+            achievement_detail, certification_status, deleted_yn, created_by, updated_by
+        ) VALUES (
+            #{request.managementNo}, #{employeeNo}, #{request.evaluationYear}, #{request.managementItemCode}, #{request.occurredDate},
+            '{}'::jsonb, 'DRAFT', 'N', #{createdBy}, #{createdBy}
+        )
+        ON CONFLICT (achievement_number) DO UPDATE SET
+            evaluation_year = EXCLUDED.evaluation_year,
+            management_item_code = EXCLUDED.management_item_code,
+            occurred_date = EXCLUDED.occurred_date,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = EXCLUDED.updated_by
+    </insert>
+
+    <delete id="deleteStudents">
+        DELETE FROM degree_completion_students WHERE achievement_id = #{achievementId}
+    </delete>
+
+    <insert id="insertStudents">
+        INSERT INTO degree_completion_students (
+            achievement_id, degree_type, student_name, thesis_title, degree_awarded_date, created_by
+        ) VALUES
+        <foreach collection="students" item="student" separator=",">
+            (#{achievementId}, #{student.degreeType}, #{student.studentName}, #{student.thesisTitle}, #{student.degreeAwardedDate}, #{createdBy})
+        </foreach>
+    </insert>
+
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id
+        ) VALUES (
+            'degree_completion_achievements', #{targetKey}, #{changeType}, 'students', NULL,
+            '석·박사 배출 지도학생 상세 저장', #{changedBy}, '석·박사 배출 실적 저장', #{requestId}
+        )
+    </insert>
+</mapper>

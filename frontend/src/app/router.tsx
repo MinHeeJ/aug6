@@ -56,6 +56,7 @@ import { EvaluationRuleSetManagementPage } from "../pages/admin/SCR-EVAL-RULE-SE
 import { JournalIndexingInfoManagementPage } from "../pages/admin/SCR-JOURNAL-INDEXING-MGMT";
 import { AreaElementSystemManagementPage } from "../pages/admin/SCR-AREA-ELEMENT-SYSTEM-MGMT";
 import { EvaluationDateManagementPage } from "../pages/admin/SCR-EVALUATION-DATE-MGMT";
+import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 import { InputPeriodManagementPage } from "../pages/admin/SCR-INPUT-PERIOD-MGMT";
 import { ModificationPeriodManagementPage } from "../pages/admin/SCR-MODIFICATION-PERIOD-MGMT";
 import { AppealPeriodManagementPage } from "../pages/admin/SCR-APPEAL-PERIOD-MGMT";
@@ -329,6 +330,8 @@ function renderAdminPage(path: string | undefined) {
       return <AreaElementSystemManagementPage />;
     case "/admin/evaluation-dates":
       return <EvaluationDateManagementPage />;
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
     case "/admin/input-periods":
       return <InputPeriodManagementPage />;
     case "/admin/modification-periods":

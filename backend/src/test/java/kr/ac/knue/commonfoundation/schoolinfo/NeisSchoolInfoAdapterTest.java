@@ -33,6 +33,20 @@ class NeisSchoolInfoAdapterTest {
     }
 
     @Test
+    void adapterReturnsEmptyResultWithoutExternalCallWhenApiKeyIsBlank() {
+        NeisSchoolInfoAdapter adapter = new NeisSchoolInfoAdapter(
+                new ObjectMapper(),
+                "https://open.neis.go.kr/hub/schoolInfo",
+                " ",
+                Duration.ofMillis(100)
+        );
+
+        SchoolInfoSearchResponse response = adapter.search(new SchoolInfoQuery(null, null, 1, 100));
+
+        assertThat(response).isEqualTo(new SchoolInfoSearchResponse(1, 100, 0, java.util.List.of()));
+    }
+
+    @Test
     void adapterTreatsInfo200AsEmptyResult() throws Exception {
         AtomicReference<String> rawQuery = new AtomicReference<>();
         try (StubNeisServer server = StubNeisServer.start(rawQuery, """

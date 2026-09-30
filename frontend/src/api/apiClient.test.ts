@@ -5,6 +5,7 @@ import {
   evaluationAreaApi,
   evaluationElementApi,
   evaluationManagementItemApi,
+  lectureEvaluationAchievementApi,
   menuPermissionApi,
   organizationApi,
 } from "./apiClient";
@@ -103,6 +104,39 @@ describe("apiRequest", () => {
       "/api/admin/evaluation-areas?page=0&size=20&ruleVersionId=10&activeYn=Y&keyword=%EA%B5%90%EC%9C%A1",
     );
     expect(fetchMock.mock.calls[1][0]).toBe("/api/admin/evaluation-areas/save");
+  });
+
+  it("uses the approved lecture-evaluation contract path for list and save", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => "application/json" },
+      json: async () => ({
+        success: true,
+        data: { achievements: [] },
+        meta: {},
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await lectureEvaluationAchievementApi.list({
+      evaluationYear: "2026",
+      size: 20,
+    });
+    await lectureEvaluationAchievementApi.save({
+      evaluationYear: "2026",
+      organizationCode: "ORG-1",
+      managementItemCode: "B77-LE-001",
+      occurredDate: "2026-03-15",
+      achievementDetail: {},
+      changeReason: "등록",
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "/api/business/lecture-evaluation-achievements?page=0&size=20&evaluationYear=2026",
+    );
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "/api/business/lecture-evaluation-achievements",
+    );
   });
 
   it("uses the relative evaluation element endpoints with dynamic filters", async () => {

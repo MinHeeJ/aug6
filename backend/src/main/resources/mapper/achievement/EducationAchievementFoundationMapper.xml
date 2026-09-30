@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.achievement.EducationAchievementFoundationMapper">
+    <select id="countAllowedFunctionPermission" resultType="int">
+        SELECT count(*)
+        FROM function_permissions
+        WHERE screen_id = #{screenId}
+          AND role_code = #{roleCode}
+          AND function_type = #{functionType}
+          AND permission_allowed = 'ALLOW'
+    </select>
+
+    <select id="countActiveInputPeriod" resultType="int">
+        SELECT count(*)
+        FROM input_period_settings
+        WHERE evaluation_year = #{evaluationYear}
+          AND area_code = 'EDUCATION'
+          AND organization_code = #{organizationCode}
+          AND active_yn = 'Y'
+          AND start_at &lt;= CURRENT_TIMESTAMP
+          AND end_at &gt;= CURRENT_TIMESTAMP
+    </select>
+
+    <select id="countActiveManagementItem" resultType="int">
+        SELECT count(*)
+        FROM evaluation_element_management_item_settings
+        WHERE evaluation_year = #{evaluationYear}
+          AND management_item_code = #{managementItemCode}
+          AND active_yn = 'Y'
+          AND effective_start_date &lt;= #{occurredDate}
+          AND effective_end_date &gt;= #{occurredDate}
+    </select>
+
+    <select id="countEvaluationConfirmedFinalization" resultType="int">
+        SELECT count(*)
+        FROM evaluation_finalizations
+        WHERE target_user_id = #{ownerUserId}
+          AND evaluation_year = #{evaluationYear}
+          AND final_status = 'EVALUATION_CONFIRMED'
+    </select>
+
+    <select id="findLectureEvaluationForUpdate" resultType="kr.ac.knue.commonfoundation.achievement.LectureEvaluationAchievementState">
+        SELECT achievement_id AS "achievementId", owner_user_id AS "ownerUserId", evaluation_year AS "evaluationYear",
+               organization_code AS "organizationCode", certification_status AS "certificationStatus"
+        FROM lecture_evaluation_achievements
+        WHERE achievement_id = #{achievementId}
+          AND deleted_yn = 'N'
+        FOR UPDATE
+    </select>
+
+    <select id="countLectureEvaluationScope" resultType="int">
+        SELECT count(*)
+        FROM lecture_evaluation_achievements achievement
+        WHERE achievement.achievement_id = #{achievementId}
+          AND achievement.deleted_yn = 'N'
+          AND (
+              achievement.owner_user_id = #{userId}
+              OR EXISTS (
+                  SELECT 1
+                  FROM organization_user_mappings mapping
+                  WHERE mapping.user_id = #{userId}
+                    AND mapping.organization_code = achievement.organization_code
+                    AND mapping.status = 'ACTIVE'
+                    AND mapping.effective_start_date &lt;= CURRENT_DATE
+                    AND (mapping.effective_end_date IS NULL OR mapping.effective_end_date &gt;= CURRENT_DATE)
+              )
+          )
+    </select>
+
+    <update id="updateLectureEvaluationStatus">
+        UPDATE lecture_evaluation_achievements
+        SET certification_status = #{nextStatus}, updated_at = CURRENT_TIMESTAMP, updated_by = #{updatedBy}
+        WHERE achievement_id = #{achievementId}
+          AND certification_status = #{previousStatus}
+          AND deleted_yn = 'N'
+    </update>
+
+    <insert id="insertStatusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, previous_status, next_status, action_type, reason_code, opinion, processed_by
+        ) VALUES (
+            #{achievementType}, #{achievementId}, #{previousStatus}, #{nextStatus}, #{actionType}, #{reasonCode}, #{opinion}, #{processedBy}
+        )
+    </insert>
+
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason
+        ) VALUES (
+            #{targetBusiness}, #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}
+        )
+    </insert>
+</mapper>

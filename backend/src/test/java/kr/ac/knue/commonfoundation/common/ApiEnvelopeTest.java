@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import kr.ac.knue.commonfoundation.common.api.ApiResponse;
+import kr.ac.knue.commonfoundation.common.api.ConflictException;
 import kr.ac.knue.commonfoundation.common.api.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,11 +47,31 @@ class ApiEnvelopeTest {
                 .andExpect(jsonPath("$.error.fields[0].field").value("requiredValue"));
     }
 
+    @Test
+    void namedConflictPrefixBecomesStableErrorCodeWithoutChangingGenericConflicts() throws Exception {
+        mockMvc.perform(post("/api/conflict-probe/named"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFIRMED_DATA_LOCKED"));
+        mockMvc.perform(post("/api/conflict-probe/generic"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+    }
+
     @RestController
     public static class ValidationProbeController {
         @PostMapping("/api/probe")
         ApiResponse<String> probe(@Valid @RequestBody ProbeRequest request) {
             return ApiResponse.ok(request.requiredValue());
+        }
+
+        @PostMapping("/api/conflict-probe/named")
+        ApiResponse<Void> namedConflict() {
+            throw new ConflictException("CONFIRMED_DATA_LOCKED: 평가확정 데이터는 수정할 수 없습니다.");
+        }
+
+        @PostMapping("/api/conflict-probe/generic")
+        ApiResponse<Void> genericConflict() {
+            throw new ConflictException("동시 수정 충돌입니다.");
         }
     }
 

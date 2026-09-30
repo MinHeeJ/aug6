@@ -42,7 +42,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.of("BAD_REQUEST", exception.getMessage())));
+        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.validation(
+                List.of(new ValidationError(exception.getRequestPartName(), "필수 파일을 첨부하세요.")))));
     }
 
     @ExceptionHandler(UnauthenticatedException.class)
@@ -62,7 +63,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of(conflictCode(exception), exception.getMessage())));
+    }
+
+    /**
+     * Preserves stable machine-readable business conflict codes without changing the legacy generic conflict envelope.
+     */
+    private String conflictCode(ConflictException exception) {
+        String message = exception.getMessage();
+        if (message != null && message.matches("^[A-Z][A-Z0-9_]*:.*")) {
+            return message.substring(0, message.indexOf(':'));
+        }
+        return "CONFLICT";
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -2190,6 +2190,97 @@ export const evaluationManagementItemApi = {
   },
 };
 
+export type LectureEvaluationAchievement = {
+  achievementId: number;
+  managementNo: string;
+  managementItemCode: string;
+  occurredDate: string;
+  certificationStatus: string;
+  attachmentCount: number;
+  occurrenceDateWarning: boolean;
+  achievementDetail: Record<string, unknown>;
+};
+export type LectureEvaluationAchievementSearchResponse = {
+  items: LectureEvaluationAchievement[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+};
+export const lectureEvaluationAchievementApi = {
+  list(
+    params: {
+      page?: number;
+      pageSize?: 20 | 50 | 100;
+      managementNo?: string;
+      managementItemCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams({
+      page: String(params.page ?? 0),
+      pageSize: String(params.pageSize ?? 20),
+    });
+    if (params.managementNo?.trim())
+      query.set("managementNo", params.managementNo.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    return apiRequest<LectureEvaluationAchievementSearchResponse>(
+      `/api/business/lecture-evaluation-achievements?${query}` as `/api/${string}`,
+    );
+  },
+  save(payload: {
+    achievementId?: number;
+    managementItemCode: string;
+    occurredDate: string;
+    achievementDetail?: Record<string, unknown>;
+  }) {
+    return apiRequest<LectureEvaluationAchievement>(
+      "/api/business/lecture-evaluation-achievements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+};
+
+export type LectureAchievement = LectureEvaluationAchievement;
+export type LectureAchievementSearchResponse =
+  LectureEvaluationAchievementSearchResponse;
+export const lectureAchievementApi = {
+  list(
+    params: {
+      page?: number;
+      pageSize?: 20 | 50 | 100;
+      managementNo?: string;
+      managementItemCode?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams({
+      page: String(params.page ?? 0),
+      pageSize: String(params.pageSize ?? 20),
+    });
+    if (params.managementNo?.trim())
+      query.set("managementNo", params.managementNo.trim());
+    if (params.managementItemCode?.trim())
+      query.set("managementItemCode", params.managementItemCode.trim());
+    return apiRequest<LectureAchievementSearchResponse>(
+      `/api/business/lecture-achievements?${query}` as `/api/${string}`,
+    );
+  },
+  save(payload: {
+    achievementId?: number;
+    managementItemCode: string;
+    occurredDate: string;
+    achievementDetail?: Record<string, unknown>;
+    nextStatus?: string;
+    transitionReason?: string;
+    attachmentCount?: number;
+    changeReason?: string;
+  }) {
+    return apiRequest<LectureAchievement>(
+      "/api/business/lecture-achievements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+};
+
 export type EvaluationScore = {
   scoreRuleId: number;
   ruleVersionId: number;
@@ -4706,6 +4797,95 @@ async function downloadBasic60Workbook(
   return response.blob();
 }
 
+export type DegreeCompletionStudent = {
+  degreeCompletionStudentId?: number;
+  degreeType: "MASTER" | "DOCTOR";
+  studentName: string;
+  thesisTitle: string;
+  degreeAwardedDate: string;
+};
+
+export type DegreeCompletionAchievement = {
+  achievementId: number;
+  managementNo: string;
+  evaluationYear: string;
+  organizationCode: string;
+  teacherUserId: number;
+  teacherName?: string;
+  managementItemCode: string;
+  occurredDate: string;
+  certificationStatus: string;
+  achievementDetail: Record<string, unknown>;
+  attachmentCount: number;
+  occurrenceDateWarning: boolean;
+  students: DegreeCompletionStudent[];
+};
+
+export type DegreeCompletionAchievementSearchResponse = {
+  items: DegreeCompletionAchievement[];
+  page: number;
+  pageSize: 20 | 50 | 100;
+  totalCount: number;
+};
+
+export type DegreeCompletionAchievementPayload = {
+  achievementId?: number;
+  managementItemCode: string;
+  occurredDate?: string;
+  achievementDetail?: Record<string, unknown>;
+  attachmentCount?: number;
+  nextStatus?: string;
+  transitionReason?: string;
+  changeReason?: string;
+  students: DegreeCompletionStudent[];
+};
+
+function buildDegreeCompletionSearchPath(
+  params: {
+    managementNo?: string;
+    teacherName?: string;
+    certificationStatus?: string;
+    page?: number;
+    pageSize?: 20 | 50 | 100;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("pageSize", String(params.pageSize ?? 20));
+  if (params.managementNo?.trim())
+    query.set("managementNo", params.managementNo.trim());
+  if (params.teacherName?.trim())
+    query.set("teacherName", params.teacherName.trim());
+  if (params.certificationStatus?.trim())
+    query.set("certificationStatus", params.certificationStatus.trim());
+  return `/api/business/degree-completion-achievements?${query.toString()}` as `/api/${string}`;
+}
+
+export const degreeCompletionAchievementApi = {
+  list(
+    params: {
+      managementNo?: string;
+      teacherName?: string;
+      certificationStatus?: string;
+      page?: number;
+      pageSize?: 20 | 50 | 100;
+    } = {},
+  ) {
+    return apiRequest<DegreeCompletionAchievementSearchResponse>(
+      buildDegreeCompletionSearchPath(params),
+    );
+  },
+  save(payload: DegreeCompletionAchievementPayload) {
+    return apiRequest<DegreeCompletionAchievement>(
+      "/api/business/degree-completion-achievements",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+};
+
 export type CourseAreaGroupGrade = {
   resultId: number;
   facultyUserId: number;
@@ -4776,5 +4956,65 @@ export const courseAreaGroupGradeApi = {
       );
     }
     return response.blob();
+  },
+};
+
+export type StudentGuidanceUploadError = {
+  rowNumber: number;
+  columnName: string;
+  errorCode: string;
+  errorReason: string;
+};
+export type StudentGuidanceUploadResult = {
+  uploadId: string;
+  originalFileName: string;
+  validationStatus: string;
+  totalCount: number;
+  successCount: number;
+  errorCount: number;
+  savedCount: number;
+  errors: StudentGuidanceUploadError[];
+};
+export type StudentGuidanceHistory = {
+  uploadId: string;
+  originalFileName: string;
+  uploaderUserId: number;
+  totalCount: number;
+  successCount: number;
+  errorCount: number;
+  savedCount: number;
+  processedAt: string;
+};
+export const studentGuidanceUploadApi = {
+  upload(templateId: string, file: File) {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("templateId", templateId);
+    return fetch("/api/business/student-guidance-achievements/excel-uploads", {
+      method: "POST",
+      credentials: "include",
+      body,
+    }).then(async (response) => {
+      const result =
+        (await response.json()) as ApiResponse<StudentGuidanceUploadResult>;
+      if (!response.ok || !result.success)
+        throw new ApiClientError(
+          response.status,
+          result.error?.message ?? "업로드에 실패했습니다.",
+          result.error,
+        );
+      return result;
+    });
+  },
+  commit(uploadId: string) {
+    return apiRequest<StudentGuidanceUploadResult>(
+      `/api/business/student-guidance-achievements/excel-uploads/${encodeURIComponent(uploadId)}/commit` as `/api/${string}`,
+      { method: "POST" },
+    );
+  },
+  histories() {
+    return apiRequest<StudentGuidanceHistory[]>(
+      "/api/business/student-guidance-achievements/excel-upload-histories",
+    );
   },
 };

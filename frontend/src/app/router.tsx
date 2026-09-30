@@ -49,6 +49,10 @@ import { EvaluationAreaManagementPage } from "../pages/admin/SCR-EVALUATION-AREA
 import { EvaluationItemManagementPage } from "../pages/admin/SCR-EVALUATION-ITEM-MGMT";
 import { EvaluationElementManagementPage } from "../pages/admin/SCR-EVALUATION-ELEMENT-MGMT";
 import { EvaluationManagementItemManagementPage } from "../pages/admin/SCR-EVALUATION-MANAGEMENT-ITEM-MGMT";
+import { LectureEvaluationAchievementManagementPage } from "../pages/admin/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { LectureAchievementManagementPage } from "../pages/admin/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { StudentGuidanceExcelUploadPage } from "../pages/admin/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
+import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/admin/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 import { EvaluationScoreManagementPage } from "../pages/admin/SCR-EVAL-SCORE-MGMT";
 import { ParticipationRateManagementPage } from "../pages/admin/SCR-PARTICIPATION-RATE-MGMT";
 import { CalculationFormulaManagementPage } from "../pages/admin/SCR-CALC-FORMULA-MGMT";
@@ -174,6 +178,56 @@ export function AppRouter() {
           title="인증 오류"
           message={auth.error ?? "인증 처리 중 오류가 발생했습니다."}
         />
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/lecture-evaluations") {
+    const allowed = auth.user?.roles.some((role) =>
+      ["R01", "R02", "R04"].includes(role),
+    );
+    return (
+      <AdminShell>
+        {allowed ? (
+          <LectureEvaluationAchievementManagementPage />
+        ) : (
+          <PermissionState />
+        )}
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/lecture-achievements") {
+    const allowed = auth.user?.roles.some((role) =>
+      ["R01", "R02", "R04"].includes(role),
+    );
+    return (
+      <AdminShell>
+        {allowed ? <LectureAchievementManagementPage /> : <PermissionState />}
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/student-guidance-uploads") {
+    const allowed = auth.user?.roles.includes("R07");
+    return (
+      <AdminShell>
+        {allowed ? <StudentGuidanceExcelUploadPage /> : <PermissionState />}
+      </AdminShell>
+    );
+  }
+
+  if (path === "/achievements/education/masters-doctoral-graduations") {
+    const allowed = auth.user?.roles.some((role) =>
+      ["R01", "R02", "R04"].includes(role),
+    );
+    return (
+      <AdminShell>
+        {allowed ? (
+          <MastersDoctoralGraduationAchievementManagementPage />
+        ) : (
+          <PermissionState />
+        )}
       </AdminShell>
     );
   }
@@ -305,6 +359,12 @@ function renderAdminPage(path: string | undefined) {
       return <EvaluationItemManagementPage />;
     case "/admin/evaluation-elements":
       return <EvaluationElementManagementPage />;
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
+    case "/achievements/education/lecture-achievements":
+      return <LectureAchievementManagementPage />;
+    case "/achievements/education/student-guidance-uploads":
+      return <StudentGuidanceExcelUploadPage />;
     case "/admin/evaluation-management-items":
       return <EvaluationManagementItemManagementPage />;
     case "/admin/evaluation-element-management-item-settings":

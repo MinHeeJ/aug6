@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class NeisSchoolInfoAdapter implements SchoolInfoPort {
+    private static final String DEFAULT_ENDPOINT_URL = "https://open.neis.go.kr/hub/schoolInfo";
+
     private final ObjectMapper objectMapper;
     private final String endpointUrl;
     private final String apiKey;
@@ -37,6 +39,9 @@ public class NeisSchoolInfoAdapter implements SchoolInfoPort {
 
     @Override
     public SchoolInfoSearchResponse search(SchoolInfoQuery query) {
+        if (apiKey.isBlank() && DEFAULT_ENDPOINT_URL.equals(endpointUrl)) {
+            return new SchoolInfoSearchResponse(query.page(), query.size(), 0, List.of());
+        }
         HttpRequest request = HttpRequest.newBuilder(URI.create(endpointUrl + "?" + toQueryString(query)))
                 .timeout(timeout)
                 .GET()

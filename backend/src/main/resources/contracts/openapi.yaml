@@ -5632,6 +5632,40 @@ paths:
           type: object
           additionalProperties: true
 
+  /api/business/lecture-evaluation-achievements:
+    get:
+      operationId: listLectureEvaluationAchievements
+      summary: 강의평가 실적 목록
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R01, R02, R04]
+      parameters: [ { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }, { name: size, in: query, schema: { type: integer, enum: [20, 50, 100], default: 20 } }, { name: managementNo, in: query, schema: { type: string } }, { name: teacherName, in: query, schema: { type: string } }, { name: managementItemCode, in: query, schema: { type: string } }, { name: occurredDateFrom, in: query, schema: { type: string, format: date } }, { name: occurredDateTo, in: query, schema: { type: string, format: date } }, { name: certificationStatus, in: query, schema: { type: string } }, { name: X-Request-Id, in: header, required: false, schema: { type: string } } ]
+      x-related-requirements: [REQ-1909, REQ-1911]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, occurredDateFrom, occurredDateTo, certificationStatus] }
+      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+    post:
+      operationId: saveLectureEvaluationAchievement
+      summary: 강의평가 실적 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R01, R02, R04]
+      parameters: [ { name: X-Request-Id, in: header, required: false, schema: { type: string } } ]
+      x-related-requirements: [REQ-1910, REQ-1912, REQ-1896, REQ-1908]
+      x-business-rules: [입력기간·데이터범위 통과 후 저장, 평가확정 변경 금지, 발생일 기간 밖은 경고 저장]
+      x-side-effects: [lecture_evaluation_achievements 저장, data_change_histories 기록]
+      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
+      x-required-tests: ['happy: 유효한 강의평가 저장 -> lecture_evaluation_achievements 재조회에 management_item_code가 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: managementItemCode 누락 -> fields.managementItemCode 오류가 반환된다', 'business: 평가확정 achievement 수정 -> 기존 lecture_evaluation_achievements row가 변경되지 않는다', 'side-effect: 저장 성공 -> data_change_histories에 target_business=lecture_evaluation_achievements가 기록된다']
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, occurredDate], properties: { achievementId: { type: integer, format: int64, nullable: true }, managementItemCode: { type: string }, occurredDate: { type: string, format: date }, achievementDetail: { type: object }, attachmentRef: { type: string, nullable: true } } } } } }
+      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+  /api/business/lecture-evaluation-achievements/{achievementId}/transitions:
+    post:
+      operationId: transitionLectureEvaluationAchievement
+      summary: 강의평가 실적 인증상태 전이
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R01, R02, R04]
+      parameters: [ { name: achievementId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { name: X-Request-Id, in: header, required: false, schema: { type: string } } ]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [nextStatus, actionType], properties: { nextStatus: { type: string }, actionType: { type: string }, reasonCode: { type: string, nullable: true }, opinion: { type: string, nullable: true } } } } } }
+      x-side-effects: [lecture_evaluation_achievements.certification_status 변경, education_achievement_status_histories 기록, data_change_histories 기록]
+      x-state-transitions: [작성중 -> 제출, 제출 -> 학과장확인|학과장미승인, 학과장확인 -> 인증|인증반려, 인증 -> 평가확정]
+      responses: { '200': { description: 상태전이 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '404': { description: 실적 없음 또는 상태 충돌, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
 components:
   securitySchemes:
     SessionCookie:

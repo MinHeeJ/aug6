@@ -55,6 +55,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean requiresMenuPermission(String path) {
+        if (path.startsWith("/api/business/lecture-evaluation-achievements")) {
+            return false;
+        }
         return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
     }
 

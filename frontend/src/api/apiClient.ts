@@ -4778,3 +4778,62 @@ export const courseAreaGroupGradeApi = {
     return response.blob();
   },
 };
+
+export type LectureEvaluationAchievement = {
+  achievementId: number;
+  managementNo: string;
+  teacherName: string;
+  managementItemCode: string;
+  occurredDate: string;
+  certificationStatus: string;
+  attachmentExists: boolean;
+  achievementDetail: string;
+  attachmentRef?: string | null;
+};
+
+export type LectureEvaluationAchievementSearchResponse = {
+  achievements: LectureEvaluationAchievement[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type SaveLectureEvaluationAchievementPayload = {
+  achievementId?: number;
+  managementItemCode: string;
+  occurredDate: string;
+  achievementDetail: Record<string, unknown>;
+  attachmentRef?: string;
+};
+
+export const lectureEvaluationAchievementApi = {
+  list(
+    params: {
+      page?: number;
+      size?: 20 | 50 | 100;
+      managementNo?: string;
+      teacherName?: string;
+      managementItemCode?: string;
+      occurredDateFrom?: string;
+      occurredDateTo?: string;
+      certificationStatus?: string;
+    } = {},
+  ) {
+    const query = new URLSearchParams();
+    query.set("page", String(params.page ?? 0));
+    query.set("size", String(params.size ?? 20));
+    for (const [key, value] of Object.entries(params)) {
+      if (typeof value === "string" && value.trim())
+        query.set(key, value.trim());
+    }
+    return apiRequest<LectureEvaluationAchievementSearchResponse>(
+      `/api/business/lecture-evaluation-achievements?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  save(payload: SaveLectureEvaluationAchievementPayload) {
+    return apiRequest<LectureEvaluationAchievement>(
+      "/api/business/lecture-evaluation-achievements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+};

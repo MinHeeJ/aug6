@@ -131,6 +131,10 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { LectureEvaluationAchievementManagementPage } from "../pages/admin/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { LectureAchievementManagementPage } from "../pages/admin/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { StudentGuidanceExcelUploadPage } from "../pages/admin/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
+import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/admin/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -439,6 +443,14 @@ function renderAdminPage(path: string | undefined) {
       return <ReportPrintHistoryPage />;
     case "/admin/bulk-report-jobs":
       return <BulkReportJobManagementPage />;
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
+    case "/achievements/education/lecture-achievements":
+      return <LectureAchievementManagementPage />;
+    case "/achievements/education/student-guidance-uploads":
+      return <StudentGuidanceExcelUploadPage />;
+    case "/achievements/education/degree-completion-achievements":
+      return <MastersDoctoralGraduationAchievementManagementPage />;
     default:
       return null;
   }

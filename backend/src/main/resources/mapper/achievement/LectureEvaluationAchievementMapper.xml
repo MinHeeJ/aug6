@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.achievement.LectureEvaluationAchievementMapper">
+    <resultMap id="LectureEvaluationRowMap" type="kr.ac.knue.commonfoundation.achievement.LectureEvaluationAchievementDtos$Row">
+        <constructor>
+            <arg column="achievementId" javaType="java.lang.Long"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="ownerUserId" javaType="java.lang.Long"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="occurredDate" javaType="java.time.LocalDate"/>
+            <arg column="achievementDetail" javaType="java.util.Map" typeHandler="kr.ac.knue.commonfoundation.achievement.AchievementDetailJsonTypeHandler"/>
+            <arg column="certificationStatus" javaType="string"/>
+            <arg column="attachmentReference" javaType="string"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+    <sql id="columns">achievement_id AS "achievementId", evaluation_year AS "evaluationYear", owner_user_id AS "ownerUserId", organization_code AS "organizationCode", management_item_code AS "managementItemCode", occurred_date AS "occurredDate", achievement_detail AS "achievementDetail", certification_status AS "certificationStatus", attachment_ref AS "attachmentReference", updated_at AS "updatedAt"</sql>
+    <sql id="filters"><where>achievement.deleted_yn = 'N' AND (achievement.owner_user_id = #{userId} OR EXISTS (SELECT 1 FROM organization_user_mappings mapping WHERE mapping.user_id = #{userId} AND mapping.organization_code = achievement.organization_code AND mapping.status = 'ACTIVE' AND mapping.effective_start_date &lt;= CURRENT_DATE AND (mapping.effective_end_date IS NULL OR mapping.effective_end_date &gt;= CURRENT_DATE)))<if test="criteria.evaluationYear != null and criteria.evaluationYear != ''"> AND achievement.evaluation_year = #{criteria.evaluationYear}</if><if test="criteria.organizationCode != null and criteria.organizationCode != ''"> AND achievement.organization_code = #{criteria.organizationCode}</if><if test="criteria.certificationStatus != null and criteria.certificationStatus != ''"> AND achievement.certification_status = #{criteria.certificationStatus}</if><if test="criteria.managementItemCode != null and criteria.managementItemCode != ''"> AND achievement.management_item_code = #{criteria.managementItemCode}</if></where></sql>
+    <select id="list" resultMap="LectureEvaluationRowMap">SELECT <include refid="columns"/> FROM lecture_evaluation_achievements achievement <include refid="filters"/> ORDER BY achievement.occurred_date DESC, achievement.achievement_id DESC LIMIT #{criteria.safeSize} OFFSET #{criteria.offset}</select>
+    <select id="count" resultType="long">SELECT count(*) FROM lecture_evaluation_achievements achievement <include refid="filters"/></select>
+    <select id="findById" resultMap="LectureEvaluationRowMap">SELECT <include refid="columns"/> FROM lecture_evaluation_achievements WHERE achievement_id = #{achievementId} AND deleted_yn = 'N'</select>
+    <select id="insert" resultType="long">INSERT INTO lecture_evaluation_achievements (evaluation_year, owner_user_id, organization_code, management_item_code, occurred_date, achievement_detail, attachment_ref, created_by, updated_by) VALUES (#{request.evaluationYear}, #{ownerUserId}, #{request.organizationCode}, #{request.managementItemCode}, #{request.occurredDate}, CAST(#{request.achievementDetail,typeHandler=kr.ac.knue.commonfoundation.achievement.AchievementDetailJsonTypeHandler} AS jsonb), #{request.attachmentReference}, #{createdBy}, #{createdBy}) RETURNING achievement_id</select>
+    <update id="update">UPDATE lecture_evaluation_achievements SET evaluation_year = #{request.evaluationYear}, organization_code = #{request.organizationCode}, management_item_code = #{request.managementItemCode}, occurred_date = #{request.occurredDate}, achievement_detail = CAST(#{request.achievementDetail,typeHandler=kr.ac.knue.commonfoundation.achievement.AchievementDetailJsonTypeHandler} AS jsonb), attachment_ref = #{request.attachmentReference}, updated_at = CURRENT_TIMESTAMP, updated_by = #{updatedBy} WHERE achievement_id = #{achievementId} AND deleted_yn = 'N'</update>
+    <update id="updateAttachmentReference">UPDATE lecture_evaluation_achievements SET attachment_ref = #{attachmentReference}, updated_at = CURRENT_TIMESTAMP, updated_by = #{updatedBy} WHERE achievement_id = #{achievementId} AND deleted_yn = 'N'</update>
+    <insert id="insertChangeHistory">INSERT INTO data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason) VALUES ('lecture_evaluation_achievements', #{targetKey}, #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})</insert>
+</mapper>

@@ -631,6 +631,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-UNCONFIRMED-RESEARCH-ACHIEVEMENT",
     menuPath: "업적 평가 관리 > 연구실적 관리 > 미확인 연구실적 목록",
   },
+  {
+    path: "/achievements/education/lecture-evaluations",
+    label: "강의평가 실적 관리",
+    screenId: "SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT",
+    menuPath: "교원 포털 > 교육영역 실적 > 강의평가 실적 관리",
+  },
+  {
+    path: "/achievements/education/lecture-achievements",
+    label: "강의실적 관리",
+    screenId: "SCR-LECTURE-ACHIEVEMENT-MGMT",
+    menuPath: "교원 포털 > 교육영역 실적 > 강의실적 관리",
+  },
+  {
+    path: "/achievements/education/student-guidance-uploads",
+    label: "학생지도 실적 Excel 일괄등록",
+    screenId: "SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD",
+    menuPath: "업적 입력 관리 > 교육영역 > 학생지도 실적 관리 > Excel 일괄등록",
+  },
+  {
+    path: "/achievements/education/degree-completion-achievements",
+    label: "석·박사 배출 실적 관리",
+    screenId: "SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT",
+    menuPath: "교원 포털 > 교육영역 실적 > 석·박사 배출 실적 관리",
+  },
 ];
 
 export type LoginValidationErrors = Partial<
@@ -672,7 +696,24 @@ export function canAccessAdminRoute(
   user: CurrentUser | null | undefined,
   path: string,
 ): boolean {
-  if (!user || !hasMenuUrl(user.menus, path)) {
+  if (!user) {
+    return false;
+  }
+  if (
+    [
+      "/achievements/education/lecture-evaluations",
+      "/achievements/education/lecture-achievements",
+      "/achievements/education/degree-completion-achievements",
+    ].includes(path)
+  ) {
+    return user.roles.some((role) =>
+      ["R01", "R02", "R04", "R09"].includes(role),
+    );
+  }
+  if (path === "/achievements/education/student-guidance-uploads") {
+    return user.roles.some((role) => ["R07", "R09"].includes(role));
+  }
+  if (!hasMenuUrl(user.menus, path)) {
     return false;
   }
   if (path === "/faculty/course-area-group-grades") {

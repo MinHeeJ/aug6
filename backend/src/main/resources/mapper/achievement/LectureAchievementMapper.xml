@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.achievement.LectureAchievementMapper">
+    <resultMap id="LectureAchievementRowMap"
+               type="kr.ac.knue.commonfoundation.achievement.LectureAchievementRow">
+        <constructor>
+            <arg column="achievementId" javaType="java.lang.Long"/>
+            <arg column="managementNo" javaType="string"/>
+            <arg column="teacherUserId" javaType="java.lang.Long"/>
+            <arg column="teacherName" javaType="string"/>
+            <arg column="evaluationYear" javaType="string"/>
+            <arg column="organizationCode" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="occurredDate" javaType="java.time.LocalDate"/>
+            <arg column="achievementDetail" javaType="string"/>
+            <arg column="certificationStatus" javaType="string"/>
+            <arg column="attachmentPresent" javaType="_boolean"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="columns">
+        la.achievement_id AS "achievementId", la.management_no AS "managementNo",
+        la.teacher_user_id AS "teacherUserId", personnel.name AS "teacherName",
+        la.evaluation_year AS "evaluationYear", la.organization_code AS "organizationCode",
+        la.management_item_code AS "managementItemCode", la.occurred_date AS "occurredDate",
+        la.achievement_detail::text AS "achievementDetail",
+        la.certification_status AS "certificationStatus",
+        CASE WHEN la.attachment_ref IS NULL THEN FALSE ELSE TRUE END AS "attachmentPresent",
+        la.created_at AS "createdAt", la.updated_at AS "updatedAt"
+    </sql>
+    <sql id="searchFilters">
+        <where>
+            la.deleted_yn = 'N'
+            <if test="criteria.managementNo != null">AND la.management_no ILIKE CONCAT('%', #{criteria.managementNo}, '%')</if>
+            <if test="criteria.teacherName != null">AND personnel.name ILIKE CONCAT('%', #{criteria.teacherName}, '%')</if>
+            <if test="criteria.managementItemCode != null">AND la.management_item_code = #{criteria.managementItemCode}</if>
+            <if test="criteria.certificationStatus != null">AND la.certification_status = #{criteria.certificationStatus}</if>
+            <if test="criteria.viewerRole == 'R01'">AND la.teacher_user_id = #{criteria.viewerUserId}</if>
+            <if test="criteria.viewerRole == 'R02'">
+                AND EXISTS (
+                    SELECT 1 FROM organization_user_mappings scope_mapping
+                    WHERE scope_mapping.user_id = #{criteria.viewerUserId}
+                      AND scope_mapping.organization_code = la.organization_code
+                      AND scope_mapping.status = 'ACTIVE'
+                )
+            </if>
+        </where>
+    </sql>
+    <select id="list" resultMap="LectureAchievementRowMap">
+        SELECT <include refid="columns"/>
+        FROM lecture_achievements la
+        LEFT JOIN users teacher ON teacher.user_id = la.teacher_user_id
+        LEFT JOIN korus_personnel_snapshots personnel ON personnel.employee_no = teacher.employee_no
+        <include refid="searchFilters"/>
+        ORDER BY la.occurred_date DESC, la.achievement_id DESC
+        LIMIT #{criteria.safeSize} OFFSET #{criteria.offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM lecture_achievements la
+        LEFT JOIN users teacher ON teacher.user_id = la.teacher_user_id
+        LEFT JOIN korus_personnel_snapshots personnel ON personnel.employee_no = teacher.employee_no
+        <include refid="searchFilters"/>
+    </select>
+    <select id="findById" resultMap="LectureAchievementRowMap">
+        SELECT <include refid="columns"/>
+        FROM lecture_achievements la
+        LEFT JOIN users teacher ON teacher.user_id = la.teacher_user_id
+        LEFT JOIN korus_personnel_snapshots personnel ON personnel.employee_no = teacher.employee_no
+        WHERE la.achievement_id = #{achievementId} AND la.deleted_yn = 'N'
+    </select>
+    <select id="findByManagementNo" resultMap="LectureAchievementRowMap">
+        SELECT <include refid="columns"/>
+        FROM lecture_achievements la
+        LEFT JOIN users teacher ON teacher.user_id = la.teacher_user_id
+        LEFT JOIN korus_personnel_snapshots personnel ON personnel.employee_no = teacher.employee_no
+        WHERE la.management_no = #{managementNo} AND la.deleted_yn = 'N'
+    </select>
+    <select id="findActiveOrganizationCode" resultType="string">
+        SELECT organization_code FROM organization_user_mappings
+        WHERE user_id = #{targetUserId} AND mapping_type = 'ORGANIZATION' AND status = 'ACTIVE'
+        ORDER BY effective_start_date DESC, mapping_id DESC LIMIT 1
+    </select>
+    <insert id="insertAchievement">
+        INSERT INTO lecture_achievements (management_no, teacher_user_id, evaluation_year, organization_code, management_item_code, occurred_date, achievement_detail, attachment_ref, created_by, updated_by, change_reason)
+        VALUES (#{managementNo}, #{teacherUserId}, #{evaluationYear}, #{organizationCode}, #{managementItemCode}, #{occurredDate}, CAST(#{achievementDetail} AS jsonb), #{attachmentRef}, #{createdBy}, #{createdBy}, #{changeReason})
+    </insert>
+    <update id="updateAchievement">
+        UPDATE lecture_achievements SET management_item_code = #{managementItemCode}, occurred_date = #{occurredDate}, achievement_detail = CAST(#{achievementDetail} AS jsonb), attachment_ref = #{attachmentRef}, updated_at = CURRENT_TIMESTAMP, updated_by = #{updatedBy}, change_reason = #{changeReason}
+        WHERE achievement_id = #{achievementId} AND deleted_yn = 'N' AND certification_status &lt;&gt; 'EVALUATION_CONFIRMED'
+    </update>
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (target_business, target_key, change_type, field_name, before_value, after_value, changed_by, change_reason)
+        VALUES ('lecture_achievements', CAST(#{achievementId} AS varchar), #{changeType}, #{fieldName}, #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason})
+    </insert>
+    <update id="updateCertificationStatus">
+        UPDATE lecture_achievements SET certification_status = #{nextStatus}, updated_at = CURRENT_TIMESTAMP, updated_by = #{updatedBy}, change_reason = #{changeReason}
+        WHERE achievement_id = #{achievementId} AND deleted_yn = 'N' AND certification_status &lt;&gt; 'EVALUATION_CONFIRMED'
+    </update>
+    <insert id="insertStatusHistory">
+        INSERT INTO education_achievement_status_histories (achievement_type, achievement_id, previous_status, next_status, action_type, reason_code, opinion, processed_by, processed_at, change_reason, request_id)
+        VALUES ('LECTURE', #{achievementId}, #{previousStatus}, #{nextStatus}, #{actionType}, #{reasonCode}, #{opinion}, #{processedBy}, #{processedAt}, #{changeReason}, #{requestId})
+    </insert>
+</mapper>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.achievement.EducationAchievementAccessMapper">
+    <select id="countDepartmentScopedTarget" resultType="int">
+        SELECT COUNT(*)
+        FROM organization_user_mappings actor_mapping
+        JOIN organization_user_mappings target_mapping
+            ON target_mapping.organization_code = actor_mapping.organization_code
+        WHERE actor_mapping.user_id = #{actorUserId}
+          AND actor_mapping.status = 'ACTIVE'
+          AND target_mapping.user_id = #{targetUserId}
+          AND target_mapping.organization_code = #{organizationCode}
+          AND target_mapping.status = 'ACTIVE'
+    </select>
+
+    <select id="countActiveInputPeriods" resultType="int">
+        SELECT COUNT(*)
+        FROM input_period_settings
+        WHERE evaluation_year = #{evaluationYear}
+          AND active_yn = 'Y'
+          AND (area_code IS NULL OR area_code = #{areaCode})
+          AND (organization_code IS NULL OR organization_code = #{organizationCode})
+          AND start_at &lt;= #{checkedAt}
+          AND end_at &gt;= #{checkedAt}
+    </select>
+
+    <select id="countEvaluationPeriodContainingDate" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_date_settings
+        WHERE evaluation_year = #{evaluationYear}
+          AND active_yn = 'Y'
+          AND (area_code IS NULL OR area_code = #{areaCode})
+          AND (organization_code IS NULL OR organization_code = #{organizationCode})
+          AND start_at::date &lt;= #{occurredDate}
+          AND end_at::date &gt;= #{occurredDate}
+    </select>
+
+    <select id="countConfirmedFinalizations" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_finalizations
+        WHERE target_user_id = #{targetUserId}
+          AND evaluation_year = #{evaluationYear}
+          AND final_status = 'EVALUATION_CONFIRMED'
+    </select>
+</mapper>

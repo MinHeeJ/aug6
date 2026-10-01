@@ -37,6 +37,9 @@ public class NeisSchoolInfoAdapter implements SchoolInfoPort {
 
     @Override
     public SchoolInfoSearchResponse search(SchoolInfoQuery query) {
+        if (apiKey.isBlank()) {
+            return new SchoolInfoSearchResponse(query.page(), query.size(), 0, List.of());
+        }
         HttpRequest request = HttpRequest.newBuilder(URI.create(endpointUrl + "?" + toQueryString(query)))
                 .timeout(timeout)
                 .GET()

@@ -14,19 +14,39 @@ import org.junit.jupiter.api.Test;
 
 class NeisSchoolInfoAdapterTest {
     @Test
-    void adapterEncodesKoreanSchoolNameAndParsesInfo000RowsWithoutKey() throws Exception {
+    void adapterReturnsAnEmptySuccessfulResponseWhenNoNeisCredentialIsConfigured() {
+        NeisSchoolInfoAdapter adapter = new NeisSchoolInfoAdapter(
+                new ObjectMapper(),
+                "http://127.0.0.1:1/hub/schoolInfo",
+                "",
+                Duration.ofMillis(100)
+        );
+
+        SchoolInfoSearchResponse response = adapter.search(new SchoolInfoQuery(null, null, 1, 100));
+
+        assertThat(response.displayedCount()).isZero();
+        assertThat(response.rows()).isEmpty();
+    }
+
+    @Test
+    void adapterEncodesKoreanSchoolNameAndParsesInfo000RowsWithConfiguredKey() throws Exception {
         AtomicReference<String> rawQuery = new AtomicReference<>();
         try (StubNeisServer server = StubNeisServer.start(rawQuery, """
                 {"schoolInfo":[{"head":[{"list_total_count":200},{"RESULT":{"CODE":"INFO-000","MESSAGE":"정상 처리되었습니다."}}]},{"row":[{"ATPT_OFCDC_SC_NM":"서울특별시교육청","SCHUL_NM":"가락고등학교","SCHUL_KND_SC_NM":"고등학교","LCTN_SC_NM":"서울","FOND_SC_NM":"공립","ORG_RDNMA":"서울 송파구 송이로 42","ORG_TELNO":"02-0000-0000"}]}]}
                 """)) {
-            NeisSchoolInfoAdapter adapter = new NeisSchoolInfoAdapter(new ObjectMapper(), server.url(), "", Duration.ofSeconds(2));
+            NeisSchoolInfoAdapter adapter = new NeisSchoolInfoAdapter(
+                    new ObjectMapper(),
+                    server.url(),
+                    "sampleKey",
+                    Duration.ofSeconds(2)
+            );
 
             SchoolInfoSearchResponse response = adapter.search(new SchoolInfoQuery("가락", "B10", 1, 100));
 
             assertThat(rawQuery.get()).contains("Type=json", "pIndex=1", "pSize=100", "ATPT_OFCDC_SC_CODE=B10");
             assertThat(rawQuery.get()).contains("SCHUL_NM=%EA%B0%80%EB%9D%BD");
             assertThat(rawQuery.get()).doesNotContain("SCHUL_NM=가락");
-            assertThat(rawQuery.get()).doesNotContain("KEY=");
+            assertThat(rawQuery.get()).contains("KEY=sampleKey");
             assertThat(response.displayedCount()).isEqualTo(1);
             assertThat(response.rows().get(0).schoolName()).isEqualTo("가락고등학교");
         }

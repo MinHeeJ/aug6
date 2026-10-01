@@ -5632,6 +5632,27 @@ paths:
           type: object
           additionalProperties: true
 
+  /api/business/lecture-evaluation-achievements:
+    get:
+      operationId: listLectureEvaluationAchievements
+      summary: 강의평가 실적 목록
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [REQ-1909, REQ-1911]
+      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, occurredDateFrom, occurredDateTo, certificationStatus] }
+      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+    post:
+      operationId: saveLectureEvaluationAchievement
+      summary: 강의평가 실적 저장
+      security: [ { SessionCookie: [] } ]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [REQ-1910, REQ-1912, REQ-1896, REQ-1908]
+      x-business-rules: [입력기간·데이터범위 통과 후 저장, 평가확정 변경 금지, 발생일 기간 밖은 경고 저장]
+      x-side-effects: [lecture_evaluation_achievements 저장, education_achievement_status_histories 및 data_change_histories 기록]
+      x-state-transitions: [작성중 생성, 평가확정 변경 거부]
+      x-required-tests: ['happy: 유효한 강의평가 저장 -> lecture_evaluation_achievements 재조회에 management_item_code가 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: managementItemCode 누락 -> fields.managementItemCode 오류가 반환된다', 'business: 평가확정 achievement 수정 -> 기존 lecture_evaluation_achievements row가 변경되지 않는다', 'side-effect: 저장 성공 -> data_change_histories에 target_business=lecture_evaluation_achievements가 기록된다']
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, occurredDate], properties: { managementItemCode: { type: string }, occurredDate: { type: string, format: date }, achievementDetail: { type: object } } } } } }
+      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
 components:
   securitySchemes:
     SessionCookie:

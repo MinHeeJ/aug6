@@ -11,6 +11,12 @@ export type AdminRoute = {
 
 export const ADMIN_ROUTES: AdminRoute[] = [
   {
+    path: "/achievements/education/lecture-evaluations",
+    label: "강의평가 실적 관리",
+    screenId: "SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의평가 실적 관리",
+  },
+  {
     path: "/admin/users",
     label: "사용자 관리",
     screenId: "SCR-USER-MGMT",
@@ -674,6 +680,11 @@ export function canAccessAdminRoute(
 ): boolean {
   if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
+  }
+  if (path === "/achievements/education/lecture-evaluations") {
+    return user.roles.some((role) =>
+      ["R01", "R02", "R04", "R09"].includes(role),
+    );
   }
   if (path === "/faculty/course-area-group-grades") {
     return (

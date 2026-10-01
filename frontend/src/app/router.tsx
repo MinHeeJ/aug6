@@ -131,6 +131,7 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -319,6 +320,8 @@ function renderAdminPage(path: string | undefined) {
       return <ParticipationAllocationRateSettingsPage />;
     case "/faculty/course-area-group-grades":
       return <CourseAreaGroupGradeQueryPage />;
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
     case "/admin/calculation-formulas":
       return <CalculationFormulaManagementPage />;
     case "/admin/evaluation-rule-sets":

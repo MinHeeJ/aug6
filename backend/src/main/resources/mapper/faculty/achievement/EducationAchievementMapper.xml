@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.faculty.achievement.EducationAchievementMapper">
+    <resultMap id="LectureEvaluationAchievementRowMap"
+               type="kr.ac.knue.commonfoundation.faculty.achievement.LectureEvaluationAchievementRow">
+        <constructor>
+            <arg column="achievementId" javaType="java.lang.Long"/>
+            <arg column="managementNo" javaType="string"/>
+            <arg column="targetUserId" javaType="java.lang.Long"/>
+            <arg column="teacherName" javaType="string"/>
+            <arg column="managementItemCode" javaType="string"/>
+            <arg column="occurredDate" javaType="java.time.LocalDate"/>
+            <arg column="achievementDetail" javaType="string"/>
+            <arg column="certificationStatus" javaType="string"/>
+            <arg column="hasAttachment" javaType="_boolean"/>
+            <arg column="createdAt" javaType="java.time.LocalDateTime"/>
+            <arg column="updatedAt" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="EvaluationPeriodMap"
+               type="kr.ac.knue.commonfoundation.faculty.achievement.EducationAchievementEvaluationPeriod">
+        <constructor>
+            <arg column="startDate" javaType="java.time.LocalDate"/>
+            <arg column="endDate" javaType="java.time.LocalDate"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="lectureEvaluationColumns">
+        lea.achievement_id as "achievementId",
+        lea.achievement_id::text as "managementNo",
+        lea.target_user_id as "targetUserId",
+        coalesce(kps.name, u.login_id) as "teacherName",
+        lea.management_item_code as "managementItemCode",
+        lea.occurred_date as "occurredDate",
+        lea.achievement_detail::text as "achievementDetail",
+        lea.certification_status as "certificationStatus",
+        (lea.attachment_ref is not null) as "hasAttachment",
+        lea.created_at as "createdAt",
+        lea.updated_at as "updatedAt"
+    </sql>
+
+    <sql id="lectureEvaluationFilters">
+        <where>
+            lea.deleted_yn = 'N'
+            <if test="criteria.normalizedManagementNo != null">
+                and lea.achievement_id::text ilike concat('%', #{criteria.normalizedManagementNo}, '%')
+            </if>
+            <if test="criteria.normalizedTeacherName != null">
+                and coalesce(kps.name, u.login_id) ilike concat('%', #{criteria.normalizedTeacherName}, '%')
+            </if>
+            <if test="criteria.normalizedManagementItemCode != null">
+                and lea.management_item_code = #{criteria.normalizedManagementItemCode}
+            </if>
+            <if test="criteria.occurredDateFrom != null">
+                and lea.occurred_date <![CDATA[>=]]> #{criteria.occurredDateFrom}
+            </if>
+            <if test="criteria.occurredDateTo != null">
+                and lea.occurred_date <![CDATA[<=]]> #{criteria.occurredDateTo}
+            </if>
+            <if test="criteria.normalizedCertificationStatus != null">
+                and lea.certification_status = #{criteria.normalizedCertificationStatus}
+            </if>
+            <if test="!unrestricted">
+                <choose>
+                    <when test="restrictToSelf">
+                        and lea.target_user_id = #{requesterUserId}
+                    </when>
+                    <otherwise>
+                        and (
+                            lea.target_user_id = #{requesterUserId}
+                            or exists (
+                                select 1
+                                from evaluation_organization_mappings eom
+                                where eom.user_id = #{requesterUserId}
+                                  and eom.business_type = 'FACULTY_ACHIEVEMENT'
+                                  and eom.data_scope in ('BUSINESS', 'ALL')
+                            )
+                        )
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </sql>
+
+    <select id="listLectureEvaluationAchievements" resultMap="LectureEvaluationAchievementRowMap">
+        select <include refid="lectureEvaluationColumns"/>
+        from lecture_evaluation_achievements lea
+        join users u on u.user_id = lea.target_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="lectureEvaluationFilters"/>
+        order by lea.occurred_date desc, lea.achievement_id desc
+        limit #{criteria.safeSize} offset #{criteria.offset}
+    </select>
+
+    <select id="countLectureEvaluationAchievements" resultType="long">
+        select count(*)
+        from lecture_evaluation_achievements lea
+        join users u on u.user_id = lea.target_user_id
+        left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+        <include refid="lectureEvaluationFilters"/>
+    </select>
+
+    <select id="isAchievementDataScopeAllowed" resultType="int">
+        select count(*)
+        from evaluation_organization_mappings eom
+        where eom.user_id = #{actorUserId}
+          and eom.business_type = 'FACULTY_ACHIEVEMENT'
+          and eom.data_scope in ('BUSINESS', 'ALL')
+    </select>
+
+    <select id="hasActiveInputPeriod" resultType="int">
+        select count(*)
+        from input_period_settings ips
+        where ips.evaluation_year = #{evaluationYear}
+          and ips.area_code = 'EDUCATION'
+          and ips.user_type_code = 'FACULTY'
+          and ips.active_yn = 'Y'
+          and CURRENT_TIMESTAMP between ips.start_at and ips.end_at
+    </select>
+
+    <select id="isEvaluationConfirmed" resultType="int">
+        select count(*)
+        from evaluation_finalizations ef
+        where ef.target_user_id = #{targetUserId}
+          and ef.evaluation_year = #{evaluationYear}
+          and ef.final_status = 'EVALUATION_CONFIRMED'
+    </select>
+
+    <select id="findEvaluationPeriod" resultMap="EvaluationPeriodMap">
+        select eds.start_at::date as "startDate",
+               eds.end_at::date as "endDate"
+        from evaluation_date_settings eds
+        where eds.evaluation_year = #{evaluationYear}
+          and eds.area_code = 'EDUCATION'
+          and eds.user_type_code = 'FACULTY'
+          and eds.active_yn = 'Y'
+        order by eds.start_at desc, eds.setting_id desc
+        limit 1
+    </select>
+
+    <select id="existsActiveManagementItem" resultType="int">
+        select count(*)
+        from evaluation_element_management_item_settings eems
+        where eems.management_item_code = #{managementItemCode}
+          and eems.evaluation_year = #{evaluationYear}
+          and eems.area_code = 'EDUCATION'
+          and eems.item_code = 'LECTURE'
+          and eems.active_yn = 'Y'
+          and eems.teacher_editable_yn = 'Y'
+          and eems.evaluation_confirmed_yn = 'N'
+          and CURRENT_DATE between eems.effective_start_date and eems.effective_end_date
+    </select>
+
+    <select id="insertLectureEvaluationAchievement" resultMap="LectureEvaluationAchievementRowMap">
+        insert into lecture_evaluation_achievements (
+            evaluation_year,
+            target_user_id,
+            management_item_code,
+            occurred_date,
+            achievement_detail,
+            certification_status,
+            created_by,
+            updated_by
+        )
+        values (
+            #{evaluationYear},
+            #{targetUserId},
+            #{managementItemCode},
+            #{occurredDate},
+            cast(#{achievementDetailJson} as jsonb),
+            'DRAFTING',
+            #{createdBy},
+            #{createdBy}
+        )
+        returning achievement_id as "achievementId",
+                  achievement_id::text as "managementNo",
+                  target_user_id as "targetUserId",
+                  (select coalesce(kps.name, u.login_id)
+                   from users u
+                   left join korus_personnel_snapshots kps on kps.employee_no = u.employee_no
+                   where u.user_id = target_user_id) as "teacherName",
+                  management_item_code as "managementItemCode",
+                  occurred_date as "occurredDate",
+                  achievement_detail::text as "achievementDetail",
+                  certification_status as "certificationStatus",
+                  (attachment_ref is not null) as "hasAttachment",
+                  created_at as "createdAt",
+                  updated_at as "updatedAt"
+    </select>
+
+    <insert id="insertEducationAchievementStatusHistory">
+        insert into education_achievement_status_histories (
+            achievement_type,
+            achievement_id,
+            previous_status,
+            next_status,
+            action_type,
+            reason_code,
+            opinion,
+            processed_by,
+            processed_at,
+            created_by,
+            updated_by
+        )
+        values (
+            #{history.achievementType},
+            #{history.achievementId},
+            #{history.previousStatus},
+            #{history.nextStatus},
+            #{history.actionType},
+            #{history.reasonCode},
+            #{history.opinion},
+            #{history.processedBy},
+            CURRENT_TIMESTAMP,
+            #{createdBy},
+            #{createdBy}
+        )
+    </insert>
+
+    <insert id="insertChangeHistory">
+        insert into data_change_histories (
+            target_business,
+            target_key,
+            change_type,
+            field_name,
+            before_value,
+            after_value,
+            changed_by,
+            change_reason,
+            request_id
+        )
+        values (
+            #{targetBusiness},
+            #{targetKey},
+            #{changeType},
+            #{fieldName},
+            #{beforeValue},
+            #{afterValue},
+            #{changedBy},
+            #{changeReason},
+            #{requestId}
+        )
+    </insert>
+</mapper>

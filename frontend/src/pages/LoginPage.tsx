@@ -11,6 +11,12 @@ export type AdminRoute = {
 
 export const ADMIN_ROUTES: AdminRoute[] = [
   {
+    path: "/achievements/education/lecture-evaluations",
+    label: "강의평가 실적 관리",
+    screenId: "SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의평가 실적 관리",
+  },
+  {
     path: "/admin/users",
     label: "사용자 관리",
     screenId: "SCR-USER-MGMT",

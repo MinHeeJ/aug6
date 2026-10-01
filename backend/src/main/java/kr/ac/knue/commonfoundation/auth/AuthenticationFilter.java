@@ -144,6 +144,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/admin/batch-retries") || apiPath.equals("/api/admin/batch-retries/targets")) {
             return "/admin/batch-retries";
         }
+        if (apiPath.equals("/api/business/lecture-evaluation-achievements")) {
+            return "/achievements/education/lecture-evaluations";
+        }
         return switch (apiPath) {
             case "/api/admin/organizations" -> "/admin/organizations";
             case "/api/admin/roles" -> "/admin/roles";

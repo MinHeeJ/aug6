@@ -78,6 +78,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";
         }
+        if (apiPath.equals("/api/business/lecture-evaluation-achievements")) {
+            return "/achievements/education/lecture-evaluations";
+        }
         if (apiPath.equals("/api/admin/business-status-codes")) {
             return "/admin/business-status-codes";
         }

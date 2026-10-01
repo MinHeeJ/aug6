@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic81.StudentGuidanceAchievementMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.basic81.StudentGuidanceAchievementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="target_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="guidance_start_date" javaType="java.time.LocalDate"/>
+            <arg column="guidance_end_date" javaType="java.time.LocalDate"/>
+            <arg column="student_count" javaType="int"/>
+            <arg column="certification_status" javaType="java.lang.String"/>
+            <arg column="attachment_ref" javaType="java.lang.String"/>
+            <arg column="students" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+    <sql id="where">
+        WHERE achievement.deleted_yn = 'N'
+        <if test="criteria.normalizedManagementNo() != null">AND achievement.management_no = #{criteria.normalizedManagementNo}</if>
+        <if test="criteria.normalizedTeacherName() != null">AND owner.login_id ILIKE CONCAT('%', #{criteria.normalizedTeacherName}, '%')</if>
+        <if test="criteria.normalizedManagementItemCode() != null">AND achievement.management_item_code = #{criteria.normalizedManagementItemCode}</if>
+        <if test="criteria.normalizedGuidanceDateFrom() != null">AND achievement.guidance_start_date >= CAST(#{criteria.normalizedGuidanceDateFrom} AS date)</if>
+        <if test="criteria.normalizedGuidanceDateTo() != null">AND achievement.guidance_end_date &lt;= CAST(#{criteria.normalizedGuidanceDateTo} AS date)</if>
+        <if test="criteria.normalizedCertificationStatus() != null">AND achievement.certification_status = #{criteria.normalizedCertificationStatus}</if>
+        <choose>
+            <when test="roles.contains('R01')">AND achievement.target_user_id = #{requesterUserId}</when>
+            <when test="roles.contains('R02')">AND EXISTS (SELECT 1 FROM organization_user_mappings requester_mapping JOIN organization_user_mappings target_mapping ON target_mapping.organization_code = requester_mapping.organization_code WHERE requester_mapping.user_id = #{requesterUserId} AND requester_mapping.status = 'ACTIVE' AND target_mapping.user_id = achievement.target_user_id AND target_mapping.status = 'ACTIVE')</when>
+            <when test="roles.contains('R04')">AND EXISTS (SELECT 1 FROM evaluation_organization_mappings permission_mapping JOIN organization_user_mappings target_mapping ON target_mapping.organization_code = permission_mapping.organization_code WHERE permission_mapping.user_id = #{requesterUserId} AND permission_mapping.business_type = 'FACULTY_ACHIEVEMENT' AND permission_mapping.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL') AND target_mapping.user_id = achievement.target_user_id AND target_mapping.status = 'ACTIVE')</when>
+            <otherwise>AND 1 = 0</otherwise>
+        </choose>
+    </sql>
+    <sql id="columns">
+        achievement.achievement_id, achievement.management_no, achievement.target_user_id,
+        owner.login_id AS teacher_name, achievement.evaluation_year, achievement.management_item_code,
+        achievement.guidance_start_date, achievement.guidance_end_date, achievement.student_count,
+        achievement.certification_status, achievement.attachment_ref,
+        COALESCE(jsonb_agg(detail.student_detail_jsonb) FILTER (WHERE detail.student_guidance_student_id IS NOT NULL), '[]'::jsonb)::text AS students,
+        achievement.created_at, achievement.updated_at
+    </sql>
+    <sql id="groupBy">GROUP BY achievement.achievement_id, owner.login_id</sql>
+    <select id="list" resultMap="row">
+        SELECT <include refid="columns"/>
+        FROM student_guidance_achievements achievement
+        JOIN users owner ON owner.user_id = achievement.target_user_id
+        LEFT JOIN student_guidance_students detail ON detail.achievement_id = achievement.achievement_id
+        <include refid="where"/>
+        <include refid="groupBy"/>
+        ORDER BY achievement.guidance_start_date DESC, achievement.achievement_id DESC
+        LIMIT #{criteria.safePageSize} OFFSET #{criteria.offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM student_guidance_achievements achievement
+        JOIN users owner ON owner.user_id = achievement.target_user_id
+        <include refid="where"/>
+    </select>
+    <select id="find" resultMap="row">
+        SELECT <include refid="columns"/>
+        FROM student_guidance_achievements achievement
+        JOIN users owner ON owner.user_id = achievement.target_user_id
+        LEFT JOIN student_guidance_students detail ON detail.achievement_id = achievement.achievement_id
+        WHERE achievement.achievement_id = #{achievementId} AND achievement.deleted_yn = 'N'
+        <include refid="groupBy"/>
+    </select>
+    <select id="findByManagementNo" resultMap="row">
+        SELECT <include refid="columns"/>
+        FROM student_guidance_achievements achievement
+        JOIN users owner ON owner.user_id = achievement.target_user_id
+        LEFT JOIN student_guidance_students detail ON detail.achievement_id = achievement.achievement_id
+        WHERE achievement.management_no = #{managementNo} AND achievement.deleted_yn = 'N'
+        <include refid="groupBy"/>
+    </select>
+    <insert id="insertHeader">INSERT INTO student_guidance_achievements (management_no, target_user_id, evaluation_year, management_item_code, guidance_start_date, guidance_end_date, student_count, certification_status, attachment_ref, deleted_yn, created_by, updated_by) VALUES (#{managementNo}, #{targetUserId}, #{evaluationYear}, #{managementItemCode}, #{guidanceStartDate}, #{guidanceEndDate}, #{studentCount}, 'DRAFT', #{attachmentRef}, 'N', #{createdBy}, #{createdBy})</insert>
+    <update id="updateHeader">UPDATE student_guidance_achievements SET management_item_code = #{managementItemCode}, guidance_start_date = #{guidanceStartDate}, guidance_end_date = #{guidanceEndDate}, student_count = #{studentCount}, attachment_ref = #{attachmentRef}, updated_at = CURRENT_TIMESTAMP, updated_by = #{updatedBy} WHERE achievement_id = #{achievementId} AND deleted_yn = 'N'</update>
+    <delete id="deleteStudents">DELETE FROM student_guidance_students WHERE achievement_id = #{achievementId}</delete>
+    <insert id="insertStudent">INSERT INTO student_guidance_students (achievement_id, student_detail_jsonb, created_by, updated_by) VALUES (#{achievementId}, CAST(#{studentDetail} AS jsonb), #{userId}, #{userId})</insert>
+    <insert id="insertStatusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type,
+            achievement_id,
+            previous_status,
+            next_status,
+            action_type,
+            reason_code,
+            opinion,
+            processed_by,
+            processed_at
+        )
+        VALUES (
+            #{history.achievementType},
+            #{history.achievementId},
+            #{history.previousStatus},
+            #{history.nextStatus},
+            #{history.actionType},
+            #{history.reasonCode},
+            #{history.opinion},
+            #{history.processedBy},
+            #{history.processedAt}
+        )
+    </insert>
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business,
+            target_key,
+            change_type,
+            field_name,
+            before_value,
+            after_value,
+            changed_by,
+            change_reason,
+            request_id
+        )
+        VALUES (
+            #{targetBusiness},
+            #{targetKey},
+            #{changeType},
+            #{fieldName},
+            #{beforeValue},
+            #{afterValue},
+            #{changedBy},
+            #{changeReason},
+            #{requestId}
+        )
+    </insert>
+    <insert id="insertExcelUpload">INSERT INTO excel_upload_files (upload_id, business_type, template_id, file_token, original_file_name, validation_status, uploader_user_id) VALUES (#{uploadId}, 'STUDENT_GUIDANCE', #{templateId}, CONCAT('student-guidance-', #{uploadId}), #{originalFileName}, #{validationStatus}, #{userId})</insert>
+    <insert id="insertExcelStaging">INSERT INTO excel_upload_staging_rows (staging_row_id, upload_id, row_number, row_payload, validation_status) VALUES (#{stagingRowId}, #{uploadId}, #{rowNumber}, CAST(#{payload} AS jsonb), #{validationStatus})</insert>
+    <insert id="insertExcelError">INSERT INTO excel_upload_errors (error_id, upload_id, row_number, column_name, input_value, error_code, error_reason, correction_guide) VALUES (#{errorId}, #{uploadId}, #{rowNumber}, #{columnName}, #{inputValue}, #{errorCode}, #{errorReason}, #{correctionGuide})</insert>
+    <insert id="upsertExcelHistory">INSERT INTO excel_upload_histories (upload_id, total_count, success_count, error_count, excluded_count, saved_count, processing_time_millis, processor_user_id) VALUES (#{uploadId}, #{totalCount}, #{successCount}, #{errorCount}, 0, #{savedCount}, 0, #{userId}) ON CONFLICT (upload_id) DO UPDATE SET total_count = EXCLUDED.total_count, success_count = EXCLUDED.success_count, error_count = EXCLUDED.error_count, saved_count = EXCLUDED.saved_count, processed_at = CURRENT_TIMESTAMP, processor_user_id = EXCLUDED.processor_user_id</insert>
+    <select id="countExcelErrors" resultType="int">SELECT COUNT(*) FROM excel_upload_errors WHERE upload_id = #{uploadId} AND status != 'DELETED'</select>
+    <select id="existsExcelUpload" resultType="int">SELECT COUNT(*) FROM excel_upload_files WHERE upload_id = #{uploadId} AND business_type = 'STUDENT_GUIDANCE' AND status != 'DELETED'</select>
+    <select id="listNormalExcelStaging" resultType="kr.ac.knue.commonfoundation.basic81.StudentGuidanceExcelStagingRow">SELECT row_number AS "rowNumber", row_payload::text AS "payload" FROM excel_upload_staging_rows WHERE upload_id = #{uploadId} AND validation_status = 'NORMAL' ORDER BY row_number</select>
+    <update id="markExcelCommitted">UPDATE excel_upload_files SET validation_status = 'COMMITTED' WHERE upload_id = #{uploadId}</update>
+    <delete id="deleteNormalExcelStaging">DELETE FROM excel_upload_staging_rows WHERE upload_id = #{uploadId} AND validation_status = 'NORMAL'</delete>
+    <select id="listExcelErrors" resultType="kr.ac.knue.commonfoundation.basic81.StudentGuidanceExcelErrorRow">SELECT row_number AS "rowNumber", column_name AS "columnName", input_value AS "inputValue", error_code AS "errorCode", error_reason AS "errorReason", correction_guide AS "correctionGuide" FROM excel_upload_errors WHERE upload_id = #{uploadId} AND status != 'DELETED' ORDER BY row_number, column_name</select>
+    <select id="listExcelHistories" resultType="kr.ac.knue.commonfoundation.basic81.StudentGuidanceExcelHistoryRow">SELECT history.upload_id AS "uploadId", file.original_file_name AS "originalFileName", history.total_count AS "totalCount", history.success_count AS "successCount", history.error_count AS "errorCount", history.saved_count AS "savedCount", history.processed_at AS "processedAt" FROM excel_upload_histories history JOIN excel_upload_files file ON file.upload_id = history.upload_id WHERE file.business_type = 'STUDENT_GUIDANCE' AND file.uploader_user_id = #{userId} AND history.status != 'DELETED' ORDER BY history.processed_at DESC</select>
+</mapper>

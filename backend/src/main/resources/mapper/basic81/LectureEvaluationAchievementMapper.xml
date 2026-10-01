@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.basic81.LectureEvaluationAchievementMapper">
+    <resultMap id="lectureEvaluationAchievementRow"
+        type="kr.ac.knue.commonfoundation.basic81.LectureEvaluationAchievementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="target_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="occurred_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_detail" javaType="java.lang.String"/>
+            <arg column="certification_status" javaType="java.lang.String"/>
+            <arg column="attachment_ref" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="listWhere">
+        WHERE achievement.deleted_yn = 'N'
+        <if test="criteria.normalizedManagementNo() != null">
+            AND achievement.management_no = #{criteria.normalizedManagementNo}
+        </if>
+        <if test="criteria.normalizedTeacherName() != null">
+            AND owner.login_id ILIKE CONCAT('%', #{criteria.normalizedTeacherName}, '%')
+        </if>
+        <if test="criteria.normalizedManagementItemCode() != null">
+            AND achievement.management_item_code = #{criteria.normalizedManagementItemCode}
+        </if>
+        <if test="criteria.occurredDateFrom != null">
+            AND achievement.occurred_date <![CDATA[>=]]> #{criteria.occurredDateFrom}
+        </if>
+        <if test="criteria.occurredDateTo != null">
+            AND achievement.occurred_date <![CDATA[<=]]> #{criteria.occurredDateTo}
+        </if>
+        <if test="criteria.normalizedCertificationStatus() != null">
+            AND achievement.certification_status = #{criteria.normalizedCertificationStatus}
+        </if>
+        <choose>
+            <when test="roles.contains('R01')">
+                AND achievement.target_user_id = #{requesterUserId}
+            </when>
+            <when test="roles.contains('R02')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings requester_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = requester_mapping.organization_code
+                    WHERE requester_mapping.user_id = #{requesterUserId}
+                      AND requester_mapping.status = 'ACTIVE'
+                      AND target_mapping.user_id = achievement.target_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <when test="roles.contains('R04')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings permission_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = permission_mapping.organization_code
+                    WHERE permission_mapping.user_id = #{requesterUserId}
+                      AND permission_mapping.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND permission_mapping.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND target_mapping.user_id = achievement.target_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="listLectureEvaluationAchievements"
+        resultMap="lectureEvaluationAchievementRow">
+        SELECT
+            achievement.achievement_id,
+            achievement.management_no,
+            achievement.target_user_id,
+            owner.login_id AS teacher_name,
+            achievement.evaluation_year,
+            achievement.management_item_code,
+            achievement.occurred_date,
+            achievement.achievement_detail,
+            achievement.certification_status,
+            achievement.attachment_ref,
+            achievement.created_at,
+            achievement.updated_at
+        FROM lecture_evaluation_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        <include refid="listWhere"/>
+        ORDER BY achievement.occurred_date DESC, achievement.achievement_id DESC
+        LIMIT #{criteria.safePageSize}
+        OFFSET #{criteria.offset}
+    </select>
+
+    <select id="countLectureEvaluationAchievements" resultType="long">
+        SELECT COUNT(*)
+        FROM lecture_evaluation_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        <include refid="listWhere"/>
+    </select>
+
+    <insert id="insertLectureEvaluationAchievement">
+        INSERT INTO lecture_evaluation_achievements (
+            management_no,
+            target_user_id,
+            evaluation_year,
+            management_item_code,
+            occurred_date,
+            achievement_detail,
+            certification_status,
+            attachment_ref,
+            deleted_yn,
+            created_by,
+            updated_by
+        )
+        VALUES (
+            #{managementNo},
+            #{targetUserId},
+            #{evaluationYear},
+            #{managementItemCode},
+            #{occurredDate},
+            #{achievementDetail},
+            'DRAFT',
+            #{attachmentRef},
+            'N',
+            #{createdBy},
+            #{createdBy}
+        )
+    </insert>
+
+    <select id="findLectureEvaluationAchievement"
+        resultMap="lectureEvaluationAchievementRow">
+        SELECT
+            achievement.achievement_id,
+            achievement.management_no,
+            achievement.target_user_id,
+            owner.login_id AS teacher_name,
+            achievement.evaluation_year,
+            achievement.management_item_code,
+            achievement.occurred_date,
+            achievement.achievement_detail,
+            achievement.certification_status,
+            achievement.attachment_ref,
+            achievement.created_at,
+            achievement.updated_at
+        FROM lecture_evaluation_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        WHERE achievement.management_no = #{managementNo}
+    </select>
+
+    <insert id="insertStatusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type,
+            achievement_id,
+            previous_status,
+            next_status,
+            action_type,
+            reason_code,
+            opinion,
+            processed_by,
+            processed_at
+        )
+        VALUES (
+            #{history.achievementType},
+            #{history.achievementId},
+            #{history.previousStatus},
+            #{history.nextStatus},
+            #{history.actionType},
+            #{history.reasonCode},
+            #{history.opinion},
+            #{history.processedBy},
+            #{history.processedAt}
+        )
+    </insert>
+
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business,
+            target_key,
+            change_type,
+            field_name,
+            before_value,
+            after_value,
+            changed_by,
+            change_reason,
+            request_id
+        )
+        VALUES (
+            #{targetBusiness},
+            #{targetKey},
+            #{changeType},
+            #{fieldName},
+            #{beforeValue},
+            #{afterValue},
+            #{changedBy},
+            #{changeReason},
+            #{requestId}
+        )
+    </insert>
+
+    <update id="updateCertificationStatus">
+        UPDATE lecture_evaluation_achievements
+        SET certification_status = #{status},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy}
+        WHERE achievement_id = #{achievementId}
+          AND deleted_yn = 'N'
+    </update>
+
+    <select id="findCertificationStatus" resultType="string">
+        SELECT certification_status
+        FROM lecture_evaluation_achievements
+        WHERE achievement_id = #{achievementId}
+          AND deleted_yn = 'N'
+    </select>
+</mapper>

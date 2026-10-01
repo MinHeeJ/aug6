@@ -75,6 +75,21 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (basic36Route != null) {
             return basic36Route;
         }
+        if (apiPath.equals("/api/business/lecture-evaluation-achievements")) {
+            return "/achievements/education/lecture-evaluations";
+        }
+        if (apiPath.equals("/api/business/lecture-achievements")) {
+            return "/achievements/education/lecture-achievements";
+        }
+        if (apiPath.equals("/api/business/degree-completion-achievements")) {
+            return "/achievements/education/masters-doctoral-graduations";
+        }
+        if (apiPath.equals("/api/business/student-guidance-achievements")) {
+            return "/achievements/education/student-guidance-achievements";
+        }
+        if (apiPath.startsWith("/api/business/student-guidance-achievements/excel-uploads")) {
+            return "/achievements/education/student-guidance-uploads";
+        }
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";
         }

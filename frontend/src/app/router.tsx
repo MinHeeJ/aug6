@@ -99,6 +99,7 @@ import {
   ExcelUploadManagementPage,
   UploadTemplateManagementPage,
 } from "../pages/admin/ExcelOperationsPages";
+import { LectureEvaluationAchievementManagementPage } from "../pages/admin/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 import {
   BaseYearManagementPage,
   CommonSettingsPage,
@@ -237,6 +238,8 @@ export function AppRouter() {
 
 function renderAdminPage(path: string | undefined) {
   switch (path) {
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
     case "/admin/users":
       return <UserManagementPage />;
     case "/admin/organizations":

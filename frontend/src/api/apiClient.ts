@@ -4778,3 +4778,78 @@ export const courseAreaGroupGradeApi = {
     return response.blob();
   },
 };
+
+export type LectureEvaluationAchievementRow = {
+  achievementId: number;
+  managementNo: string;
+  teacherUserId: number;
+  teacherName?: string | null;
+  evaluationYear: string;
+  organizationCode?: string | null;
+  managementItemCode: string;
+  occurredDate: string;
+  achievementDetailJson: string;
+  certificationStatus: string;
+  attachmentRef?: string | null;
+};
+
+export type LectureEvaluationAchievementSearchResponse = {
+  rows: LectureEvaluationAchievementRow[];
+  page: number;
+  pageSize: PageSize;
+  totalElements: number;
+};
+
+export type SaveLectureEvaluationAchievementPayload = {
+  achievementId?: number;
+  managementItemCode: string;
+  occurredDate: string;
+  achievementDetail?: object;
+  attachmentRef?: string;
+};
+
+function lectureEvaluationAchievementQuery(params: {
+  managementNo?: string;
+  teacherName?: string;
+  managementItemCode?: string;
+  occurredDateFrom?: string;
+  occurredDateTo?: string;
+  certificationStatus?: string;
+  page?: number;
+  pageSize?: PageSize;
+}) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 0),
+    pageSize: String(params.pageSize ?? 20),
+  });
+  if (params.managementNo?.trim())
+    query.set("managementNo", params.managementNo.trim());
+  if (params.teacherName?.trim())
+    query.set("teacherName", params.teacherName.trim());
+  if (params.managementItemCode?.trim())
+    query.set("managementItemCode", params.managementItemCode.trim());
+  if (params.occurredDateFrom)
+    query.set("occurredDateFrom", params.occurredDateFrom);
+  if (params.occurredDateTo) query.set("occurredDateTo", params.occurredDateTo);
+  if (params.certificationStatus?.trim())
+    query.set("certificationStatus", params.certificationStatus.trim());
+  return query;
+}
+
+export const lectureEvaluationAchievementApi = {
+  list(params: Parameters<typeof lectureEvaluationAchievementQuery>[0]) {
+    return apiRequest<LectureEvaluationAchievementSearchResponse>(
+      `/api/business/lecture-evaluation-achievements?${lectureEvaluationAchievementQuery(params).toString()}` as `/api/${string}`,
+    );
+  },
+  save(payload: SaveLectureEvaluationAchievementPayload) {
+    return apiRequest<{
+      achievement: LectureEvaluationAchievementRow;
+      warning: boolean;
+      warningCode?: string;
+    }>("/api/business/lecture-evaluation-achievements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};

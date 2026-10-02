@@ -18,6 +18,10 @@ import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Applies session authentication and menu-level authorization before protected API
+ * handlers execute, including BASIC-83 education-achievement route mappings.
+ */
 public class AuthenticationFilter extends OncePerRequestFilter {
     private final AuthService authService;
     private final EffectivePermissionService permissionService;
@@ -89,6 +93,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         if (apiPath.startsWith("/api/business/student-guidance-achievements/excel-uploads")) {
             return "/achievements/education/student-guidance-uploads";
+        }
+        if (apiPath.startsWith("/api/business/employment-rate-improvements")) {
+            return "/faculty/employment-rate-improvement-achievements";
+        }
+        if (apiPath.startsWith("/api/business/course-operations")) {
+            return "/faculty/course-offering-operation-achievements";
+        }
+        if (apiPath.startsWith("/api/business/lecture-improvements")) {
+            return "/faculty/teaching-improvement-achievements";
+        }
+        if (apiPath.startsWith("/api/business/employment-rate-achievements")) {
+            return "/faculty/employment-rate-achievements";
         }
         if (apiPath.equals("/api/business/evaluation-organization-mappings")) {
             return "/admin/evaluation-organization-mappings";

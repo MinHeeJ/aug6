@@ -135,6 +135,10 @@ import { LectureEvaluationAchievementManagementPage } from "../pages/achievement
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+import { EmploymentRateImprovementAchievementPage } from "../pages/achievements/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
+import { EmploymentRateAchievementPage } from "../pages/achievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
+import { CourseOfferingOperationAchievementPage } from "../pages/achievements/SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT";
+import { TeachingImprovementAchievementPage } from "../pages/achievements/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -283,6 +287,52 @@ function renderAchievementPage(path: string, user: CurrentUser | null) {
       );
     }
     return <MastersDoctoralGraduationAchievementManagementPage />;
+  }
+  if (path === "/faculty/employment-rate-achievements") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R07"].includes(role))
+    ) {
+      return (
+        <PermissionState
+          title="취업률 실적 관리 권한이 없습니다"
+          message="R01, R02, R04 또는 R07 권한이 필요합니다."
+        />
+      );
+    }
+    return <EmploymentRateAchievementPage />;
+  }
+  if (path === "/faculty/employment-rate-improvement-achievements") {
+    if (!user?.roles.some((role) => ["R01", "R02", "R04"].includes(role))) {
+      return (
+        <PermissionState
+          title="취업률 제고 실적 관리 권한이 없습니다"
+          message="R01, R02 또는 R04 권한과 해당 데이터 범위가 필요합니다."
+        />
+      );
+    }
+    return <EmploymentRateImprovementAchievementPage />;
+  }
+  if (path === "/faculty/course-offering-operation-achievements") {
+    if (!user?.roles.some((role) => ["R01", "R02", "R04"].includes(role))) {
+      return (
+        <PermissionState
+          title="강좌 개설·운영 실적 관리 권한이 없습니다"
+          message="R01, R02 또는 R04 권한과 해당 데이터 범위가 필요합니다."
+        />
+      );
+    }
+    return <CourseOfferingOperationAchievementPage />;
+  }
+  if (path === "/faculty/teaching-improvement-achievements") {
+    if (!user?.roles.some((role) => ["R01", "R02", "R04"].includes(role))) {
+      return (
+        <PermissionState
+          title="강의개선 실적 관리 권한이 없습니다"
+          message="R01, R02 또는 R04 권한과 해당 데이터 범위가 필요합니다."
+        />
+      );
+    }
+    return <TeachingImprovementAchievementPage />;
   }
   if (path === "/achievements/education/student-guidance-uploads") {
     if (!user?.roles.some((role) => ["R07", "R09"].includes(role))) {

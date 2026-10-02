@@ -135,6 +135,10 @@ import { LectureEvaluationAchievementManagementPage } from "../pages/achievement
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+import { EmploymentRateImprovementAchievementPage } from "../pages/f2_user_story_1/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
+import { CourseOfferingOperationAchievementPage } from "../pages/f3_user_story_2/SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT";
+import { TeachingImprovementAchievementPage } from "../pages/f4_user_story_3/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
+import { EmploymentRateAchievementPage } from "../pages/f5_user_story_4/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +249,36 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/faculty/education/employment-rate-improvements") {
+    if (!hasAnyRole(user, ["R01", "R02", "R04"])) {
+      return achievementPermissionState("취업률 제고 실적 관리");
+    }
+    return <EmploymentRateImprovementAchievementPage />;
+  }
+  if (path === "/faculty/education/course-operations") {
+    if (!hasAnyRole(user, ["R01", "R02", "R04"])) {
+      return achievementPermissionState("강좌 개설·운영 실적 관리");
+    }
+    return <CourseOfferingOperationAchievementPage />;
+  }
+  if (path === "/faculty/education/lecture-improvements") {
+    if (!hasAnyRole(user, ["R01", "R02", "R04"])) {
+      return achievementPermissionState("강의개선 실적 관리");
+    }
+    return <TeachingImprovementAchievementPage />;
+  }
+  if (path === "/faculty/education/employment-rate-achievements") {
+    if (!hasAnyRole(user, ["R01", "R02", "R04", "R07"])) {
+      return achievementPermissionState("취업률 실적 관리");
+    }
+    return (
+      <EmploymentRateAchievementPage
+        initialTab={
+          hasAnyRole(user, ["R01", "R02", "R04"]) ? "individual" : "excel"
+        }
+      />
+    );
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
@@ -296,6 +330,23 @@ function renderAchievementPage(path: string, user: CurrentUser | null) {
     return <StudentGuidanceExcelUploadPage />;
   }
   return null;
+}
+
+function hasAnyRole(user: CurrentUser | null, permittedRoles: string[]) {
+  return (
+    user?.roles.some(
+      (role) => permittedRoles.includes(role) || role === "R09",
+    ) ?? false
+  );
+}
+
+function achievementPermissionState(title: string) {
+  return (
+    <PermissionState
+      title={`${title} 권한이 없습니다`}
+      message="필요한 업무 역할 또는 데이터 범위 권한이 없습니다."
+    />
+  );
 }
 
 function renderAdminPage(path: string | undefined) {

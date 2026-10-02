@@ -11,6 +11,30 @@ export type AdminRoute = {
 
 export const ADMIN_ROUTES: AdminRoute[] = [
   {
+    path: "/achievements/education/student-guidance-uploads",
+    label: "학생지도 Excel 일괄등록",
+    screenId: "SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD",
+    menuPath: "업적 입력 관리 > 교육영역 > 학생지도 실적 관리 > Excel 일괄등록",
+  },
+  {
+    path: "/achievements/education/lecture-evaluations",
+    label: "강의평가 실적 관리",
+    screenId: "SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의평가 실적 관리",
+  },
+  {
+    path: "/achievements/education/lecture-achievements",
+    label: "강의실적 관리",
+    screenId: "SCR-LECTURE-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의실적 관리",
+  },
+  {
+    path: "/achievements/education/masters-doctoral-graduations",
+    label: "석·박사 배출 실적 관리",
+    screenId: "SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT",
+    menuPath: "업적 입력 관리 > 교육영역 > 석·박사 배출 실적 관리",
+  },
+  {
     path: "/admin/users",
     label: "사용자 관리",
     screenId: "SCR-USER-MGMT",

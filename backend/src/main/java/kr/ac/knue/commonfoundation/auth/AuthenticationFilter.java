@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.UUID;
 import kr.ac.knue.commonfoundation.basic33.EvaluationRuleFoundationContract;
 import kr.ac.knue.commonfoundation.basic34.EvaluationRuleBusinessFoundationContract;
 import kr.ac.knue.commonfoundation.basic36.Basic36FoundationContract;
@@ -15,6 +16,7 @@ import kr.ac.knue.commonfoundation.businessperiod.BusinessPeriodFoundationContra
 import kr.ac.knue.commonfoundation.common.api.ApiError;
 import kr.ac.knue.commonfoundation.common.api.ApiResponse;
 import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
+import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -31,27 +33,40 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.equals("/api/health") || path.equals("/api/auth/login")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-        String sessionId = extractSession(request);
-        if (sessionId == null) {
-            writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
-            return;
-        }
-        try {
-            CurrentUser user = authService.currentUser(sessionId);
-            request.setAttribute("currentUser", user);
-            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
-                writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+        String requestId = resolveRequestId(request.getHeader("X-Request-Id"));
+        request.setAttribute("requestId", requestId);
+        response.setHeader("X-Request-Id", requestId);
+        try (MDC.MDCCloseable ignored = MDC.putCloseable("requestId", requestId)) {
+            String path = request.getRequestURI();
+            if (!path.startsWith("/api/") || path.equals("/api/health") || path.equals("/api/auth/login")) {
+                filterChain.doFilter(request, response);
                 return;
             }
-            filterChain.doFilter(request, response);
-        } catch (RuntimeException exception) {
-            writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
+            String sessionId = extractSession(request);
+            if (sessionId == null) {
+                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
+                return;
+            }
+            try {
+                CurrentUser user = authService.currentUser(sessionId);
+                request.setAttribute("currentUser", user);
+                if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+                    writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+                    return;
+                }
+                filterChain.doFilter(request, response);
+            } catch (RuntimeException exception) {
+                writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
+            }
         }
+    }
+
+    /** Accepts a bounded opaque correlation ID and replaces malformed client input with a UUID. */
+    private String resolveRequestId(String suppliedRequestId) {
+        if (suppliedRequestId != null && suppliedRequestId.matches("[A-Za-z0-9-]{1,100}")) {
+            return suppliedRequestId;
+        }
+        return UUID.randomUUID().toString();
     }
 
     private boolean requiresMenuPermission(String path) {
@@ -143,6 +158,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
         if (apiPath.equals("/api/admin/batch-retries") || apiPath.equals("/api/admin/batch-retries/targets")) {
             return "/admin/batch-retries";
+        }
+        if (apiPath.equals("/api/business/lecture-evaluation-achievements")) {
+            return "/achievements/education/lecture-evaluations";
+        }
+        if (apiPath.equals("/api/business/lecture-achievements")) {
+            return "/achievements/education/lecture-achievements";
+        }
+        if (apiPath.startsWith("/api/business/student-guidance-achievements")) {
+            return "/achievements/education/student-guidance-uploads";
+        }
+        if (apiPath.equals("/api/business/degree-completion-achievements")) {
+            return "/achievements/education/masters-doctoral-graduations";
         }
         return switch (apiPath) {
             case "/api/admin/organizations" -> "/admin/organizations";

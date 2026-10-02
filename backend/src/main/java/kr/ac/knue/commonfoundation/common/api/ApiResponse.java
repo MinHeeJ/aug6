@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.MDC;
 
 public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String, Object> meta) {
     public static <T> ApiResponse<T> ok(T data) {
@@ -30,6 +31,10 @@ public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("timestamp", OffsetDateTime.now().toString());
         meta.put("traceId", UUID.randomUUID().toString());
+        String requestId = MDC.get("requestId");
+        if (requestId != null && !requestId.isBlank()) {
+            meta.put("requestId", requestId);
+        }
         return meta;
     }
 }

@@ -64,6 +64,10 @@ import { ExceptionPeriodManagementPage } from "../pages/admin/SCR-EXCEPTION-PERI
 import { DepartmentChairConfirmPeriodManagementPage } from "../pages/admin/SCR-DEPARTMENT-CHAIR-CONFIRM-PERIOD-MGMT";
 import { DepartmentChairConfirmationManagementPage } from "../pages/admin/SCR-DEPARTMENT-CHAIR-CONFIRM-MGMT";
 import { AchievementVerificationManagementPage } from "../pages/admin/SCR-ACHIEVEMENT-VERIFICATION-MGMT";
+import { LectureEvaluationAchievementManagementPage } from "../pages/admin/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { LectureAchievementManagementPage } from "../pages/admin/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { StudentGuidanceExcelUploadPage } from "../pages/admin/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
+import { DegreeCompletionAchievementManagementPage } from "../pages/admin/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 import { GrantPaymentApprovalManagementPage } from "../pages/admin/SCR-GRANT-PAYMENT-APPROVAL-MGMT";
 import { ObjectionOpinionManagementPage } from "../pages/admin/SCR-OBJECTION-OPINION-MGMT";
 import { EvaluationMaterialGenerationPage } from "../pages/admin/SCR-EVAL-MATERIAL-GENERATION";
@@ -347,6 +351,14 @@ function renderAdminPage(path: string | undefined) {
       return <DepartmentChairConfirmationManagementPage />;
     case "/admin/achievement-verifications":
       return <AchievementVerificationManagementPage />;
+    case "/achievements/education/lecture-evaluations":
+      return <LectureEvaluationAchievementManagementPage />;
+    case "/achievements/education/lecture-achievements":
+      return <LectureAchievementManagementPage />;
+    case "/achievements/education/student-guidance-uploads":
+      return <StudentGuidanceExcelUploadPage />;
+    case "/achievements/education/masters-doctoral-graduations":
+      return <DegreeCompletionAchievementManagementPage />;
     case "/admin/grant-payment-approvals":
       return <GrantPaymentApprovalManagementPage />;
     case "/admin/objection-opinions":

@@ -177,15 +177,43 @@ public class ExcelOperationsService {
     }
 
     private List<ExcelUploadErrorRow> inspectUpload(String uploadId, MultipartFile file) {
+        List<ExcelUploadErrorRow> errors = new ArrayList<>();
         try {
             String text = new String(file.getBytes(), StandardCharsets.UTF_8);
-            if (text.contains("E9999") || text.contains("DUPLICATE")) {
-                return List.of(new ExcelUploadErrorRow("ERR-" + UUID.randomUUID(), uploadId, 2, "교번", "E9999", "INVALID_CODE", "존재하지 않는 교번입니다.", "KORUS 기준 교번을 확인하세요."));
+            String[] lines = text.split("\\R");
+            if (lines.length < 2) {
+                return List.of(error(uploadId, 1, "file", "", "REQUIRED_VALUE", "데이터 행이 없습니다."));
             }
-        } catch (Exception ignored) {
-            return List.of();
+            String[] headers = lines[0].split(",", -1);
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (int index = 1; index < lines.length; index++) {
+                String line = lines[index];
+                if (line.isBlank()) continue;
+                int rowNumber = index + 1;
+                String[] values = line.split(",", -1);
+                if (values.length < headers.length) {
+                    errors.add(error(uploadId, rowNumber, "row", line, "REQUIRED_VALUE", "필수 열 값이 누락되었습니다."));
+                    continue;
+                }
+                String rowKey = line.trim();
+                if (!seen.add(rowKey) || line.contains("DUPLICATE")) {
+                    errors.add(error(uploadId, rowNumber, "row", line, "DUPLICATE", "중복 데이터는 반영할 수 없습니다."));
+                }
+                if (line.contains("E9999")) {
+                    errors.add(error(uploadId, rowNumber, "교번", "E9999", "INVALID_CODE", "존재하지 않는 교번입니다."));
+                }
+                for (int column = 0; column < headers.length; column++) {
+                    if (values[column].trim().isEmpty()) errors.add(error(uploadId, rowNumber, headers[column], "", "REQUIRED_VALUE", "필수값을 입력하세요."));
+                }
+            }
+        } catch (Exception exception) {
+            return List.of(error(uploadId, 1, "file", "", "INVALID_FILE", "파일 내용을 읽을 수 없습니다."));
         }
-        return List.of();
+        return errors;
+    }
+
+    private ExcelUploadErrorRow error(String uploadId, int rowNumber, String columnName, String inputValue, String errorCode, String reason) {
+        return new ExcelUploadErrorRow("ERR-" + UUID.randomUUID(), uploadId, rowNumber, columnName, inputValue, errorCode, reason, "양식과 입력값을 확인하세요.");
     }
 
     private int countDataRows(MultipartFile file) {

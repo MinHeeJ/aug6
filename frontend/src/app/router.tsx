@@ -131,6 +131,10 @@ import {
   ManagementItemEvaluationScoreSettingsPage,
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
+import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
+import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -189,6 +193,11 @@ export function AppRouter() {
     );
   }
 
+  const achievementPage = renderAchievementPage(path, auth.user);
+  if (achievementPage) {
+    return <AdminShell>{achievementPage}</AdminShell>;
+  }
+
   const routedPage = renderAdminPage(adminRoute?.path);
   if (routedPage) {
     return <AdminShell>{routedPage}</AdminShell>;
@@ -233,6 +242,60 @@ export function AppRouter() {
       </section>
     </AdminShell>
   );
+}
+
+function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/achievements/education/lecture-evaluations") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
+    ) {
+      return (
+        <PermissionState
+          title="강의평가 실적 관리 권한이 없습니다"
+          message="R01, R02 또는 R04 권한과 해당 데이터 범위가 필요합니다."
+        />
+      );
+    }
+    return <LectureEvaluationAchievementManagementPage />;
+  }
+  if (path === "/achievements/education/lecture-achievements") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
+    ) {
+      return (
+        <PermissionState
+          title="강의실적 관리 권한이 없습니다"
+          message="R01, R02 또는 R04 권한과 해당 데이터 범위가 필요합니다."
+        />
+      );
+    }
+    return <LectureAchievementManagementPage />;
+  }
+  if (path === "/achievements/education/masters-doctoral-graduations") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
+    ) {
+      return (
+        <PermissionState
+          title="석·박사 배출 실적 관리 권한이 없습니다"
+          message="R01, R02 또는 R04 권한과 해당 데이터 범위가 필요합니다."
+        />
+      );
+    }
+    return <MastersDoctoralGraduationAchievementManagementPage />;
+  }
+  if (path === "/achievements/education/student-guidance-uploads") {
+    if (!user?.roles.some((role) => ["R07", "R09"].includes(role))) {
+      return (
+        <PermissionState
+          title="학생지도 Excel 등록 권한이 없습니다"
+          message="이 화면은 R07 역할만 사용할 수 있습니다."
+        />
+      );
+    }
+    return <StudentGuidanceExcelUploadPage />;
+  }
+  return null;
 }
 
 function renderAdminPage(path: string | undefined) {

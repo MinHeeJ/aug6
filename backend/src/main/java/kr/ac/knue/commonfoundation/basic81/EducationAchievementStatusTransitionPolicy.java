@@ -21,7 +21,8 @@ public class EducationAchievementStatusTransitionPolicy {
             "LECTURE_EVALUATION",
             "LECTURE",
             "STUDENT_GUIDANCE",
-            "DEGREE_COMPLETION");
+            "DEGREE_COMPLETION",
+            "EMPLOYMENT_RATE_IMPROVEMENT");
     private static final Map<EducationAchievementStatus, Set<EducationAchievementStatus>> ALLOWED_TRANSITIONS =
             allowedTransitions();
 

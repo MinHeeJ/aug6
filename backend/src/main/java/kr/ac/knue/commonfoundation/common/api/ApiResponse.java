@@ -30,6 +30,10 @@ public record ApiResponse<T>(boolean success, T data, ApiError error, Map<String
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("timestamp", OffsetDateTime.now().toString());
         meta.put("traceId", UUID.randomUUID().toString());
+        String requestId = RequestIdContext.get();
+        if (requestId != null && !requestId.isBlank()) {
+            meta.put("requestId", requestId);
+        }
         return meta;
     }
 }

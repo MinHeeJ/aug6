@@ -38,7 +38,9 @@ export async function apiRequest<T>(
     ...init,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(typeof FormData !== "undefined" && init.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...(init.headers ?? {}),
     },
   });
@@ -4776,5 +4778,140 @@ export const courseAreaGroupGradeApi = {
       );
     }
     return response.blob();
+  },
+};
+
+export type Basic83PageParams = {
+  page?: number;
+  pageSize?: 20 | 50 | 100;
+};
+
+export type EmploymentRateImprovementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  specialLectureStartDate?: string;
+  specialLectureEndDate?: string;
+  mockExamQuestionPeriod?: string;
+  attachmentIds?: string[];
+};
+
+export type CourseOperationRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  performanceDetails: string;
+  attachmentIds?: string[];
+};
+
+export type LectureImprovementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementContent: string;
+  academicYear: number;
+  semester: 1 | 2;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateAchievementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementName?: string;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateBulkJobRequest = {
+  evaluationYear: string;
+  actionType: "GENERATE" | "DELETE";
+  targetCondition?: Record<string, unknown>;
+};
+
+function basic83ListPath(
+  resource: string,
+  params: Basic83PageParams = {},
+): `/api/${string}` {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 0),
+    pageSize: String(params.pageSize ?? 20),
+  });
+  return `/api/business/${resource}?${query.toString()}` as `/api/${string}`;
+}
+
+function basic83DetailPath(
+  resource: string,
+  achievementId: number,
+): `/api/${string}` {
+  return `/api/business/${resource}/${achievementId}`;
+}
+
+function achievementResourceApi<TRequest>(resource: string) {
+  return {
+    list<TResponse>(params: Basic83PageParams = {}) {
+      return apiRequest<TResponse>(basic83ListPath(resource, params));
+    },
+    get<TResponse>(achievementId: number) {
+      return apiRequest<TResponse>(basic83DetailPath(resource, achievementId));
+    },
+    create<TResponse>(payload: TRequest) {
+      return apiRequest<TResponse>(`/api/business/${resource}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    update<TResponse>(achievementId: number, payload: TRequest) {
+      return apiRequest<TResponse>(basic83DetailPath(resource, achievementId), {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+}
+
+async function downloadBasic83Workbook(params: Basic83PageParams = {}) {
+  const response = await fetch(
+    basic83ListPath("employment-rate-achievements/download", params),
+    { credentials: "include" },
+  );
+  if (!response.ok) {
+    throw new ApiClientError(
+      response.status,
+      "Excel 파일을 내려받지 못했습니다.",
+    );
+  }
+  return response.blob();
+}
+
+export const basic83Api = {
+  employmentRateImprovements:
+    achievementResourceApi<EmploymentRateImprovementRequest>(
+      "employment-rate-improvements",
+    ),
+  courseOperations:
+    achievementResourceApi<CourseOperationRequest>("course-operations"),
+  lectureImprovements: achievementResourceApi<LectureImprovementRequest>(
+    "lecture-improvements",
+  ),
+  employmentRateAchievements: {
+    ...achievementResourceApi<EmploymentRateAchievementRequest>(
+      "employment-rate-achievements",
+    ),
+    download: downloadBasic83Workbook,
+    upload<TResponse>(file: File) {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiRequest<TResponse>(
+        "/api/business/employment-rate-achievements/excel-uploads",
+        { method: "POST", body: formData },
+      );
+    },
+    createBulkJob<TResponse>(payload: EmploymentRateBulkJobRequest) {
+      return apiRequest<TResponse>(
+        "/api/business/employment-rate-achievements/bulk-jobs",
+        { method: "POST", body: JSON.stringify(payload) },
+      );
+    },
+    getBulkJob<TResponse>(jobId: string) {
+      return apiRequest<TResponse>(
+        `/api/business/employment-rate-achievements/bulk-jobs/${encodeURIComponent(jobId)}`,
+      );
+    },
   },
 };

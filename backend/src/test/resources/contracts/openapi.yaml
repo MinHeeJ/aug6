@@ -6000,37 +6000,6 @@ paths:
       security: [ { SessionCookie: [] } ]
       x-roles: [R04, R08, R09]
       x-related-requirements: [REQ-1545, REQ-1546, REQ-1547, REQ-1548, REQ-1514, REQ-1515, REQ-1517, REQ-1518]
-
-    BusinessTransitionRequest:
-      type: object
-      required: [actionType]
-      properties:
-        actionType: { type: string }
-        reasonCode: { type: string }
-        opinion: { type: string }
-        evidenceRef: { type: string }
-    ObjectionOpinionRequest:
-      type: object
-      required: [decisionResult, reviewerOpinion]
-      properties:
-        decisionResult: { type: string }
-        reviewerOpinion: { type: string }
-        reasonCode: { type: string }
-    ApiResponse:
-      type: object
-      required: [success, meta]
-      properties:
-        success: { type: boolean }
-        data: { nullable: true }
-        meta: { type: object, additionalProperties: true }
-    ApiError:
-      type: object
-      required: [success, meta]
-      properties:
-        success: { type: boolean }
-        message: { type: string }
-        fields: { type: object, additionalProperties: true }
-        meta: { type: object, additionalProperties: true }
   /api/business/college-evaluation-unit-authorities:
     get:
       operationId: listCollegeEvaluationUnitAuthorities
@@ -6543,103 +6512,735 @@ paths:
       parameters: [ { name: page, in: query, schema: { type: integer, minimum: 0 } }, { name: pageSize, in: query, schema: { type: integer, enum: [20, 50, 100] } } ]
       responses: { '200': { description: Excel 다운로드 성공, content: { application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } } } }, '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '401': { description: 인증 필요, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
       x-related-requirements: [REQ-1826, REQ-1838, REQ-1839]
+  /api/business/employment-rate-improvements:
+    get:
+      operationId: listEmploymentRateImprovements
+      summary: 취업률 제고 실적 목록
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [FR-029, REQ-1873, REQ-1874, REQ-1892, REQ-1894]
+      parameters: [{name: page, in: query, schema: {type: integer, default: 0}}, {name: pageSize, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20}}]
+      responses: {'200': {description: 목록 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    post:
+      operationId: createEmploymentRateImprovement
+      summary: 취업률 제고 실적 등록
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1876, REQ-1883, REQ-1884, REQ-1893, REQ-1895]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EmploymentRateImprovementRequest'}}}}
+      responses: {'200': {description: 저장 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 상태 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [입력기간 밖 등록은 거부한다, 평가확정 실적은 변경하지 않는다]
+      x-side-effects: [education_achievements 저장, data_change_histories 기록]
+      x-state-transitions: []
+      x-required-tests: ['happy: 유효 특강기간 저장 -> education_achievements 재조회에 row 존재', 'auth: R07 요청 -> 403 반환', 'validation: managementItemCode 누락 -> fields.managementItemCode 오류', 'business: 평가확정 변경 -> 409 및 원본 row 무변경', 'side-effect: 저장 성공 -> data_change_histories row 존재']
+  /api/business/employment-rate-improvements/{achievementId}:
+    get:
+      operationId: getEmploymentRateImprovement
+      summary: 취업률 제고 실적 상세
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [REQ-1894]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses: {'200': {description: 상세 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '404': {description: 실적 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    put:
+      operationId: updateEmploymentRateImprovement
+      summary: 취업률 제고 실적 수정
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1893, REQ-1895]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EmploymentRateImprovementRequest'}}}}
+      responses: {'200': {description: 수정 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 확정 또는 기간 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [평가확정 실적과 입력기간 밖 수정은 거부한다, 실패 시 기존 값을 유지한다]
+      x-side-effects: [employment_rate_improvement_achievements 수정, data_change_histories 기록]
+      x-required-tests: ['happy: 수정 후 상세 재조회 값 일치', 'auth: 타인 또는 범위 밖 수정 -> 403', 'validation: managementItemCode 누락 -> 400', 'business: 평가확정 수정 -> 409 및 원본 row 무변경', 'side-effect: 수정 성공 -> data_change_histories row 존재']
+  /api/business/course-operations:
+    get:
+      operationId: listCourseOperations
+      summary: 강좌 개설·운영 실적 목록
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [FR-030, REQ-1873, REQ-1874, REQ-1896, REQ-1898]
+      parameters: [{name: page, in: query, schema: {type: integer, default: 0}}, {name: pageSize, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20}}]
+      responses: {'200': {description: 목록 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    post:
+      operationId: createCourseOperation
+      summary: 강좌 개설·운영 실적 등록
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1883, REQ-1884, REQ-1897, REQ-1899]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CourseOperationRequest'}}}}
+      responses: {'200': {description: 저장 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 상태 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [입력기간 밖 등록은 거부한다, 단건 저장 실패 시 업무 데이터와 이력을 함께 롤백한다]
+      x-side-effects: [course_offering_operation_achievements 저장, data_change_histories 기록]
+      x-required-tests: ['happy: 실적내역 저장 후 목록·상세 값 일치', 'auth: 권한 없는 사용자 -> 403', 'validation: performanceDetails 누락 -> 400', 'business: 평가확정 수정 -> 409 및 원본 row 무변경', 'side-effect: 저장 성공 -> data_change_histories row 존재']
+  /api/business/course-operations/{achievementId}:
+    get:
+      operationId: getCourseOperation
+      summary: 강좌 개설·운영 실적 상세
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [REQ-1898]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses: {'200': {description: 상세 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '404': {description: 실적 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    put:
+      operationId: updateCourseOperation
+      summary: 강좌 개설·운영 실적 수정
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1897, REQ-1899]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CourseOperationRequest'}}}}
+      responses: {'200': {description: 수정 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 확정 또는 기간 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [평가확정 실적과 입력기간 밖 수정은 거부한다, 실패 시 기존 값을 유지한다]
+      x-side-effects: [course_offering_operation_achievements 수정, data_change_histories 기록]
+      x-required-tests: ['happy: 수정 후 상세 재조회 값 일치', 'auth: 타인 또는 범위 밖 수정 -> 403', 'validation: performanceDetails 누락 -> 400', 'business: 평가확정 수정 -> 409 및 원본 row 무변경', 'side-effect: 수정 성공 -> data_change_histories row 존재']
+  /api/business/lecture-improvements:
+    get:
+      operationId: listLectureImprovements
+      summary: 강의개선 실적 목록
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [FR-031, REQ-1873, REQ-1874, REQ-1900, REQ-1902]
+      parameters: [{name: page, in: query, schema: {type: integer, default: 0}}, {name: pageSize, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20}}]
+      responses: {'200': {description: 목록 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    post:
+      operationId: createLectureImprovement
+      summary: 강의개선 실적 등록
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1883, REQ-1884, REQ-1901, REQ-1903]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LectureImprovementRequest'}}}}
+      responses: {'200': {description: 저장 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 상태 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [학년도와 학기를 서버에서 검증한다, 단건 저장 실패 시 업무 데이터와 이력을 함께 롤백한다]
+      x-side-effects: [teaching_improvement_achievements 저장, data_change_histories 기록]
+      x-required-tests: ['happy: 학년도·학기 저장 후 상세 값 일치', 'auth: 권한 없는 사용자 -> 403', 'validation: academicYear 또는 semester 누락 -> 400', 'business: 평가확정 수정 -> 409 및 원본 row 무변경', 'side-effect: 저장 성공 -> data_change_histories row 존재']
+  /api/business/lecture-improvements/{achievementId}:
+    get:
+      operationId: getLectureImprovement
+      summary: 강의개선 실적 상세
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [REQ-1902]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses: {'200': {description: 상세 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '404': {description: 실적 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    put:
+      operationId: updateLectureImprovement
+      summary: 강의개선 실적 수정
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1901, REQ-1903]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LectureImprovementRequest'}}}}
+      responses: {'200': {description: 수정 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 확정 또는 기간 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [평가확정 실적과 입력기간 밖 수정은 거부한다, 학년도와 학기를 서버에서 검증한다]
+      x-side-effects: [teaching_improvement_achievements 수정, data_change_histories 기록]
+      x-required-tests: ['happy: 수정 후 학년도·학기 상세 값 일치', 'auth: 타인 또는 범위 밖 수정 -> 403', 'validation: semester 범위 오류 -> 400', 'business: 평가확정 수정 -> 409 및 원본 row 무변경', 'side-effect: 수정 성공 -> data_change_histories row 존재']
+  /api/business/employment-rate-achievements:
+    get:
+      operationId: listEmploymentRateAchievements
+      summary: 취업률 실적 목록
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [FR-032, REQ-1873, REQ-1874, REQ-1904]
+      parameters: [{name: page, in: query, schema: {type: integer, default: 0}}, {name: pageSize, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20}}]
+      responses: {'200': {description: 목록 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    post:
+      operationId: createEmploymentRateAchievement
+      summary: 취업률 실적 등록
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1883, REQ-1884, REQ-1904]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EmploymentRateAchievementRequest'}}}}
+      responses: {'200': {description: 저장 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 상태 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [단건 저장 실패 시 업무 데이터와 이력을 함께 롤백한다]
+      x-side-effects: [employment_rate_achievements 저장, data_change_histories 기록]
+      x-required-tests: ['happy: 저장 후 목록·상세 값 일치', 'auth: 권한 없는 사용자 -> 403', 'validation: managementItemCode 누락 -> 400', 'business: 평가확정 대상 변경 -> 409 및 원본 row 무변경', 'side-effect: 저장 성공 -> data_change_histories row 존재']
+  /api/business/employment-rate-achievements/{achievementId}:
+    get:
+      operationId: getEmploymentRateAchievement
+      summary: 취업률 실적 상세
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04]
+      x-related-requirements: [REQ-1904]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses: {'200': {description: 상세 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '404': {description: 실적 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+    put:
+      operationId: updateEmploymentRateAchievement
+      summary: 취업률 실적 수정
+      security: [{SessionCookie: []}]
+      x-roles: [R01]
+      x-related-requirements: [REQ-1904]
+      parameters: [{name: achievementId, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EmploymentRateAchievementRequest'}}}}
+      responses: {'200': {description: 수정 성공, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 확정 또는 기간 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [평가확정 실적과 입력기간 밖 수정은 거부한다, 실패 시 기존 값을 유지한다]
+      x-side-effects: [employment_rate_achievements 수정, data_change_histories 기록]
+      x-required-tests: ['happy: 수정 후 상세 재조회 값 일치', 'auth: 타인 또는 범위 밖 수정 -> 403', 'validation: achievementDate 형식 오류 -> 400', 'business: 평가확정 수정 -> 409 및 원본 row 무변경', 'side-effect: 수정 성공 -> data_change_histories row 존재']
+  /api/business/employment-rate-achievements/download:
+    get:
+      operationId: downloadEmploymentRateAchievements
+      summary: 취업률 실적 Excel 다운로드
+      security: [{SessionCookie: []}]
+      x-roles: [R01, R02, R04, R07]
+      x-related-requirements: [REQ-1875, REQ-1904]
+      parameters: [{name: page, in: query, schema: {type: integer, default: 0}}, {name: pageSize, in: query, schema: {type: integer, enum: [20, 50, 100], default: 20}}]
+      responses: {'200': {description: Excel 다운로드 성공, content: {application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: {schema: {type: string, format: binary}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+  /api/business/employment-rate-achievements/excel-uploads:
+    post:
+      operationId: uploadEmploymentRateAchievementsExcel
+      summary: 취업률 실적 Excel 검증 및 일괄등록
+      security: [{SessionCookie: []}]
+      x-roles: [R07]
+      x-related-requirements: [REQ-1878, REQ-1879, REQ-1880, REQ-1881, REQ-1882, REQ-1905, REQ-1908, REQ-1909, REQ-1910]
+      requestBody: {required: true, content: {multipart/form-data: {schema: {type: object, required: [file], properties: {file: {type: string, format: binary}}}}}}
+      responses: {'200': {description: 검증 결과, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 오류 또는 중복 행 존재, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [전체 행을 먼저 검증한다, 오류 또는 중복 행이 하나라도 있으면 업무 데이터는 0건 반영한다]
+      x-side-effects: [excel_upload_histories 기록, 오류 결과 파일 보존, 검증 성공 시 employment_rate_achievements 원자 반영]
+      x-required-tests: ['happy: 정상 파일 -> 전 행 반영 및 업로드 이력 기록', 'auth: R07 외 역할 -> 403', 'validation: 오류행 1건 -> 업무 데이터 0건 반영 및 오류파일 제공', 'business: 중복행 -> 기존 값 유지', 'side-effect: 검증 실패도 업로드 이력과 오류 결과 파일 보존']
+  /api/business/employment-rate-achievements/bulk-jobs:
+    post:
+      operationId: createEmploymentRateBulkJob
+      summary: 취업률 실적 일괄 생성·삭제 작업
+      security: [{SessionCookie: []}]
+      x-roles: [R07]
+      x-related-requirements: [REQ-1877, REQ-1906, REQ-1907, REQ-1910]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EmploymentRateBulkJobRequest'}}}}
+      responses: {'202': {description: 작업 접수, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '400': {description: 입력 오류, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '409': {description: 정책 또는 상태 충돌, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
+      x-business-rules: [대상 미리보기와 사용자 확인을 요구한다, OQ-83-01 확정 전 실행조건과 삭제 허용 상태를 hardcode하지 않는다]
+      x-side-effects: [employment_rate_bulk_jobs와 employment_rate_bulk_job_items 기록]
+      x-state-transitions: []
+      x-required-tests: ['happy: 승인된 생성 조건 실행 -> 202와 jobId', 'auth: R01 요청 -> 403 반환', 'validation: evaluationYear 누락 -> fields.evaluationYear 오류', 'business: OQ-83-01 미확정 조건 -> 409 및 job 미생성', 'side-effect: 접수 성공 -> employment_rate_bulk_jobs와 item row 존재']
+  /api/business/employment-rate-achievements/bulk-jobs/{jobId}:
+    get:
+      operationId: getEmploymentRateBulkJob
+      summary: 취업률 실적 일괄 처리결과
+      security: [{SessionCookie: []}]
+      x-roles: [R07]
+      x-related-requirements: [REQ-1907, REQ-1910]
+      parameters: [{name: jobId, in: path, required: true, schema: {type: string}}]
+      responses: {'200': {description: 처리건수·미처리 대상·건별 결과, content: {application/json: {schema: {$ref: '#/components/schemas/ApiResponse'}}}}, '401': {description: 인증 필요, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '403': {description: 권한 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}, '404': {description: 작업 없음, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}}
   /api/business/lecture-evaluation-achievements:
     get:
       operationId: listLectureEvaluationAchievements
       summary: 강의평가 실적 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1909, REQ-1911]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, occurredDateFrom, occurredDateTo, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1909
+      - REQ-1911
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - managementItemCode
+        - occurredDateFrom
+        - occurredDateTo
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveLectureEvaluationAchievement
       summary: 강의평가 실적 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1910, REQ-1912, REQ-1896, REQ-1908]
-      x-business-rules: [입력기간·데이터범위 통과 후 저장, 평가확정 변경 금지, 발생일 기간 밖은 경고 저장]
-      x-side-effects: [lecture_evaluation_achievements 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 유효한 강의평가 저장 -> lecture_evaluation_achievements 재조회에 management_item_code가 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: managementItemCode 누락 -> fields.managementItemCode 오류가 반환된다', 'business: 평가확정 achievement 수정 -> 기존 lecture_evaluation_achievements row가 변경되지 않는다', 'side-effect: 저장 성공 -> data_change_histories에 target_business=lecture_evaluation_achievements가 기록된다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, occurredDate], properties: { managementItemCode: { type: string }, occurredDate: { type: string, format: date }, achievementDetail: { type: object } } } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1910
+      - REQ-1912
+      - REQ-1896
+      - REQ-1908
+      x-business-rules:
+      - 입력기간·데이터범위 통과 후 저장
+      - 평가확정 변경 금지
+      - 발생일 기간 밖은 경고 저장
+      x-side-effects:
+      - lecture_evaluation_achievements 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 유효한 강의평가 저장 -> lecture_evaluation_achievements 재조회에 management_item_code가 보인다'
+      - 'auth: R07 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: managementItemCode 누락 -> fields.managementItemCode 오류가 반환된다'
+      - 'business: 평가확정 achievement 수정 -> 기존 lecture_evaluation_achievements row가 변경되지 않는다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 target_business=lecture_evaluation_achievements가 기록된다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - occurredDate
+              properties:
+                managementItemCode:
+                  type: string
+                occurredDate:
+                  type: string
+                  format: date
+                achievementDetail:
+                  type: object
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/lecture-achievements:
     get:
       operationId: listLectureAchievements
       summary: 강의실적 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1913, REQ-1915]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1913
+      - REQ-1915
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - managementItemCode
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveLectureAchievement
       summary: 강의실적 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1914, REQ-1916]
-      x-business-rules: [입력기간·데이터범위·평가확정 잠금을 검증한다]
-      x-side-effects: [lecture_achievements 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 유효한 강의실적 저장 -> lecture_achievements 재조회에 저장값이 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: occurredDate 누락 -> fields.occurredDate 오류가 반환된다', 'business: 평가확정 row 수정 -> lecture_achievements 기존 값이 유지된다', 'side-effect: 저장 성공 -> data_change_histories에 lecture_achievements 변경이 남는다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, occurredDate] } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1914
+      - REQ-1916
+      x-business-rules:
+      - 입력기간·데이터범위·평가확정 잠금을 검증한다
+      x-side-effects:
+      - lecture_achievements 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 유효한 강의실적 저장 -> lecture_achievements 재조회에 저장값이 보인다'
+      - 'auth: R07 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: occurredDate 누락 -> fields.occurredDate 오류가 반환된다'
+      - 'business: 평가확정 row 수정 -> lecture_achievements 기존 값이 유지된다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 lecture_achievements 변경이 남는다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - occurredDate
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/student-guidance-achievements:
     get:
       operationId: listStudentGuidanceAchievements
       summary: 학생지도 실적 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1917, REQ-1918]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, guidanceDateFrom, guidanceDateTo, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1917
+      - REQ-1918
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - managementItemCode
+        - guidanceDateFrom
+        - guidanceDateTo
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveStudentGuidanceAchievement
       summary: 학생지도 실적 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1917, REQ-1918, REQ-1896]
-      x-business-rules: [지도학생 상세는 header와 함께 저장, 입력기간·데이터범위 통과 후 저장, 평가확정 변경 금지]
-      x-side-effects: [student_guidance_achievements·student_guidance_students 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 유효한 학생지도 저장 -> 목록과 상세 재조회에 지도기간·학생수·학생 정보가 보인다', 'auth: R07 개별 저장 요청 -> 403 ApiError가 반환된다', 'validation: managementItemCode 또는 지도기간 누락 -> 해당 field 오류가 반환된다', 'business: 평가확정 row 수정 -> student_guidance_achievements 기존 값이 유지된다', 'side-effect: 저장 성공 -> data_change_histories에 student_guidance_achievements 변경이 남는다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, guidanceStartDate, guidanceEndDate, students], properties: { achievementId: { type: integer, format: int64, nullable: true }, managementItemCode: { type: string }, guidanceStartDate: { type: string, format: date }, guidanceEndDate: { type: string, format: date }, attachmentRef: { type: string, nullable: true }, students: { type: array, minItems: 1, items: { type: object } } } } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1917
+      - REQ-1918
+      - REQ-1896
+      x-business-rules:
+      - 지도학생 상세는 header와 함께 저장
+      - 입력기간·데이터범위 통과 후 저장
+      - 평가확정 변경 금지
+      x-side-effects:
+      - student_guidance_achievements·student_guidance_students 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 유효한 학생지도 저장 -> 목록과 상세 재조회에 지도기간·학생수·학생 정보가 보인다'
+      - 'auth: R07 개별 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: managementItemCode 또는 지도기간 누락 -> 해당 field 오류가 반환된다'
+      - 'business: 평가확정 row 수정 -> student_guidance_achievements 기존 값이 유지된다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 student_guidance_achievements 변경이 남는다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - guidanceStartDate
+              - guidanceEndDate
+              - students
+              properties:
+                achievementId:
+                  type: integer
+                  format: int64
+                  nullable: true
+                managementItemCode:
+                  type: string
+                guidanceStartDate:
+                  type: string
+                  format: date
+                guidanceEndDate:
+                  type: string
+                  format: date
+                attachmentRef:
+                  type: string
+                  nullable: true
+                students:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/student-guidance-achievements/excel-uploads:
     post:
       operationId: createStudentGuidanceAchievementExcelUpload
       summary: 학생지도 Excel 검증
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R07]
-      x-related-requirements: [REQ-1919, REQ-1920, REQ-1921, REQ-1883, REQ-1884, REQ-1885, REQ-1886]
-      x-business-rules: [businessType은 STUDENT_GUIDANCE 고정, 오류·중복 행은 전체 반영 금지]
-      x-side-effects: [excel_upload_staging_rows·excel_upload_errors·excel_upload_histories 기록]
-      x-state-transitions: [업로드됨 -> 검증완료, 오류존재 -> 반영거부]
-      x-required-tests: ['happy: R07 정상 Excel upload -> 정상행과 검증 count가 반환된다', 'auth: R01 upload 요청 -> 403 ApiError가 반환된다', 'validation: template_version 없는 파일 -> fields.file 오류가 반환된다', 'business: 중복 행 upload -> student_guidance_achievements 기존 row가 변경되지 않는다', 'side-effect: 검증 완료 -> excel_upload_histories에 uploader와 total_count가 기록된다']
-      requestBody: { required: true, content: { multipart/form-data: { schema: { type: object, required: [file], properties: { file: { type: string, format: binary } } } } } }
-      responses: { '200': { description: 검증 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 파일 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 반영 불가, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R07
+      x-related-requirements:
+      - REQ-1919
+      - REQ-1920
+      - REQ-1921
+      - REQ-1883
+      - REQ-1884
+      - REQ-1885
+      - REQ-1886
+      x-business-rules:
+      - businessType은 STUDENT_GUIDANCE 고정
+      - 오류·중복 행은 전체 반영 금지
+      x-side-effects:
+      - excel_upload_staging_rows·excel_upload_errors·excel_upload_histories 기록
+      x-state-transitions:
+      - 업로드됨 -> 검증완료
+      - 오류존재 -> 반영거부
+      x-required-tests:
+      - 'happy: R07 정상 Excel upload -> 정상행과 검증 count가 반환된다'
+      - 'auth: R01 upload 요청 -> 403 ApiError가 반환된다'
+      - 'validation: template_version 없는 파일 -> fields.file 오류가 반환된다'
+      - 'business: 중복 행 upload -> student_guidance_achievements 기존 row가 변경되지 않는다'
+      - 'side-effect: 검증 완료 -> excel_upload_histories에 uploader와 total_count가 기록된다'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 검증 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 파일 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 반영 불가
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/degree-completion-achievements:
     get:
       operationId: listDegreeCompletionAchievements
       summary: 석·박사 배출 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1922, REQ-1924]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1922
+      - REQ-1924
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveDegreeCompletionAchievement
       summary: 석·박사 배출 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1923, REQ-1924]
-      x-business-rules: [지도학생 상세는 header와 함께 저장, 평가확정 row 변경 금지]
-      x-side-effects: [degree_completion_achievements·degree_completion_students 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 석·박사 실적 저장 -> degree_completion_students 재조회에 degree_type이 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: degreeType 누락 지도학생 -> fields.degreeType 오류가 반환된다', 'business: 평가확정 header 수정 -> degree_completion_achievements가 변경되지 않는다', 'side-effect: 저장 성공 -> data_change_histories에 degree_completion_achievements 기록이 남는다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, students] } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1923
+      - REQ-1924
+      x-business-rules:
+      - 지도학생 상세는 header와 함께 저장
+      - 평가확정 row 변경 금지
+      x-side-effects:
+      - degree_completion_achievements·degree_completion_students 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 석·박사 실적 저장 -> degree_completion_students 재조회에 degree_type이 보인다'
+      - 'auth: R07 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: degreeType 누락 지도학생 -> fields.degreeType 오류가 반환된다'
+      - 'business: 평가확정 header 수정 -> degree_completion_achievements가 변경되지 않는다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 degree_completion_achievements 기록이 남는다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - students
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
 x-uncovered-requirements:
   - canonical_id: REQ-1633
     status: screen-only
@@ -8241,6 +8842,135 @@ x-uncovered-requirements:
     status: out-of-scope
     evidence: BASIC-70 외부 연계 제외은(는) out-of-scope 소유 artifact에서 검증하며 이 operation에 직접 매핑하지 않는다.
 
+  - canonical_id: REQ-1866
+    status: data-constraint
+    evidence: 업적 상태 보유은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1867
+    status: screen-only
+    evidence: 상태 전이 제한은(는) ui-design.md BASIC-83 화면 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1868
+    status: screen-only
+    evidence: 반려 사유 필수은(는) ui-design.md BASIC-83 화면 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1869
+    status: data-constraint
+    evidence: 상태전이 이력은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1870
+    status: data-constraint
+    evidence: 변경 전 이력은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1871
+    status: data-constraint
+    evidence: 작성 메타데이터은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1872
+    status: data-constraint
+    evidence: 논리 삭제은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1875
+    status: covered
+    evidence: downloadEmploymentRateAchievements operation이 목록 조건 Excel 다운로드를 소유한다.
+  - canonical_id: REQ-1878
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel operation과 UI workflow가 템플릿·검증·반영 절차를 소유한다.
+  - canonical_id: REQ-1879
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel 응답이 정상 행과 오류 행 결과를 소유한다.
+  - canonical_id: REQ-1880
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel의 오류행 0건 반영 규칙이 소유한다.
+  - canonical_id: REQ-1881
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel의 중복행 오류·기존 값 유지 규칙이 소유한다.
+  - canonical_id: REQ-1882
+    status: data-constraint
+    evidence: 업로드 이력은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1885
+    status: non-functional
+    evidence: 요청 추적은(는) architecture.md/quickstart.md BASIC-83 검증에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1886
+    status: data-constraint
+    evidence: 메뉴 ID 충돌 방지은(는) data-model.md BASIC-83 계약에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1887
+    status: seed-test-fixture
+    evidence: 증분 시드은(는) 증분 migration fixture에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1888
+    status: seed-test-fixture
+    evidence: 시드 사례은(는) 증분 migration fixture에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1889
+    status: non-functional
+    evidence: 질의 성능은(는) architecture.md/quickstart.md BASIC-83 검증에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1890
+    status: non-functional
+    evidence: 보안 코딩은(는) architecture.md/quickstart.md BASIC-83 검증에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1891
+    status: non-functional
+    evidence: 브라우저 호환은(는) architecture.md/quickstart.md BASIC-83 검증에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1896
+    status: covered
+    evidence: listCourseOperations operation이 강좌 개설·운영 목록 조회를 소유한다.
+  - canonical_id: REQ-1897
+    status: covered
+    evidence: createCourseOperation과 updateCourseOperation operation이 저장을 소유한다.
+  - canonical_id: REQ-1898
+    status: covered
+    evidence: getCourseOperation operation이 상세 조회를 소유한다.
+  - canonical_id: REQ-1899
+    status: covered
+    evidence: updateCourseOperation의 403·409 계약과 원본 미변경 테스트가 수정 제한을 소유한다.
+  - canonical_id: REQ-1900
+    status: covered
+    evidence: listLectureImprovements operation이 강의개선 목록 조회를 소유한다.
+  - canonical_id: REQ-1901
+    status: covered
+    evidence: createLectureImprovement와 updateLectureImprovement operation이 저장을 소유한다.
+  - canonical_id: REQ-1902
+    status: covered
+    evidence: getLectureImprovement operation이 상세 조회를 소유한다.
+  - canonical_id: REQ-1903
+    status: covered
+    evidence: updateLectureImprovement의 403·409 계약과 원본 미변경 테스트가 수정 제한을 소유한다.
+  - canonical_id: REQ-1904
+    status: covered
+    evidence: list/create/get/updateEmploymentRateAchievement operations가 개별 관리를 소유한다.
+  - canonical_id: REQ-1905
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel operation이 Excel 일괄등록을 소유한다.
+  - canonical_id: REQ-1908
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel의 오류행 0건 반영 규칙과 테스트가 소유한다.
+  - canonical_id: REQ-1909
+    status: covered
+    evidence: uploadEmploymentRateAchievementsExcel의 중복행 오류·기존 값 유지 규칙과 테스트가 소유한다.
+  - canonical_id: REQ-1911
+    status: out-of-scope
+    evidence: FR-025~028 재구현 제외은(는) SPEC-REQUEST.md 범위 제외에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1912
+    status: out-of-scope
+    evidence: 연구·창작영역 제외은(는) SPEC-REQUEST.md 범위 제외에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1913
+    status: out-of-scope
+    evidence: 봉사영역 제외은(는) SPEC-REQUEST.md 범위 제외에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1914
+    status: out-of-scope
+    evidence: 그룹 K 설정 재구현 제외은(는) SPEC-REQUEST.md 범위 제외에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1915
+    status: out-of-scope
+    evidence: 그룹 G 산출 재구현 제외은(는) SPEC-REQUEST.md 범위 제외에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: REQ-1916
+    status: out-of-scope
+    evidence: 그룹 F 확인·인증 재구현 제외은(는) SPEC-REQUEST.md 범위 제외에서 소유하며 이 operation의 직접 결과가 아니다.
+  - canonical_id: FR-025
+    status: out-of-scope
+    evidence: 그룹 L에서 이미 구현된 교육영역 공통 CRUD 패턴이므로 BASIC-83은 재구현하지 않고 재사용한다.
+  - canonical_id: FR-033
+    status: out-of-scope
+    evidence: 연구·창작영역은 BASIC-83 명시 범위 밖이다.
+  - canonical_id: FR-045
+    status: out-of-scope
+    evidence: 봉사영역은 BASIC-83 명시 범위 밖이다.
+  - canonical_id: FR-018
+    status: out-of-scope
+    evidence: 그룹 K에서 이미 구현된 관리항목 설정을 재사용하며 BASIC-83은 재구현하지 않는다.
+  - canonical_id: FR-027
+    status: out-of-scope
+    evidence: 그룹 L에서 이미 구현된 Excel 일괄등록 패턴을 재사용하며 BASIC-83은 업무 템플릿만 추가한다.
 components:
   securitySchemes:
     SessionCookie:
@@ -8264,6 +8994,49 @@ components:
         decisionResult: { type: string }
         reviewerOpinion: { type: string }
         reasonCode: { type: string }
+    EmploymentRateImprovementRequest:
+      type: object
+      required: [managementItemCode, achievementDate]
+      properties:
+        managementItemCode: {type: string}
+        achievementDate: {type: string, format: date}
+        specialLectureStartDate: {type: string, format: date}
+        specialLectureEndDate: {type: string, format: date}
+        mockExamQuestionPeriod: {type: string}
+        attachmentIds: {type: array, items: {type: string}}
+    CourseOperationRequest:
+      type: object
+      required: [managementItemCode, achievementDate, performanceDetails]
+      properties:
+        managementItemCode: {type: string}
+        achievementDate: {type: string, format: date}
+        performanceDetails: {type: string}
+        attachmentIds: {type: array, items: {type: string}}
+    LectureImprovementRequest:
+      type: object
+      required: [managementItemCode, achievementDate, achievementContent, academicYear, semester]
+      properties:
+        managementItemCode: {type: string}
+        achievementDate: {type: string, format: date}
+        achievementContent: {type: string}
+        academicYear: {type: integer, minimum: 2000}
+        semester: {type: integer, enum: [1, 2]}
+        attachmentIds: {type: array, items: {type: string}}
+    EmploymentRateAchievementRequest:
+      type: object
+      required: [managementItemCode, achievementDate]
+      properties:
+        managementItemCode: {type: string}
+        achievementDate: {type: string, format: date}
+        achievementName: {type: string}
+        attachmentIds: {type: array, items: {type: string}}
+    EmploymentRateBulkJobRequest:
+      type: object
+      required: [evaluationYear, actionType]
+      properties:
+        evaluationYear: {type: string}
+        actionType: {type: string, enum: [GENERATE, DELETE]}
+        targetCondition: {type: object, additionalProperties: true}
     ApiResponse:
       type: object
       required: [success, meta]
@@ -8273,12 +9046,26 @@ components:
         meta: { type: object, additionalProperties: true }
     ApiError:
       type: object
-      required: [success, meta]
+      required: [success, error, meta]
       properties:
-        success: { type: boolean }
-        message: { type: string }
-        fields: { type: object, additionalProperties: true }
+        success: { type: boolean, enum: [false] }
+        data: { nullable: true }
+        error: { $ref: '#/components/schemas/ApiErrorDetail' }
         meta: { type: object, additionalProperties: true }
+    ApiErrorDetail:
+      type: object
+      required: [code, message, fields]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fields:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }
     SaveBusinessSettingRequest:
       type: object
       required: [ruleVersionId, items]

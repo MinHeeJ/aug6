@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateachievement.EmploymentRateAchievementMapper">
+    <resultMap id="employmentRateAchievementRow"
+        type="kr.ac.knue.commonfoundation.employmentrateachievement.EmploymentRateAchievementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="target_user_id" javaType="java.lang.Long"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_name" javaType="java.lang.String"/>
+            <arg column="attachment_ids" javaType="java.util.List"
+                typeHandler="kr.ac.knue.commonfoundation.lectureimprovement.JsonStringListTypeHandler"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="rowColumns">
+        achievement.achievement_id,
+        achievement.target_user_id,
+        achievement.management_item_code,
+        achievement.achievement_date,
+        achievement.achievement_name,
+        achievement.attachment_ids::text AS attachment_ids,
+        achievement.achievement_status,
+        achievement.created_at,
+        achievement.updated_at
+    </sql>
+
+    <sql id="scopePredicate">
+        <choose>
+            <when test="visibility.scope == 'OWNER'">
+                AND achievement.target_user_id = #{visibility.requesterUserId}
+            </when>
+            <when test="visibility.scope == 'SHARED_ORGANIZATION'">
+                AND EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings requester_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = requester_mapping.organization_code
+                    WHERE requester_mapping.user_id = #{visibility.requesterUserId}
+                      AND requester_mapping.status = 'ACTIVE'
+                      AND target_mapping.user_id = achievement.target_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <when test="visibility.scope == 'CERTIFICATION_SCOPE'">
+                AND EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings permission_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = permission_mapping.organization_code
+                    WHERE permission_mapping.user_id = #{visibility.requesterUserId}
+                      AND permission_mapping.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND permission_mapping.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND target_mapping.user_id = achievement.target_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="list" resultMap="employmentRateAchievementRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM employment_rate_achievements achievement
+        WHERE achievement.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+        ORDER BY achievement.achievement_date DESC, achievement.achievement_id DESC
+        LIMIT #{criteria.pageSize}
+        OFFSET #{criteria.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM employment_rate_achievements achievement
+        WHERE achievement.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+    </select>
+
+    <select id="findAccessible" resultMap="employmentRateAchievementRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM employment_rate_achievements achievement
+        WHERE achievement.achievement_id = #{achievementId}
+          AND achievement.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+    </select>
+</mapper>

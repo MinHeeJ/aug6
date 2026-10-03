@@ -34,13 +34,18 @@ export async function apiRequest<T>(
   if (!path.startsWith("/api/")) {
     throw new Error("API 요청은 /api/ 상대경로만 허용됩니다.");
   }
+  const headers = new Headers(init.headers);
+  const isFormData =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(path, {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
+    headers,
   });
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("application/json")
@@ -4776,5 +4781,275 @@ export const courseAreaGroupGradeApi = {
       );
     }
     return response.blob();
+  },
+};
+
+export type AchievementPageSize = 20 | 50 | 100;
+
+export type EducationAchievementListParams = {
+  page?: number;
+  pageSize?: AchievementPageSize;
+};
+
+export type EmploymentRateImprovementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  specialLectureStartDate?: string;
+  specialLectureEndDate?: string;
+  mockExamQuestionPeriod?: string;
+  attachmentIds?: string[];
+};
+
+export type CourseOperationRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  performanceDetails: string;
+  attachmentIds?: string[];
+};
+
+export type LectureImprovementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementContent: string;
+  academicYear: number;
+  semester: 1 | 2;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateAchievementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementName?: string;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateBulkJobRequest = {
+  evaluationYear: string;
+  actionType: "GENERATE" | "DELETE";
+  targetCondition?: Record<string, unknown>;
+};
+
+export type EducationAchievementListResponse<T> = {
+  achievements: T[];
+  page: number;
+  pageSize: AchievementPageSize;
+  totalElements: number;
+};
+
+type AchievementIdentity = {
+  achievementId: number;
+  managementNo?: string;
+  teacherName?: string;
+  certificationStatus?: string;
+};
+
+export type EmploymentRateImprovement = EmploymentRateImprovementRequest &
+  AchievementIdentity;
+export type CourseOperation = CourseOperationRequest & AchievementIdentity;
+export type LectureImprovement = LectureImprovementRequest &
+  AchievementIdentity;
+export type EmploymentRateAchievement = EmploymentRateAchievementRequest &
+  AchievementIdentity;
+
+export type EmploymentRateBulkJob = {
+  jobId: string;
+  evaluationYear?: string;
+  actionType?: "GENERATE" | "DELETE";
+  status?: string;
+  totalCount?: number;
+  successCount?: number;
+  failureCount?: number;
+  unprocessedTargets?: string[];
+  items?: Array<{
+    targetId?: string;
+    processed: boolean;
+    message?: string;
+  }>;
+};
+
+export type EmploymentRateExcelUploadResult = {
+  uploadId?: string;
+  totalCount?: number;
+  successCount?: number;
+  errorCount?: number;
+  savedCount?: number;
+  errorFileUrl?: string;
+  errors?: Array<{
+    rowNumber: number;
+    columnName?: string;
+    errorReason: string;
+  }>;
+};
+
+function achievementListQuery(params: EducationAchievementListParams = {}) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("pageSize", String(params.pageSize ?? 20));
+  return query;
+}
+
+function achievementListPath(
+  resource: string,
+  params: EducationAchievementListParams = {},
+) {
+  return `/api/business/${resource}?${achievementListQuery(params).toString()}` as `/api/${string}`;
+}
+
+function achievementDetailPath(resource: string, achievementId: number) {
+  return `/api/business/${resource}/${encodeURIComponent(String(achievementId))}` as `/api/${string}`;
+}
+
+async function uploadEmploymentRateWorkbook(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(
+    "/api/business/employment-rate-achievements/excel-uploads",
+    {
+      body: form,
+      credentials: "include",
+      method: "POST",
+    },
+  );
+  const body =
+    (await response.json()) as ApiResponse<EmploymentRateExcelUploadResult>;
+  if (!response.ok || body.success === false) {
+    throw new ApiClientError(
+      response.status,
+      body.error?.message ?? "취업률 실적 Excel 업로드에 실패했습니다.",
+      body.error,
+    );
+  }
+  return body;
+}
+
+async function downloadEmploymentRateWorkbook(
+  params: EducationAchievementListParams = {},
+) {
+  const response = await fetch(
+    `/api/business/employment-rate-achievements/download?${achievementListQuery(params).toString()}`,
+    { credentials: "include" },
+  );
+  if (!response.ok) {
+    throw new ApiClientError(
+      response.status,
+      "취업률 실적 Excel 파일을 내려받지 못했습니다.",
+    );
+  }
+  return response.blob();
+}
+
+export const employmentRateImprovementApi = {
+  list(params: EducationAchievementListParams = {}) {
+    return apiRequest<
+      EducationAchievementListResponse<EmploymentRateImprovement>
+    >(achievementListPath("employment-rate-improvements", params));
+  },
+  get(achievementId: number) {
+    return apiRequest<EmploymentRateImprovement>(
+      achievementDetailPath("employment-rate-improvements", achievementId),
+    );
+  },
+  create(payload: EmploymentRateImprovementRequest) {
+    return apiRequest<EmploymentRateImprovement>(
+      "/api/business/employment-rate-improvements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+  update(achievementId: number, payload: EmploymentRateImprovementRequest) {
+    return apiRequest<EmploymentRateImprovement>(
+      achievementDetailPath("employment-rate-improvements", achievementId),
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+};
+
+export const courseOperationApi = {
+  list(params: EducationAchievementListParams = {}) {
+    return apiRequest<EducationAchievementListResponse<CourseOperation>>(
+      achievementListPath("course-operations", params),
+    );
+  },
+  get(achievementId: number) {
+    return apiRequest<CourseOperation>(
+      achievementDetailPath("course-operations", achievementId),
+    );
+  },
+  create(payload: CourseOperationRequest) {
+    return apiRequest<CourseOperation>("/api/business/course-operations", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  update(achievementId: number, payload: CourseOperationRequest) {
+    return apiRequest<CourseOperation>(
+      achievementDetailPath("course-operations", achievementId),
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+};
+
+export const lectureImprovementApi = {
+  list(params: EducationAchievementListParams = {}) {
+    return apiRequest<EducationAchievementListResponse<LectureImprovement>>(
+      achievementListPath("lecture-improvements", params),
+    );
+  },
+  get(achievementId: number) {
+    return apiRequest<LectureImprovement>(
+      achievementDetailPath("lecture-improvements", achievementId),
+    );
+  },
+  create(payload: LectureImprovementRequest) {
+    return apiRequest<LectureImprovement>(
+      "/api/business/lecture-improvements",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  update(achievementId: number, payload: LectureImprovementRequest) {
+    return apiRequest<LectureImprovement>(
+      achievementDetailPath("lecture-improvements", achievementId),
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+};
+
+export const employmentRateAchievementApi = {
+  list(params: EducationAchievementListParams = {}) {
+    return apiRequest<
+      EducationAchievementListResponse<EmploymentRateAchievement>
+    >(achievementListPath("employment-rate-achievements", params));
+  },
+  get(achievementId: number) {
+    return apiRequest<EmploymentRateAchievement>(
+      achievementDetailPath("employment-rate-achievements", achievementId),
+    );
+  },
+  create(payload: EmploymentRateAchievementRequest) {
+    return apiRequest<EmploymentRateAchievement>(
+      "/api/business/employment-rate-achievements",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+  update(achievementId: number, payload: EmploymentRateAchievementRequest) {
+    return apiRequest<EmploymentRateAchievement>(
+      achievementDetailPath("employment-rate-achievements", achievementId),
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+  download: downloadEmploymentRateWorkbook,
+  upload: uploadEmploymentRateWorkbook,
+  createBulkJob(payload: EmploymentRateBulkJobRequest) {
+    return apiRequest<EmploymentRateBulkJob>(
+      "/api/business/employment-rate-achievements/bulk-jobs",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+  getBulkJob(jobId: string) {
+    return apiRequest<EmploymentRateBulkJob>(
+      `/api/business/employment-rate-achievements/bulk-jobs/${encodeURIComponent(jobId)}` as `/api/${string}`,
+    );
   },
 };

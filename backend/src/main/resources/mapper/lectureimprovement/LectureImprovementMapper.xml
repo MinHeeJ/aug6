@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.lectureimprovement.LectureImprovementMapper">
+    <resultMap id="lectureImprovementRow"
+        type="kr.ac.knue.commonfoundation.lectureimprovement.LectureImprovementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="target_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_content" javaType="java.lang.String"/>
+            <arg column="academic_year" javaType="java.lang.Integer"/>
+            <arg column="semester" javaType="java.lang.Integer"/>
+            <arg column="certification_status" javaType="java.lang.String"/>
+            <arg column="attachment_ids"
+                javaType="java.util.List"
+                typeHandler="kr.ac.knue.commonfoundation.lectureimprovement.JsonStringListTypeHandler"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="rowColumns">
+        achievement.achievement_id,
+        achievement.management_no,
+        achievement.target_user_id,
+        owner.login_id AS teacher_name,
+        achievement.management_item_code,
+        achievement.achievement_date,
+        achievement.achievement_content,
+        achievement.academic_year,
+        achievement.semester,
+        achievement.certification_status,
+        achievement.attachment_ids::text AS attachment_ids,
+        achievement.created_at,
+        achievement.updated_at
+    </sql>
+
+    <sql id="scopePredicate">
+        <choose>
+            <when test="roles.contains('R01')">
+                AND achievement.target_user_id = #{requesterUserId}
+            </when>
+            <when test="roles.contains('R02')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings requester_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = requester_mapping.organization_code
+                    WHERE requester_mapping.user_id = #{requesterUserId}
+                      AND requester_mapping.status = 'ACTIVE'
+                      AND target_mapping.user_id = achievement.target_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <when test="roles.contains('R04')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings permission_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = permission_mapping.organization_code
+                    WHERE permission_mapping.user_id = #{requesterUserId}
+                      AND permission_mapping.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND permission_mapping.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND target_mapping.user_id = achievement.target_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="listLectureImprovements" resultMap="lectureImprovementRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM teaching_improvement_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        WHERE achievement.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+        ORDER BY achievement.achievement_date DESC, achievement.achievement_id DESC
+        LIMIT #{criteria.safePageSize}
+        OFFSET #{criteria.offset}
+    </select>
+
+    <select id="countLectureImprovements" resultType="long">
+        SELECT COUNT(*)
+        FROM teaching_improvement_achievements achievement
+        WHERE achievement.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+    </select>
+
+    <select id="findLectureImprovement" resultMap="lectureImprovementRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM teaching_improvement_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        WHERE achievement.achievement_id = #{achievementId}
+          AND achievement.deleted_yn = 'N'
+    </select>
+
+    <select id="findAccessibleLectureImprovement" resultMap="lectureImprovementRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM teaching_improvement_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        WHERE achievement.achievement_id = #{achievementId}
+          AND achievement.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+    </select>
+
+    <select id="findLectureImprovementByManagementNo" resultMap="lectureImprovementRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM teaching_improvement_achievements achievement
+        JOIN users owner
+            ON owner.user_id = achievement.target_user_id
+        WHERE achievement.management_no = #{managementNo}
+          AND achievement.deleted_yn = 'N'
+    </select>
+
+    <insert id="insertLectureImprovement">
+        INSERT INTO teaching_improvement_achievements (
+            management_no,
+            target_user_id,
+            management_item_code,
+            achievement_date,
+            achievement_content,
+            academic_year,
+            semester,
+            certification_status,
+            attachment_ids,
+            deleted_yn,
+            created_by,
+            updated_by
+        )
+        VALUES (
+            #{managementNo},
+            #{targetUserId},
+            #{managementItemCode},
+            #{achievementDate},
+            #{achievementContent},
+            #{academicYear},
+            #{semester},
+            'DRAFT',
+            CAST(#{attachmentIds} AS jsonb),
+            'N',
+            #{createdBy},
+            #{createdBy}
+        )
+    </insert>
+
+    <update id="updateLectureImprovement">
+        UPDATE teaching_improvement_achievements
+        SET management_item_code = #{managementItemCode},
+            achievement_date = #{achievementDate},
+            achievement_content = #{achievementContent},
+            academic_year = #{academicYear},
+            semester = #{semester},
+            attachment_ids = CAST(#{attachmentIds} AS jsonb),
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy}
+        WHERE achievement_id = #{achievementId}
+          AND deleted_yn = 'N'
+    </update>
+
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business,
+            target_key,
+            change_type,
+            field_name,
+            before_value,
+            after_value,
+            changed_by,
+            change_reason,
+            request_id
+        )
+        VALUES (
+            #{targetBusiness},
+            #{targetKey},
+            #{changeType},
+            #{fieldName},
+            #{beforeValue},
+            #{afterValue},
+            #{changedBy},
+            #{changeReason},
+            #{requestId}
+        )
+    </insert>
+</mapper>

@@ -2,6 +2,7 @@ package kr.ac.knue.commonfoundation.common.api;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import kr.ac.knue.commonfoundation.schoolinfo.ExternalIntegrationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Pattern CONFLICT_CODE_PREFIX = Pattern.compile("^[A-Z][A-Z0-9_]*$");
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException exception) {
@@ -62,7 +64,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.fail(ApiError.of("CONFLICT", exception.getMessage())));
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail(ApiError.of(conflictCode(exception.getMessage()), exception.getMessage())));
+    }
+
+    private String conflictCode(String message) {
+        if (message == null) {
+            return "CONFLICT";
+        }
+        int delimiterIndex = message.indexOf(':');
+        if (delimiterIndex <= 0) {
+            return "CONFLICT";
+        }
+        String candidate = message.substring(0, delimiterIndex);
+        return CONFLICT_CODE_PREFIX.matcher(candidate).matches() ? candidate : "CONFLICT";
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateachievements.EmploymentRateAchievementMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.employmentrateachievements.EmploymentRateAchievementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="target_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_name" javaType="java.lang.String"/>
+            <arg column="certification_status" javaType="java.lang.String"/>
+            <arg column="attachment_ids"
+    javaType="java.util.List"
+    typeHandler="org.apache.ibatis.type.ArrayTypeHandler"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+    <sql id="columns">achievement.achievement_id,
+    achievement.management_no,
+    achievement.target_user_id,
+    owner.login_id AS teacher_name,
+    achievement.evaluation_year,
+    achievement.management_item_code,
+    achievement.achievement_date,
+    achievement.achievement_name,
+    achievement.certification_status,
+    ARRAY[]::varchar[] AS attachment_ids,
+    achievement.created_at,
+    achievement.updated_at</sql>
+    <sql id="scope">
+        <choose>
+            <when test="roles.contains('R01')">
+                AND achievement.target_user_id = #{requesterUserId}
+            </when>
+            <when test="roles.contains('R02') or roles.contains('R04')">
+                AND 1 = 1
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+    <select id="list" resultMap="row">SELECT
+    <include refid="columns"/> FROM
+    employment_rate_achievements achievement JOIN
+    users owner ON owner.user_id = achievement.target_user_id WHERE
+    achievement.deleted_yn = 'N' <include refid="scope"/> ORDER BY
+    achievement.achievement_date DESC,
+    achievement.achievement_id DESC LIMIT
+    #{pageSize} OFFSET
+    #{page} * #{pageSize}</select>
+    <select id="count" resultType="long">SELECT
+    COUNT(*) FROM
+    employment_rate_achievements achievement WHERE
+    achievement.deleted_yn = 'N' <include refid="scope"/></select>
+    <select id="find" resultMap="row">SELECT
+    <include refid="columns"/> FROM
+    employment_rate_achievements achievement JOIN
+    users owner ON owner.user_id = achievement.target_user_id WHERE
+    achievement.achievement_id = #{achievementId} AND
+    achievement.deleted_yn = 'N'</select>
+    <select id="findByManagementNo" resultMap="row">SELECT
+    <include refid="columns"/> FROM
+    employment_rate_achievements achievement JOIN
+    users owner ON owner.user_id = achievement.target_user_id WHERE
+    achievement.management_no = #{managementNo} AND
+    achievement.deleted_yn = 'N'</select>
+    <insert id="insert">INSERT INTO employment_rate_achievements (management_no,
+    target_user_id,
+    evaluation_year,
+    management_item_code,
+    achievement_date,
+    achievement_name,
+    attachment_ids,
+    certification_status,
+    deleted_yn,
+    created_by,
+    updated_by) VALUES
+    (#{managementNo},
+    #{targetUserId},
+    #{evaluationYear},
+    #{managementItemCode},
+    #{achievementDate},
+    #{achievementName},
+    CAST(#{attachmentIds} AS jsonb),
+    'DRAFT',
+    'N',
+    #{userId},
+    #{userId})</insert>
+    <update id="update">UPDATE employment_rate_achievements SET
+    management_item_code = #{managementItemCode},
+    achievement_date = #{achievementDate},
+    achievement_name = #{achievementName},
+    attachment_ids = CAST(#{attachmentIds} AS jsonb),
+    updated_at = CURRENT_TIMESTAMP,
+    updated_by = #{userId} WHERE
+    achievement_id = #{achievementId} AND
+    deleted_yn = 'N'</update>
+    <insert id="insertChangeHistory">INSERT INTO data_change_histories (target_business,
+    target_key,
+    change_type,
+    field_name,
+    before_value,
+    after_value,
+    changed_by,
+    change_reason,
+    request_id) VALUES
+    ('employment_rate_achievements',
+    #{targetKey},
+    #{changeType},
+    'achievement_name',
+    #{beforeValue},
+    #{afterValue},
+    #{changedBy},
+    '취업률 실적 변경',
+    #{requestId})</insert>
+    <select id="findUserIdByEmployeeNo" resultType="long">SELECT
+    user_id FROM
+    users WHERE
+    employee_no = #{employeeNo} AND
+    status = 'ACTIVE'</select>
+    <select id="countDuplicate" resultType="int">SELECT
+    COUNT(*) FROM
+    employment_rate_achievements achievement WHERE
+    achievement.target_user_id = #{targetUserId} AND
+    achievement.management_item_code = #{managementItemCode} AND
+    achievement.achievement_date = #{achievementDate} AND
+    achievement.achievement_name = #{achievementName} AND
+    achievement.deleted_yn = 'N'</select>
+    <insert id="insertUpload">INSERT INTO excel_upload_files (upload_id,
+    business_type,
+    file_token,
+    original_file_name,
+    validation_status,
+    uploader_user_id) VALUES
+    (#{uploadId},
+    'EMPLOYMENT_RATE',
+    CONCAT('employment-rate-',
+    #{uploadId}),
+    #{fileName},
+    #{status},
+    #{userId});
+    INSERT INTO excel_upload_histories (upload_id,
+    total_count,
+    success_count,
+    error_count,
+    saved_count,
+    processor_user_id) VALUES
+    (#{uploadId},
+    #{total},
+    #{success},
+    #{errors},
+    CASE WHEN #{errors} = 0 THEN #{total} ELSE 0 END,
+    #{userId})</insert>
+    <insert id="insertUploadError">INSERT INTO employment_rate_upload_errors (upload_id,
+    row_number,
+    column_name,
+    input_value,
+    error_code,
+    error_reason) VALUES
+    (#{uploadId},
+    #{error.rowNumber},
+    #{error.columnName},
+    #{error.inputValue},
+    #{error.errorCode},
+    #{error.errorReason})</insert>
+    <select
+        id="findBulkJob"
+        resultType="kr.ac.knue.commonfoundation.employmentrateachievements.EmploymentRateBulkJobResult"
+    >SELECT
+    job_id AS "jobId",
+    evaluation_year AS "evaluationYear",
+    action_type AS "actionType",
+    status,
+    processed_count AS "processedCount",
+    unprocessed_count AS "unprocessedCount",
+    ARRAY[]::varchar[] AS items FROM
+    employment_rate_bulk_jobs WHERE
+    job_id = #{jobId} AND
+    operator_user_id = #{operatorUserId}</select>
+</mapper>

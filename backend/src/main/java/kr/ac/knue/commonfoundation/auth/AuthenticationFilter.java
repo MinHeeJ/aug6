@@ -84,6 +84,18 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (apiPath.equals("/api/business/degree-completion-achievements")) {
             return "/achievements/education/masters-doctoral-graduations";
         }
+        if (apiPath.startsWith("/api/business/course-operations")) {
+            return "/faculty/education/course-operations";
+        }
+        if (apiPath.startsWith("/api/business/employment-rate-improvements")) {
+            return "/faculty/education/employment-rate-improvements";
+        }
+        if (apiPath.startsWith("/api/business/lecture-improvements")) {
+            return "/faculty/education/lecture-improvements";
+        }
+        if (apiPath.startsWith("/api/business/employment-rate-achievements")) {
+            return "/faculty/education/employment-rate-achievements";
+        }
         if (apiPath.equals("/api/business/student-guidance-achievements")) {
             return "/achievements/education/student-guidance-achievements";
         }

@@ -135,6 +135,14 @@ import { LectureEvaluationAchievementManagementPage } from "../pages/achievement
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+import { CourseOperationsPage } from "../pages/courseoperations/SCR-COURSE-OPERATIONS";
+import { EmploymentRateAchievementsPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENTS";
+import { EmploymentRateImprovementsPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENTS";
+import { LectureImprovementsPage } from "../pages/lectureimprovements/SCR-LECTURE-IMPROVEMENTS";
+import {
+  canAccessBasic83Route,
+  findBasic83Route,
+} from "../pages/taskgaps/basic83RouteAccess";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +253,15 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  const basic83Route = findBasic83Route(path);
+  if (basic83Route && !canAccessBasic83Route(basic83Route, user?.roles)) {
+    return (
+      <PermissionState
+        title={`${basic83Route.title} 권한이 없습니다`}
+        message={`${basic83Route.allowedRoles.join(", ")} 권한과 해당 데이터 범위가 필요합니다.`}
+      />
+    );
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
@@ -294,6 +311,18 @@ function renderAchievementPage(path: string, user: CurrentUser | null) {
       );
     }
     return <StudentGuidanceExcelUploadPage />;
+  }
+  if (path === "/faculty/education/employment-rate-improvements") {
+    return <EmploymentRateImprovementsPage />;
+  }
+  if (path === "/faculty/education/course-operations") {
+    return <CourseOperationsPage />;
+  }
+  if (path === "/faculty/education/lecture-improvements") {
+    return <LectureImprovementsPage />;
+  }
+  if (path === "/faculty/education/employment-rate-achievements") {
+    return <EmploymentRateAchievementsPage />;
   }
   return null;
 }

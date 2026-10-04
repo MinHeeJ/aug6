@@ -4778,3 +4778,148 @@ export const courseAreaGroupGradeApi = {
     return response.blob();
   },
 };
+
+export type Basic83PageSize = 20 | 50 | 100;
+
+export type Basic83AchievementSearchParams = {
+  page?: number;
+  pageSize?: Basic83PageSize;
+};
+
+export type Basic83AchievementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  attachmentIds: string[];
+};
+
+export type EmploymentRateImprovementRequest = Basic83AchievementRequest & {
+  specialLectureStartDate?: string;
+  specialLectureEndDate?: string;
+  mockExamQuestionPeriod?: string;
+};
+
+export type CourseOperationRequest = Basic83AchievementRequest & {
+  performanceDetails: string;
+};
+
+export type LectureImprovementRequest = Basic83AchievementRequest & {
+  achievementContent: string;
+  academicYear: number;
+  semester: number;
+};
+
+export type EmploymentRateAchievementRequest = Basic83AchievementRequest & {
+  achievementName?: string;
+};
+
+export type EmploymentRateBulkJobRequest = {
+  evaluationYear: string;
+  actionType: string;
+  targetCondition?: Record<string, unknown>;
+};
+
+function buildBasic83SearchPath(
+  resource: string,
+  params: Basic83AchievementSearchParams = {},
+) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 0),
+    pageSize: String(params.pageSize ?? 20),
+  });
+  return `/api/business/${resource}?${query.toString()}` as `/api/${string}`;
+}
+
+function basic83ResourceApi<TResponse, TRequest>(resource: string) {
+  const collectionPath = `/api/business/${resource}` as `/api/${string}`;
+  return {
+    list(params: Basic83AchievementSearchParams = {}) {
+      return apiRequest<TResponse>(buildBasic83SearchPath(resource, params));
+    },
+    get(achievementId: number) {
+      return apiRequest<TResponse>(
+        `${collectionPath}/${encodeURIComponent(String(achievementId))}` as `/api/${string}`,
+      );
+    },
+    create(payload: TRequest) {
+      return apiRequest<TResponse>(collectionPath, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    update(achievementId: number, payload: TRequest) {
+      return apiRequest<TResponse>(
+        `${collectionPath}/${encodeURIComponent(String(achievementId))}` as `/api/${string}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+      );
+    },
+  };
+}
+
+/** Registers the approved BASIC-83 relative-path achievement API operations. */
+export const employmentRateImprovementApi = basic83ResourceApi<
+  unknown,
+  EmploymentRateImprovementRequest
+>("employment-rate-improvements");
+
+/** Registers the approved BASIC-83 relative-path course-operation API operations. */
+export const courseOperationApi = basic83ResourceApi<
+  unknown,
+  CourseOperationRequest
+>("course-operations");
+
+/** Registers the approved BASIC-83 relative-path lecture-improvement API operations. */
+export const lectureImprovementApi = basic83ResourceApi<
+  unknown,
+  LectureImprovementRequest
+>("lecture-improvements");
+
+/** Registers the approved BASIC-83 relative-path employment-rate API operations. */
+export const employmentRateAchievementApi = {
+  ...basic83ResourceApi<unknown, EmploymentRateAchievementRequest>(
+    "employment-rate-achievements",
+  ),
+  downloadPath(params: Basic83AchievementSearchParams = {}) {
+    return buildBasic83SearchPath(
+      "employment-rate-achievements/download",
+      params,
+    );
+  },
+  async uploadSpreadsheet(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(
+      "/api/business/employment-rate-achievements/excel-uploads",
+      {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      },
+    );
+    const body = (await response.json()) as ApiResponse<unknown>;
+    if (!response.ok || body.success === false) {
+      throw new ApiClientError(
+        response.status,
+        body.error?.message ?? "Excel 업로드에 실패했습니다.",
+        body.error,
+      );
+    }
+    return body;
+  },
+  createBulkJob(payload: EmploymentRateBulkJobRequest) {
+    return apiRequest<unknown>(
+      "/api/business/employment-rate-achievements/bulk-jobs",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  getBulkJob(jobId: string) {
+    return apiRequest<unknown>(
+      `/api/business/employment-rate-achievements/bulk-jobs/${encodeURIComponent(jobId)}` as `/api/${string}`,
+    );
+  },
+};

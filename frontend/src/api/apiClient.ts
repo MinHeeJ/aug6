@@ -4778,3 +4778,156 @@ export const courseAreaGroupGradeApi = {
     return response.blob();
   },
 };
+
+export type AchievementPageSize = 20 | 50 | 100;
+
+export type EducationAchievementListParams = {
+  page?: number;
+  pageSize?: AchievementPageSize;
+};
+
+export type EmploymentRateImprovementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  specialLectureStartDate?: string;
+  specialLectureEndDate?: string;
+  mockExamQuestionPeriod?: string;
+  attachmentIds?: string[];
+};
+
+export type CourseOperationRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  performanceDetails: string;
+  attachmentIds?: string[];
+};
+
+export type LectureImprovementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementContent: string;
+  academicYear: number;
+  semester: 1 | 2;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateAchievementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementName?: string;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateBulkJobRequest = {
+  evaluationYear: string;
+  actionType: "GENERATE" | "DELETE";
+  targetCondition?: Record<string, unknown>;
+};
+
+function buildEducationAchievementListPath(
+  path: string,
+  params: EducationAchievementListParams = {},
+) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("pageSize", String(params.pageSize ?? 20));
+  return `${path}?${query.toString()}` as `/api/${string}`;
+}
+
+function achievementPath(path: string, achievementId: number) {
+  return `${path}/${encodeURIComponent(String(achievementId))}` as `/api/${string}`;
+}
+
+function createEducationAchievementApi<TRequest>(path: string) {
+  return {
+    list(params: EducationAchievementListParams = {}) {
+      return apiRequest<unknown>(
+        buildEducationAchievementListPath(path, params),
+      );
+    },
+    get(achievementId: number) {
+      return apiRequest<unknown>(achievementPath(path, achievementId));
+    },
+    create(payload: TRequest) {
+      return apiRequest<unknown>(path as `/api/${string}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    update(achievementId: number, payload: TRequest) {
+      return apiRequest<unknown>(achievementPath(path, achievementId), {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+}
+
+export const employmentRateImprovementApi =
+  createEducationAchievementApi<EmploymentRateImprovementRequest>(
+    "/api/business/employment-rate-improvements",
+  );
+
+export const courseOperationApi =
+  createEducationAchievementApi<CourseOperationRequest>(
+    "/api/business/course-operations",
+  );
+
+export const lectureImprovementApi =
+  createEducationAchievementApi<LectureImprovementRequest>(
+    "/api/business/lecture-improvements",
+  );
+
+export const employmentRateAchievementApi = {
+  ...createEducationAchievementApi<EmploymentRateAchievementRequest>(
+    "/api/business/employment-rate-achievements",
+  ),
+  async download(params: EducationAchievementListParams = {}) {
+    const response = await fetch(
+      buildEducationAchievementListPath(
+        "/api/business/employment-rate-achievements/download",
+        params,
+      ),
+      { credentials: "include" },
+    );
+    if (!response.ok) {
+      throw new ApiClientError(
+        response.status,
+        "취업률 실적 Excel 파일을 내려받지 못했습니다.",
+      );
+    }
+    return response.blob();
+  },
+  async uploadExcel(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch(
+      "/api/business/employment-rate-achievements/excel-uploads",
+      { method: "POST", body: form, credentials: "include" },
+    );
+    return readApiResponse<unknown>(response);
+  },
+  createBulkJob(payload: EmploymentRateBulkJobRequest) {
+    return apiRequest<unknown>(
+      "/api/business/employment-rate-achievements/bulk-jobs",
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
+  getBulkJob(jobId: string) {
+    return apiRequest<unknown>(
+      `/api/business/employment-rate-achievements/bulk-jobs/${encodeURIComponent(jobId)}` as `/api/${string}`,
+    );
+  },
+};
+
+async function readApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  const body = (await response.json()) as ApiResponse<T>;
+  if (!response.ok || body.success === false) {
+    throw new ApiClientError(
+      response.status,
+      body.error?.message ?? "API 요청에 실패했습니다.",
+      body.error,
+    );
+  }
+  return body;
+}

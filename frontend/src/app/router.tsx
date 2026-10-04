@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { useAuth } from "./AuthProvider";
 import { AdminShell } from "../components/layout/AdminShell";
 import {
@@ -135,6 +135,10 @@ import { LectureEvaluationAchievementManagementPage } from "../pages/achievement
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+import { EmploymentRateImprovementsPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENTS";
+import { CourseOperationsPage } from "../pages/courseoperations/SCR-COURSE-OPERATIONS";
+import { LectureImprovementsPage } from "../pages/lectureimprovements/SCR-LECTURE-IMPROVEMENTS";
+import { EmploymentRateAchievementsPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENTS";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +249,50 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (
+    path === "/faculty/employment-rate-improvement-achievements" ||
+    path === "/faculty/education/employment-rate-improvements"
+  ) {
+    return renderEducationAchievementPage(
+      user,
+      ["R01", "R02", "R04"],
+      "취업률 제고 실적 관리",
+      <EmploymentRateImprovementsPage />,
+    );
+  }
+  if (
+    path === "/faculty/course-offering-operation-achievements" ||
+    path === "/faculty/education/course-operations"
+  ) {
+    return renderEducationAchievementPage(
+      user,
+      ["R01", "R02", "R04"],
+      "강좌 개설·운영 실적 관리",
+      <CourseOperationsPage />,
+    );
+  }
+  if (
+    path === "/faculty/teaching-improvement-achievements" ||
+    path === "/faculty/education/lecture-improvements"
+  ) {
+    return renderEducationAchievementPage(
+      user,
+      ["R01", "R02", "R04"],
+      "강의개선 실적 관리",
+      <LectureImprovementsPage />,
+    );
+  }
+  if (
+    path === "/faculty/employment-rate-achievements" ||
+    path === "/faculty/education/employment-rate-achievements"
+  ) {
+    return renderEducationAchievementPage(
+      user,
+      ["R01", "R02", "R04", "R07"],
+      "취업률 실적 관리",
+      <EmploymentRateAchievementsPage />,
+    );
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
@@ -296,6 +344,23 @@ function renderAchievementPage(path: string, user: CurrentUser | null) {
     return <StudentGuidanceExcelUploadPage />;
   }
   return null;
+}
+
+function renderEducationAchievementPage(
+  user: CurrentUser | null,
+  allowedRoles: string[],
+  screenName: string,
+  page: ReactElement,
+) {
+  if (!user?.roles.some((role) => allowedRoles.includes(role))) {
+    return (
+      <PermissionState
+        title={`${screenName} 권한이 없습니다`}
+        message={`${allowedRoles.join(", ")} 권한과 해당 데이터 범위가 필요합니다.`}
+      />
+    );
+  }
+  return page;
 }
 
 function renderAdminPage(path: string | undefined) {

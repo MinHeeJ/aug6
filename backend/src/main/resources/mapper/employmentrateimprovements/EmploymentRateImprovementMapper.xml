@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateimprovements.EmploymentRateImprovementMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.employmentrateimprovements.EmploymentRateImprovementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="special_lecture_start_date" javaType="java.time.LocalDate"/>
+            <arg column="special_lecture_end_date" javaType="java.time.LocalDate"/>
+            <arg column="mock_exam_question_period" javaType="java.lang.String"/>
+            <arg column="attachment_ids" javaType="java.lang.String"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="scopePredicate">
+        <choose>
+            <when test="roles.contains('R01')">
+                AND header.teacher_user_id = #{requesterUserId}
+            </when>
+            <when test="roles.contains('R02')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings requester_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = requester_mapping.organization_code
+                    WHERE requester_mapping.user_id = #{requesterUserId}
+                      AND requester_mapping.status = 'ACTIVE'
+                      AND target_mapping.user_id = header.teacher_user_id
+                      AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <when test="roles.contains('R04')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings permission_mapping
+                    WHERE permission_mapping.user_id = #{requesterUserId}
+                      AND permission_mapping.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND permission_mapping.organization_code = header.organization_code
+                      AND permission_mapping.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                )
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="columns">
+        header.achievement_id,
+        header.management_no,
+        header.teacher_user_id,
+        owner.login_id AS teacher_name,
+        header.evaluation_year,
+        header.management_item_code,
+        header.achievement_date,
+        detail.special_lecture_start_date,
+        detail.special_lecture_end_date,
+        detail.mock_exam_question_period,
+        header.attachment_ids::text AS attachment_ids,
+        header.achievement_status,
+        header.created_at,
+        header.updated_at
+    </sql>
+
+    <select id="list" resultMap="row">
+        SELECT
+            <include refid="columns"/>
+        FROM education_achievements header
+        JOIN users owner
+            ON owner.user_id = header.teacher_user_id
+        JOIN employment_rate_improvement_achievement_details detail
+            ON detail.achievement_id = header.achievement_id
+        WHERE header.achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND header.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+        ORDER BY header.achievement_date DESC, header.achievement_id DESC
+        LIMIT #{criteria.safePageSize}
+        OFFSET #{criteria.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM education_achievements header
+        WHERE header.achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND header.deleted_yn = 'N'
+        <include refid="scopePredicate"/>
+    </select>
+
+    <select id="findById" resultMap="row">
+        SELECT
+            <include refid="columns"/>
+        FROM education_achievements header
+        JOIN users owner
+            ON owner.user_id = header.teacher_user_id
+        JOIN employment_rate_improvement_achievement_details detail
+            ON detail.achievement_id = header.achievement_id
+        WHERE header.achievement_id = #{achievementId}
+          AND header.achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND header.deleted_yn = 'N'
+    </select>
+
+    <select id="isVisible" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM education_achievements header
+            WHERE header.achievement_id = #{achievementId}
+              AND header.achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+              AND header.deleted_yn = 'N'
+            <include refid="scopePredicate"/>
+        )
+    </select>
+
+    <select id="insertAchievement" resultType="long">
+        INSERT INTO education_achievements (
+            management_no,
+            achievement_type,
+            teacher_user_id,
+            organization_code,
+            evaluation_year,
+            management_item_code,
+            achievement_date,
+            attachment_ids,
+            achievement_status,
+            deleted_yn,
+            created_by,
+            updated_by
+        )
+        SELECT
+            #{managementNo},
+            'EMPLOYMENT_RATE_IMPROVEMENT',
+            #{teacherUserId},
+            mapping.organization_code,
+            #{evaluationYear},
+            #{managementItemCode},
+            #{achievementDate},
+            CAST(#{attachmentIds} AS jsonb),
+            'DRAFT',
+            'N',
+            #{createdBy},
+            #{createdBy}
+        FROM organization_user_mappings mapping
+        WHERE mapping.user_id = #{teacherUserId}
+          AND mapping.status = 'ACTIVE'
+        ORDER BY mapping.mapping_id
+        LIMIT 1
+        RETURNING achievement_id
+    </select>
+
+    <insert id="insertDetail">
+        INSERT INTO employment_rate_improvement_achievement_details (
+            achievement_id,
+            special_lecture_start_date,
+            special_lecture_end_date,
+            mock_exam_question_period
+        )
+        VALUES (
+            #{achievementId},
+            #{specialLectureStartDate},
+            #{specialLectureEndDate},
+            #{mockExamQuestionPeriod}
+        )
+    </insert>
+
+    <update id="updateAchievement">
+        UPDATE education_achievements
+        SET management_item_code = #{managementItemCode},
+            achievement_date = #{achievementDate},
+            attachment_ids = CAST(#{attachmentIds} AS jsonb),
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy}
+        WHERE achievement_id = #{achievementId}
+          AND achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND deleted_yn = 'N'
+    </update>
+
+    <update id="updateDetail">
+        UPDATE employment_rate_improvement_achievement_details
+        SET special_lecture_start_date = #{specialLectureStartDate},
+            special_lecture_end_date = #{specialLectureEndDate},
+            mock_exam_question_period = #{mockExamQuestionPeriod}
+        WHERE achievement_id = #{achievementId}
+    </update>
+
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business,
+            target_key,
+            change_type,
+            field_name,
+            before_value,
+            after_value,
+            changed_by,
+            change_reason
+        )
+        VALUES (
+            'education_achievements',
+            #{targetKey},
+            #{changeType},
+            'employment_rate_improvement',
+            #{beforeValue},
+            #{afterValue},
+            #{changedBy},
+            #{changeReason}
+        )
+    </insert>
+</mapper>

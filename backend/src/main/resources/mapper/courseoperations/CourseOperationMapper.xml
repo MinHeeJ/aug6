@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.courseoperations.CourseOperationMapper">
+    <resultMap id="courseOperationRow"
+        type="kr.ac.knue.commonfoundation.courseoperations.CourseOperationRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="organization_code" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_name" javaType="java.lang.String"/>
+            <arg column="performance_details" javaType="java.lang.String"/>
+            <arg column="attachment_ids_json" javaType="java.lang.String"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="rowColumns">
+        achievement.achievement_id,
+        achievement.teacher_user_id,
+        owner.login_id AS teacher_name,
+        achievement.organization_code,
+        achievement.evaluation_year,
+        achievement.management_item_code,
+        achievement.achievement_date,
+        achievement.achievement_name,
+        detail.performance_detail AS performance_details,
+        CAST(achievement.attachment_ids AS text) AS attachment_ids_json,
+        achievement.achievement_status,
+        achievement.created_at,
+        achievement.updated_at
+    </sql>
+
+    <sql id="scopeWhere">
+        achievement.achievement_type = 'COURSE_OPERATION'
+        AND achievement.deleted_yn = 'N'
+        <choose>
+            <when test="roles.contains('R01')">
+                AND achievement.teacher_user_id = #{requesterUserId}
+            </when>
+            <when test="roles.contains('R02')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings requester_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = requester_mapping.organization_code
+                    WHERE requester_mapping.user_id = #{requesterUserId}
+                        AND requester_mapping.status = 'ACTIVE'
+                        AND target_mapping.user_id = achievement.teacher_user_id
+                        AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <when test="roles.contains('R04')">
+                AND EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings permission_mapping
+                    JOIN organization_user_mappings target_mapping
+                        ON target_mapping.organization_code = permission_mapping.organization_code
+                    WHERE permission_mapping.user_id = #{requesterUserId}
+                        AND permission_mapping.business_type = 'FACULTY_ACHIEVEMENT'
+                        AND permission_mapping.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                        AND target_mapping.user_id = achievement.teacher_user_id
+                        AND target_mapping.status = 'ACTIVE'
+                )
+            </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="list" resultMap="courseOperationRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM education_achievements achievement
+        JOIN course_operation_achievement_details detail
+            ON detail.achievement_id = achievement.achievement_id
+        JOIN users owner
+            ON owner.user_id = achievement.teacher_user_id
+        WHERE
+            <include refid="scopeWhere"/>
+        ORDER BY achievement.achievement_date DESC, achievement.achievement_id DESC
+        LIMIT #{pageSize}
+        OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM education_achievements achievement
+        WHERE
+            <include refid="scopeWhere"/>
+    </select>
+
+    <select id="findScoped" resultMap="courseOperationRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM education_achievements achievement
+        JOIN course_operation_achievement_details detail
+            ON detail.achievement_id = achievement.achievement_id
+        JOIN users owner
+            ON owner.user_id = achievement.teacher_user_id
+        WHERE achievement.achievement_id = #{achievementId}
+            AND <include refid="scopeWhere"/>
+    </select>
+
+    <select id="findById" resultMap="courseOperationRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM education_achievements achievement
+        JOIN course_operation_achievement_details detail
+            ON detail.achievement_id = achievement.achievement_id
+        JOIN users owner
+            ON owner.user_id = achievement.teacher_user_id
+        WHERE achievement.achievement_id = #{achievementId}
+            AND achievement.achievement_type = 'COURSE_OPERATION'
+            AND achievement.deleted_yn = 'N'
+    </select>
+
+    <select id="findPrimaryOrganizationCode" resultType="string">
+        SELECT mapping.organization_code
+        FROM organization_user_mappings mapping
+        WHERE mapping.user_id = #{userId}
+            AND mapping.status = 'ACTIVE'
+        ORDER BY mapping.created_at ASC
+        LIMIT 1
+    </select>
+
+    <select id="findLatestCreated" resultMap="courseOperationRow">
+        SELECT
+            <include refid="rowColumns"/>
+        FROM education_achievements achievement
+        JOIN course_operation_achievement_details detail
+            ON detail.achievement_id = achievement.achievement_id
+        JOIN users owner
+            ON owner.user_id = achievement.teacher_user_id
+        WHERE achievement.achievement_type = 'COURSE_OPERATION'
+            AND achievement.teacher_user_id = #{teacherUserId}
+            AND achievement.management_item_code = #{managementItemCode}
+            AND achievement.achievement_date = #{achievementDate}
+            AND detail.performance_detail = #{performanceDetails}
+            AND achievement.deleted_yn = 'N'
+        ORDER BY achievement.achievement_id DESC
+        LIMIT 1
+    </select>
+
+    <select id="insertAchievement"
+        resultType="long"
+        affectData="true"
+        flushCache="true">
+        INSERT INTO education_achievements (
+            achievement_type,
+            teacher_user_id,
+            organization_code,
+            evaluation_year,
+            management_item_code,
+            achievement_date,
+            achievement_name,
+            attachment_ids,
+            achievement_status,
+            deleted_yn,
+            created_by,
+            updated_by
+        )
+        VALUES (
+            'COURSE_OPERATION',
+            #{teacherUserId},
+            #{organizationCode},
+            #{evaluationYear},
+            #{managementItemCode},
+            #{achievementDate},
+            #{achievementName},
+            CAST(#{attachmentIdsJson} AS jsonb),
+            'DRAFT',
+            'N',
+            #{createdBy},
+            #{createdBy}
+        )
+        RETURNING achievement_id
+    </select>
+
+    <insert id="insertAchievementDetail">
+        INSERT INTO course_operation_achievement_details (
+            achievement_id,
+            performance_detail
+        )
+        VALUES (
+            #{achievementId},
+            #{performanceDetails}
+        )
+    </insert>
+
+    <update id="updateAchievement">
+        UPDATE education_achievements achievement
+        SET management_item_code = #{managementItemCode},
+            evaluation_year = EXTRACT(YEAR FROM #{achievementDate})::varchar,
+            achievement_date = #{achievementDate},
+            achievement_name = #{achievementName},
+            attachment_ids = CAST(#{attachmentIdsJson} AS jsonb),
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy}
+        WHERE achievement.achievement_id = #{achievementId}
+            AND achievement.achievement_type = 'COURSE_OPERATION'
+            AND achievement.deleted_yn = 'N'
+    </update>
+
+    <update id="updateDetail">
+        UPDATE course_operation_achievement_details detail
+        SET performance_detail = #{performanceDetails}
+        WHERE detail.achievement_id = #{achievementId}
+    </update>
+
+    <insert id="insertStatusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type,
+            achievement_id,
+            previous_status,
+            next_status,
+            action_type,
+            processed_by
+        )
+        VALUES (
+            'COURSE_OPERATION',
+            #{achievementId},
+            #{previousStatus},
+            #{nextStatus},
+            'CREATE',
+            #{processedBy}
+        )
+    </insert>
+
+    <insert id="insertChangeHistory">
+        INSERT INTO data_change_histories (
+            target_business,
+            target_key,
+            change_type,
+            field_name,
+            before_value,
+            after_value,
+            changed_by,
+            change_reason,
+            request_id
+        )
+        VALUES (
+            'education_achievements',
+            #{targetKey},
+            #{changeType},
+            'performance_detail',
+            #{beforeValue},
+            #{afterValue},
+            #{changedBy},
+            '강좌 개설·운영 실적 저장',
+            #{requestId}
+        )
+    </insert>
+</mapper>

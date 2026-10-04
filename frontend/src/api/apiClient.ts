@@ -4778,3 +4778,227 @@ export const courseAreaGroupGradeApi = {
     return response.blob();
   },
 };
+
+export type EducationAchievementPageParams = {
+  page?: number;
+  pageSize?: 20 | 50 | 100;
+};
+
+export type EmploymentRateImprovementPayload = {
+  managementItemCode: string;
+  achievementDate: string;
+  specialLectureStartDate?: string;
+  specialLectureEndDate?: string;
+  mockExamQuestionPeriod?: string;
+  attachmentIds?: string[];
+};
+
+export type CourseOperationPayload = {
+  managementItemCode: string;
+  achievementDate: string;
+  performanceDetails: string;
+  attachmentIds?: string[];
+};
+
+export type LectureImprovementPayload = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementContent: string;
+  academicYear: number;
+  semester: 1 | 2;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateAchievementPayload = {
+  managementItemCode: string;
+  achievementDate: string;
+  achievementName?: string;
+  attachmentIds?: string[];
+};
+
+export type EmploymentRateBulkJobPayload = {
+  evaluationYear: string;
+  actionType: "GENERATE" | "DELETE";
+  targetCondition?: Record<string, unknown>;
+};
+
+function educationAchievementListPath(
+  resource: string,
+  params: EducationAchievementPageParams = {},
+) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 0),
+    pageSize: String(params.pageSize ?? 20),
+  });
+  return `/api/business/${resource}?${query.toString()}` as `/api/${string}`;
+}
+
+async function uploadEmploymentRateWorkbook<T>(
+  file: File,
+): Promise<ApiResponse<T>> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(
+    "/api/business/employment-rate-achievements/excel-uploads",
+    {
+      body: formData,
+      credentials: "include",
+      method: "POST",
+    },
+  );
+  const body = (await response.json()) as ApiResponse<T>;
+  if (!response.ok || body.success === false) {
+    throw new ApiClientError(
+      response.status,
+      body.error?.message ?? "Excel 업로드에 실패했습니다.",
+      body.error,
+    );
+  }
+  return body;
+}
+
+/** Shared BASIC-83 API registration for the education-achievement screens. */
+export const educationAchievementApi = {
+  listEmploymentRateImprovements<T>(
+    params: EducationAchievementPageParams = {},
+  ) {
+    return apiRequest<T>(
+      educationAchievementListPath("employment-rate-improvements", params),
+    );
+  },
+  getEmploymentRateImprovement<T>(achievementId: number) {
+    return apiRequest<T>(
+      `/api/business/employment-rate-improvements/${achievementId}`,
+    );
+  },
+  createEmploymentRateImprovement<T>(
+    payload: EmploymentRateImprovementPayload,
+  ) {
+    return apiRequest<T>("/api/business/employment-rate-improvements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateEmploymentRateImprovement<T>(
+    achievementId: number,
+    payload: EmploymentRateImprovementPayload,
+  ) {
+    return apiRequest<T>(
+      `/api/business/employment-rate-improvements/${achievementId}`,
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+  listCourseOperations<T>(params: EducationAchievementPageParams = {}) {
+    return apiRequest<T>(
+      educationAchievementListPath("course-operations", params),
+    );
+  },
+  getCourseOperation<T>(achievementId: number) {
+    return apiRequest<T>(`/api/business/course-operations/${achievementId}`);
+  },
+  createCourseOperation<T>(payload: CourseOperationPayload) {
+    return apiRequest<T>("/api/business/course-operations", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateCourseOperation<T>(
+    achievementId: number,
+    payload: CourseOperationPayload,
+  ) {
+    return apiRequest<T>(`/api/business/course-operations/${achievementId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  listLectureImprovements<T>(params: EducationAchievementPageParams = {}) {
+    return apiRequest<T>(
+      educationAchievementListPath("lecture-improvements", params),
+    );
+  },
+  getLectureImprovement<T>(achievementId: number) {
+    return apiRequest<T>(`/api/business/lecture-improvements/${achievementId}`);
+  },
+  createLectureImprovement<T>(payload: LectureImprovementPayload) {
+    return apiRequest<T>("/api/business/lecture-improvements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateLectureImprovement<T>(
+    achievementId: number,
+    payload: LectureImprovementPayload,
+  ) {
+    return apiRequest<T>(
+      `/api/business/lecture-improvements/${achievementId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  listEmploymentRateAchievements<T>(
+    params: EducationAchievementPageParams = {},
+  ) {
+    return apiRequest<T>(
+      educationAchievementListPath("employment-rate-achievements", params),
+    );
+  },
+  getEmploymentRateAchievement<T>(achievementId: number) {
+    return apiRequest<T>(
+      `/api/business/employment-rate-achievements/${achievementId}`,
+    );
+  },
+  createEmploymentRateAchievement<T>(
+    payload: EmploymentRateAchievementPayload,
+  ) {
+    return apiRequest<T>("/api/business/employment-rate-achievements", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  updateEmploymentRateAchievement<T>(
+    achievementId: number,
+    payload: EmploymentRateAchievementPayload,
+  ) {
+    return apiRequest<T>(
+      `/api/business/employment-rate-achievements/${achievementId}`,
+      { method: "PUT", body: JSON.stringify(payload) },
+    );
+  },
+  uploadEmploymentRateWorkbook<T>(file: File) {
+    return uploadEmploymentRateWorkbook<T>(file);
+  },
+  createEmploymentRateBulkJob<T>(payload: EmploymentRateBulkJobPayload) {
+    return apiRequest<T>(
+      "/api/business/employment-rate-achievements/bulk-jobs",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+  getEmploymentRateBulkJob<T>(jobId: string) {
+    return apiRequest<T>(
+      `/api/business/employment-rate-achievements/bulk-jobs/${encodeURIComponent(jobId)}`,
+    );
+  },
+  async downloadEmploymentRateAchievements(
+    params: EducationAchievementPageParams = {},
+  ) {
+    const response = await fetch(
+      educationAchievementListPath(
+        "employment-rate-achievements/download",
+        params,
+      ),
+      { credentials: "include" },
+    );
+    if (!response.ok) {
+      throw new ApiClientError(
+        response.status,
+        "취업률 실적 Excel 파일을 내려받지 못했습니다.",
+      );
+    }
+    return response.blob();
+  },
+};

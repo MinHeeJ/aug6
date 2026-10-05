@@ -748,6 +748,26 @@ export function canAccessAdminRoute(
   return hasMenuUrl(user.menus, path);
 }
 
+/**
+ * Applies approved BASIC-83 roles and server-provided menu visibility before
+ * rendering an education-achievement route.
+ */
+export function canAccessEducationAchievementRoute(
+  user: CurrentUser | null | undefined,
+  path: string,
+): boolean {
+  if (!user || !hasMenuUrl(user.menus, path)) {
+    return false;
+  }
+
+  const readRoles = ["R01", "R02", "R04"];
+  const allowedRoles =
+    path === "/faculty/education/employment-rate-achievements"
+      ? [...readRoles, "R07"]
+      : readRoles;
+  return user.roles.some((role) => allowedRoles.includes(role));
+}
+
 function hasMenuUrl(menus: CurrentUser["menus"], path: string): boolean {
   return menus.some(
     (menu) =>

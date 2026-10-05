@@ -13,6 +13,7 @@ import {
   ADMIN_ROUTES,
   LoginPage,
   canAccessAdminRoute,
+  canAccessEducationAchievementRoute,
 } from "../pages/LoginPage";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
@@ -135,6 +136,10 @@ import { LectureEvaluationAchievementManagementPage } from "../pages/achievement
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+import { CourseOperationsPage } from "../pages/courseoperations/SCR-COURSE-OPERATIONS";
+import { EmploymentRateAchievementsPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENTS";
+import { EmploymentRateImprovementsPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENTS";
+import { LectureImprovementsPage } from "../pages/lectureimprovements/SCR-LECTURE-IMPROVEMENTS";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +250,38 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  const educationAchievementRoutes = {
+    "/faculty/education/employment-rate-improvements": {
+      label: "취업률 제고 실적 관리",
+      page: <EmploymentRateImprovementsPage />,
+    },
+    "/faculty/education/course-operations": {
+      label: "강좌 개설·운영 실적 관리",
+      page: <CourseOperationsPage />,
+    },
+    "/faculty/education/lecture-improvements": {
+      label: "강의개선 실적 관리",
+      page: <LectureImprovementsPage />,
+    },
+    "/faculty/education/employment-rate-achievements": {
+      label: "취업률 실적 관리",
+      page: <EmploymentRateAchievementsPage />,
+    },
+  } as const;
+  const educationAchievementRoute =
+    educationAchievementRoutes[path as keyof typeof educationAchievementRoutes];
+  if (educationAchievementRoute) {
+    if (!canAccessEducationAchievementRoute(user, path)) {
+      return (
+        <PermissionState
+          title={`${educationAchievementRoute.label} 권한이 없습니다`}
+          message="메뉴 권한과 역할 권한을 확인하세요."
+        />
+      );
+    }
+    return educationAchievementRoute.page;
+  }
+
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

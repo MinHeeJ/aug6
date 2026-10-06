@@ -16,6 +16,22 @@ export type ApiResponse<T> = {
   meta: Record<string, unknown>;
 };
 
+export type SignupRequest = {
+  userId: string;
+  password: string;
+  passwordConfirm: string;
+  email: string;
+};
+
+export type SignupResponse = {
+  userId: string;
+  message: string;
+};
+
+export type UserIdAvailabilityResponse = {
+  available: boolean;
+};
+
 export class ApiClientError extends Error {
   readonly status: number;
   readonly apiError?: ApiError;
@@ -72,6 +88,18 @@ export const authApi = {
   },
   health() {
     return apiRequest<HealthStatus>("/api/health");
+  },
+  checkUserIdAvailability(userId: string) {
+    const query = new URLSearchParams({ userId });
+    return apiRequest<UserIdAvailabilityResponse>(
+      `/api/v1/auth/check-userid?${query.toString()}` as `/api/${string}`,
+    );
+  },
+  signup(request: SignupRequest) {
+    return apiRequest<SignupResponse>("/api/v1/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
   },
 };
 

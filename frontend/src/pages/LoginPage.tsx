@@ -906,6 +906,13 @@ export function LoginPage({
             >
               {submitting ? "처리 중" : "로그인"}
             </button>
+            <a
+              className="mt-4 block text-center text-sm font-medium text-primary underline"
+              data-testid="signup-entry-link"
+              href="/signup"
+            >
+              회원가입
+            </a>
             <div
               className="mt-4 rounded-md bg-lightprimary p-4 text-sm text-primary"
               role="status"

@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class AuthContractTest {
     @Autowired MockMvc mockMvc;
     @MockBean AuthService authService;
+    @MockBean SignupService signupService;
 
     @Test
     void openApiFixtureContainsUs01OperationIds() throws Exception {

@@ -249,6 +249,30 @@ paths:
         - R07
         - R08
         - R09
+  /api/v1/auth/check-userid:
+    get:
+      operationId: checkUserIdAvailability
+      summary: 아이디 사용 가능 확인
+      parameters: [ { name: userId, in: query, required: false, schema: { type: string, pattern: '^[a-z][a-z0-9]{3,19}$' }, description: 생략 시 available=false를 반환한다 } ]
+      responses:
+        '200': { description: 확인 성공, content: { application/json: { schema: { allOf: [ { $ref: '#/components/schemas/ApiResponse' }, { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/UserIdAvailabilityResponse' } } } ] } } } }
+        '400': { description: 요청 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-pagination: { paginated: false, reason: 단일 userId 결과 }
+      x-related-requirements: [REQ-1873, REQ-1877, REQ-1878]
+  /api/v1/auth/signup:
+    post:
+      operationId: signup
+      summary: 회원가입 계정 생성
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/SignupRequest' } } } }
+      responses:
+        '201': { description: 가입 성공, content: { application/json: { schema: { allOf: [ { $ref: '#/components/schemas/ApiResponse' }, { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/SignupResponse' } } } ] } } } }
+        '400': { description: 입력 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+        '409': { description: 중복 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+      x-related-requirements: [REQ-1867, REQ-1869, REQ-1872, REQ-1873, REQ-1874, REQ-1877, REQ-1879]
+      x-business-rules: [서버 검증 순서를 준수하고 password는 Argon2id hash만 저장한다]
+      x-side-effects: [users 행 생성, user_roles R01 행 생성]
+      x-state-transitions: ['users: none -> ACTIVE', 'user_roles: none -> ACTIVE (R01)']
+      x-required-tests: ['happy: 유효한 가입 -> users.login_id와 user_roles R01이 후속 조회에 존재한다', 'auth: anonymous signup 요청 -> 인증 거부 없이 201 또는 입력 오류가 반환된다', 'validation: passwordConfirm 불일치 -> 400 fields.passwordConfirm과 users 무생성이 반환된다', 'business: 중복 lowercase email -> 409과 기존 users 무변경이 반환된다', 'side-effect: 성공 가입 -> users.password_hash Argon2id와 user_roles R01 행이 존재한다']
   /api/admin/users:
     get:
       operationId: searchUsers
@@ -6547,99 +6571,523 @@ paths:
     get:
       operationId: listLectureEvaluationAchievements
       summary: 강의평가 실적 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1909, REQ-1911]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, occurredDateFrom, occurredDateTo, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1909
+      - REQ-1911
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - managementItemCode
+        - occurredDateFrom
+        - occurredDateTo
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveLectureEvaluationAchievement
       summary: 강의평가 실적 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1910, REQ-1912, REQ-1896, REQ-1908]
-      x-business-rules: [입력기간·데이터범위 통과 후 저장, 평가확정 변경 금지, 발생일 기간 밖은 경고 저장]
-      x-side-effects: [lecture_evaluation_achievements 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 유효한 강의평가 저장 -> lecture_evaluation_achievements 재조회에 management_item_code가 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: managementItemCode 누락 -> fields.managementItemCode 오류가 반환된다', 'business: 평가확정 achievement 수정 -> 기존 lecture_evaluation_achievements row가 변경되지 않는다', 'side-effect: 저장 성공 -> data_change_histories에 target_business=lecture_evaluation_achievements가 기록된다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, occurredDate], properties: { managementItemCode: { type: string }, occurredDate: { type: string, format: date }, achievementDetail: { type: object } } } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1910
+      - REQ-1912
+      - REQ-1896
+      - REQ-1908
+      x-business-rules:
+      - 입력기간·데이터범위 통과 후 저장
+      - 평가확정 변경 금지
+      - 발생일 기간 밖은 경고 저장
+      x-side-effects:
+      - lecture_evaluation_achievements 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 유효한 강의평가 저장 -> lecture_evaluation_achievements 재조회에 management_item_code가 보인다'
+      - 'auth: R07 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: managementItemCode 누락 -> fields.managementItemCode 오류가 반환된다'
+      - 'business: 평가확정 achievement 수정 -> 기존 lecture_evaluation_achievements row가 변경되지 않는다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 target_business=lecture_evaluation_achievements가 기록된다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - occurredDate
+              properties:
+                managementItemCode:
+                  type: string
+                occurredDate:
+                  type: string
+                  format: date
+                achievementDetail:
+                  type: object
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/lecture-achievements:
     get:
       operationId: listLectureAchievements
       summary: 강의실적 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1913, REQ-1915]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1913
+      - REQ-1915
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - managementItemCode
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveLectureAchievement
       summary: 강의실적 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1914, REQ-1916]
-      x-business-rules: [입력기간·데이터범위·평가확정 잠금을 검증한다]
-      x-side-effects: [lecture_achievements 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 유효한 강의실적 저장 -> lecture_achievements 재조회에 저장값이 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: occurredDate 누락 -> fields.occurredDate 오류가 반환된다', 'business: 평가확정 row 수정 -> lecture_achievements 기존 값이 유지된다', 'side-effect: 저장 성공 -> data_change_histories에 lecture_achievements 변경이 남는다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, occurredDate] } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1914
+      - REQ-1916
+      x-business-rules:
+      - 입력기간·데이터범위·평가확정 잠금을 검증한다
+      x-side-effects:
+      - lecture_achievements 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 유효한 강의실적 저장 -> lecture_achievements 재조회에 저장값이 보인다'
+      - 'auth: R07 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: occurredDate 누락 -> fields.occurredDate 오류가 반환된다'
+      - 'business: 평가확정 row 수정 -> lecture_achievements 기존 값이 유지된다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 lecture_achievements 변경이 남는다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - occurredDate
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/student-guidance-achievements:
     get:
       operationId: listStudentGuidanceAchievements
       summary: 학생지도 실적 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1917, REQ-1918]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, managementItemCode, guidanceDateFrom, guidanceDateTo, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1917
+      - REQ-1918
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - managementItemCode
+        - guidanceDateFrom
+        - guidanceDateTo
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveStudentGuidanceAchievement
       summary: 학생지도 실적 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1917, REQ-1918, REQ-1896]
-      x-business-rules: [지도학생 상세는 header와 함께 저장, 입력기간·데이터범위 통과 후 저장, 평가확정 변경 금지]
-      x-side-effects: [student_guidance_achievements·student_guidance_students 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 유효한 학생지도 저장 -> 목록과 상세 재조회에 지도기간·학생수·학생 정보가 보인다', 'auth: R07 개별 저장 요청 -> 403 ApiError가 반환된다', 'validation: managementItemCode 또는 지도기간 누락 -> 해당 field 오류가 반환된다', 'business: 평가확정 row 수정 -> student_guidance_achievements 기존 값이 유지된다', 'side-effect: 저장 성공 -> data_change_histories에 student_guidance_achievements 변경이 남는다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, guidanceStartDate, guidanceEndDate, students], properties: { achievementId: { type: integer, format: int64, nullable: true }, managementItemCode: { type: string }, guidanceStartDate: { type: string, format: date }, guidanceEndDate: { type: string, format: date }, attachmentRef: { type: string, nullable: true }, students: { type: array, minItems: 1, items: { type: object } } } } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1917
+      - REQ-1918
+      - REQ-1896
+      x-business-rules:
+      - 지도학생 상세는 header와 함께 저장
+      - 입력기간·데이터범위 통과 후 저장
+      - 평가확정 변경 금지
+      x-side-effects:
+      - student_guidance_achievements·student_guidance_students 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 유효한 학생지도 저장 -> 목록과 상세 재조회에 지도기간·학생수·학생 정보가 보인다'
+      - 'auth: R07 개별 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: managementItemCode 또는 지도기간 누락 -> 해당 field 오류가 반환된다'
+      - 'business: 평가확정 row 수정 -> student_guidance_achievements 기존 값이 유지된다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 student_guidance_achievements 변경이 남는다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - guidanceStartDate
+              - guidanceEndDate
+              - students
+              properties:
+                achievementId:
+                  type: integer
+                  format: int64
+                  nullable: true
+                managementItemCode:
+                  type: string
+                guidanceStartDate:
+                  type: string
+                  format: date
+                guidanceEndDate:
+                  type: string
+                  format: date
+                attachmentRef:
+                  type: string
+                  nullable: true
+                students:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/student-guidance-achievements/excel-uploads:
     post:
       operationId: createStudentGuidanceAchievementExcelUpload
       summary: 학생지도 Excel 검증
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R07]
-      x-related-requirements: [REQ-1919, REQ-1920, REQ-1921, REQ-1883, REQ-1884, REQ-1885, REQ-1886]
-      x-business-rules: [businessType은 STUDENT_GUIDANCE 고정, 오류·중복 행은 전체 반영 금지]
-      x-side-effects: [excel_upload_staging_rows·excel_upload_errors·excel_upload_histories 기록]
-      x-state-transitions: [업로드됨 -> 검증완료, 오류존재 -> 반영거부]
-      x-required-tests: ['happy: R07 정상 Excel upload -> 정상행과 검증 count가 반환된다', 'auth: R01 upload 요청 -> 403 ApiError가 반환된다', 'validation: template_version 없는 파일 -> fields.file 오류가 반환된다', 'business: 중복 행 upload -> student_guidance_achievements 기존 row가 변경되지 않는다', 'side-effect: 검증 완료 -> excel_upload_histories에 uploader와 total_count가 기록된다']
-      requestBody: { required: true, content: { multipart/form-data: { schema: { type: object, required: [file], properties: { file: { type: string, format: binary } } } } } }
-      responses: { '200': { description: 검증 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 파일 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 반영 불가, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R07
+      x-related-requirements:
+      - REQ-1919
+      - REQ-1920
+      - REQ-1921
+      - REQ-1883
+      - REQ-1884
+      - REQ-1885
+      - REQ-1886
+      x-business-rules:
+      - businessType은 STUDENT_GUIDANCE 고정
+      - 오류·중복 행은 전체 반영 금지
+      x-side-effects:
+      - excel_upload_staging_rows·excel_upload_errors·excel_upload_histories 기록
+      x-state-transitions:
+      - 업로드됨 -> 검증완료
+      - 오류존재 -> 반영거부
+      x-required-tests:
+      - 'happy: R07 정상 Excel upload -> 정상행과 검증 count가 반환된다'
+      - 'auth: R01 upload 요청 -> 403 ApiError가 반환된다'
+      - 'validation: template_version 없는 파일 -> fields.file 오류가 반환된다'
+      - 'business: 중복 행 upload -> student_guidance_achievements 기존 row가 변경되지 않는다'
+      - 'side-effect: 검증 완료 -> excel_upload_histories에 uploader와 total_count가 기록된다'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 검증 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 파일 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 반영 불가
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
   /api/business/degree-completion-achievements:
     get:
       operationId: listDegreeCompletionAchievements
       summary: 석·박사 배출 목록
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1922, REQ-1924]
-      x-pagination: { defaultSize: 20, allowedSizes: [20, 50, 100], filters: [managementNo, teacherName, certificationStatus] }
-      responses: { '200': { description: 조회 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검색조건 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1922
+      - REQ-1924
+      x-pagination:
+        defaultSize: 20
+        allowedSizes:
+        - 20
+        - 50
+        - 100
+        filters:
+        - managementNo
+        - teacherName
+        - certificationStatus
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검색조건 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     post:
       operationId: saveDegreeCompletionAchievement
       summary: 석·박사 배출 저장
-      security: [ { SessionCookie: [] } ]
-      x-roles: [R01, R02, R04]
-      x-related-requirements: [REQ-1923, REQ-1924]
-      x-business-rules: [지도학생 상세는 header와 함께 저장, 평가확정 row 변경 금지]
-      x-side-effects: [degree_completion_achievements·degree_completion_students 저장, data_change_histories 기록]
-      x-state-transitions: [작성중 -> 제출, 평가확정 -> 변경 거부]
-      x-required-tests: ['happy: 석·박사 실적 저장 -> degree_completion_students 재조회에 degree_type이 보인다', 'auth: R07 저장 요청 -> 403 ApiError가 반환된다', 'validation: degreeType 누락 지도학생 -> fields.degreeType 오류가 반환된다', 'business: 평가확정 header 수정 -> degree_completion_achievements가 변경되지 않는다', 'side-effect: 저장 성공 -> data_change_histories에 degree_completion_achievements 기록이 남는다']
-      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [managementItemCode, students] } } } }
-      responses: { '200': { description: 저장 성공, content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } } }, '400': { description: 검증 오류, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '403': { description: 권한 없음, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }, '409': { description: 업무 규칙 위반, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } } }
+      security:
+      - SessionCookie: []
+      x-roles:
+      - R01
+      - R02
+      - R04
+      x-related-requirements:
+      - REQ-1923
+      - REQ-1924
+      x-business-rules:
+      - 지도학생 상세는 header와 함께 저장
+      - 평가확정 row 변경 금지
+      x-side-effects:
+      - degree_completion_achievements·degree_completion_students 저장
+      - data_change_histories 기록
+      x-state-transitions:
+      - 작성중 -> 제출
+      - 평가확정 -> 변경 거부
+      x-required-tests:
+      - 'happy: 석·박사 실적 저장 -> degree_completion_students 재조회에 degree_type이 보인다'
+      - 'auth: R07 저장 요청 -> 403 ApiError가 반환된다'
+      - 'validation: degreeType 누락 지도학생 -> fields.degreeType 오류가 반환된다'
+      - 'business: 평가확정 header 수정 -> degree_completion_achievements가 변경되지 않는다'
+      - 'side-effect: 저장 성공 -> data_change_histories에 degree_completion_achievements 기록이 남는다'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - managementItemCode
+              - students
+      responses:
+        '200':
+          description: 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 권한 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 업무 규칙 위반
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
 x-uncovered-requirements:
   - canonical_id: REQ-1633
     status: screen-only
@@ -8615,6 +9063,23 @@ components:
           type: string
         password:
           type: string
+    SignupRequest:
+      type: object
+      required: [userId, password, passwordConfirm, email]
+      properties:
+        userId: { type: string, minLength: 4, maxLength: 20, pattern: '^[a-z][a-z0-9]{3,19}$' }
+        password: { type: string, format: password, writeOnly: true, minLength: 8 }
+        passwordConfirm: { type: string, format: password, writeOnly: true, minLength: 8 }
+        email: { type: string, format: email, maxLength: 254 }
+    UserIdAvailabilityResponse:
+      type: object
+      required: [available]
+      properties: { available: { type: boolean } }
+    SignupResponse:
+      type: object
+      required: [userId, message]
+      properties: { userId: { type: string }, message: { type: string } }
+
     UpdateUserAccountRequest:
       type: object
       required:

@@ -32,7 +32,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.equals("/api/health") || path.equals("/api/auth/login")) {
+        if (isAnonymousPath(request.getMethod(), path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -44,7 +44,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         try {
             CurrentUser user = authService.currentUser(sessionId);
             request.setAttribute("currentUser", user);
-            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            if (requiresMenuPermission(request.getMethod(), path)
+                    && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
                 return;
             }
@@ -54,8 +55,20 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-    private boolean requiresMenuPermission(String path) {
-        return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
+    /**
+     * Keeps the anonymous surface explicit so new authentication routes are protected by default.
+     */
+    private boolean isAnonymousPath(String method, String path) {
+        return !path.startsWith("/api/")
+                || path.equals("/api/health")
+                || path.equals("/api/auth/login")
+                || ("GET".equals(method) && path.equals("/api/v1/auth/check-userid"))
+                || ("POST".equals(method) && path.equals("/api/v1/auth/signup"));
+    }
+
+    private boolean requiresMenuPermission(String method, String path) {
+        return !("GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method))
+                && (path.startsWith("/api/admin/") || path.startsWith("/api/business/"));
     }
 
     private String pathToUiRoute(String apiPath) {

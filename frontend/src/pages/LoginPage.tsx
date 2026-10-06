@@ -912,6 +912,26 @@ export function LoginPage({
             >
               {statusMessage ?? "admin / admin 계정으로 로그인하세요."}
             </div>
+            <a
+              className="mt-4 inline-block text-sm text-primary"
+              href="/signup"
+              data-testid="login-signup-link"
+              onClick={(event) => {
+                if (
+                  event.button === 0 &&
+                  !event.ctrlKey &&
+                  !event.metaKey &&
+                  !event.shiftKey &&
+                  !event.altKey
+                ) {
+                  event.preventDefault();
+                  window.history.pushState({}, "", "/signup");
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                }
+              }}
+            >
+              회원가입
+            </a>
             <p className="mt-4 text-xs text-muted">
               README 또는 quickstart에서 실행·로그인·주요 화면 검증 방법을
               확인합니다.

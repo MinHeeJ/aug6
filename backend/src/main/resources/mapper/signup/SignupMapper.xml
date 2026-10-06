@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.signup.SignupMapper">
+    <select id="existsLoginId" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM users u
+            WHERE u.login_id = #{loginId}
+        )
+    </select>
+    <select id="existsEmail" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM users u
+            WHERE u.email = #{email}
+        )
+    </select>
+    <!-- The key comes from the insert itself, never from a joined/scoped readback. -->
+    <select id="insertUser"
+            resultType="java.lang.Long"
+            affectData="true"
+            flushCache="true">
+        INSERT INTO users (
+            login_id,
+            email,
+            password_hash,
+            system_use_yn,
+            status
+        )
+        VALUES (
+            #{loginId},
+            #{email},
+            #{passwordHash},
+            'Y',
+            'ACTIVE'
+        )
+        ON CONFLICT DO NOTHING
+        RETURNING user_id
+    </select>
+    <insert id="insertDefaultRole">
+        INSERT INTO user_roles (
+            user_id,
+            role_code,
+            assignment_type,
+            status
+        )
+        VALUES (
+            #{userId},
+            'R01',
+            'MANUAL',
+            'ACTIVE'
+        )
+    </insert>
+</mapper>

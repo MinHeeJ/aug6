@@ -32,7 +32,13 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || path.equals("/api/health") || path.equals("/api/auth/login")) {
+        boolean anonymousSignupOperation =
+                ("POST".equals(request.getMethod()) && path.equals("/api/v1/auth/signup"))
+                || ("GET".equals(request.getMethod()) && path.equals("/api/v1/auth/check-userid"));
+        if (!path.startsWith("/api/")
+                || path.equals("/api/health")
+                || path.equals("/api/auth/login")
+                || anonymousSignupOperation) {
             filterChain.doFilter(request, response);
             return;
         }

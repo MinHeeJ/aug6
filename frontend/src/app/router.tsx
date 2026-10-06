@@ -9,6 +9,7 @@ import {
   SuccessState,
 } from "../components/States";
 import { authApi, type CurrentUser } from "../api/apiClient";
+import { SignupPage } from "../pages/signup/SCR-SIGNUP";
 import {
   ADMIN_ROUTES,
   LoginPage,
@@ -155,6 +156,10 @@ export function AppRouter() {
   }
 
   if (auth.status === "anonymous") {
+    // Signup is public and does not inherit the admin shell or menu permissions.
+    if (path === "/signup") {
+      return <SignupPage />;
+    }
     return (
       <LoginPage
         onLogin={auth.login}

@@ -24,6 +24,12 @@
     </properties>
 
     <dependencies>
+        <!-- Employment-rate templates, validation and error exports are actual XLSX workbooks. -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.4.1</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

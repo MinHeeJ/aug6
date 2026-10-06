@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.UUID;
 import kr.ac.knue.commonfoundation.common.api.UnauthenticatedException;
 import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Authenticates local accounts while retaining legacy SHA-256 compatibility during Argon2id rollout.
+ */
 @Service
 public class LocalAccountAuthenticationAdapter implements AuthenticationPort {
     private final AuthMapper authMapper;
@@ -30,12 +34,20 @@ public class LocalAccountAuthenticationAdapter implements AuthenticationPort {
         String sessionId = UUID.randomUUID().toString().replace("-", "");
         authMapper.insertSession(sessionId, account.userId(), LocalDateTime.now().plusHours(8));
         List<String> roles = authMapper.findActiveRoleCodes(account.userId());
-        CurrentUser user = new CurrentUser(account.userId(), account.loginId(), account.employeeNo(), account.name(), roles,
+        CurrentUser user = new CurrentUser(
+                account.userId(),
+                account.loginId(),
+                account.employeeNo(),
+                account.name(),
+                roles,
                 permissionService.visibleMenus(account.userId(), roles));
         return new AuthenticatedSession(sessionId, user);
     }
 
     private boolean matches(String rawPassword, String storedHash) {
+        if (storedHash != null && storedHash.startsWith("$argon2id$")) {
+            return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8().matches(rawPassword, storedHash);
+        }
         return ("sha256:" + sha256(rawPassword)).equals(storedHash);
     }
 

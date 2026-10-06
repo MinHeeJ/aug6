@@ -14,6 +14,7 @@ import {
   LoginPage,
   canAccessAdminRoute,
 } from "../pages/LoginPage";
+import { SignupPage } from "../pages/signupauthapi/SCR-SIGNUP";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
@@ -155,6 +156,10 @@ export function AppRouter() {
   }
 
   if (auth.status === "anonymous") {
+    if (path === "/signup") {
+      return <SignupPage />;
+    }
+
     return (
       <LoginPage
         onLogin={auth.login}

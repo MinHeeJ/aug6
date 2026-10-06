@@ -34,6 +34,18 @@ describe("LoginPage", () => {
     expect(html).not.toContain('name="password" type="password" value="admin"');
   });
 
+  it("provides one 회원가입 link to the anonymous signup route", () => {
+    const html = renderToStaticMarkup(
+      <LoginPage
+        onLogin={async () => undefined}
+        onHealth={async () => ({ status: "UP" })}
+      />,
+    );
+
+    expect(html.match(/href="\/signup"/g)).toHaveLength(1);
+    expect(html).toContain(">회원가입</a>");
+  });
+
   it("describes BASIC-19 menu paths with menu screens under roles and privacy screens under system management", () => {
     expect(routePath("/admin/menu-structure")).toBe(
       "시스템 관리 > 메뉴 관리 > 메뉴 구조 관리",

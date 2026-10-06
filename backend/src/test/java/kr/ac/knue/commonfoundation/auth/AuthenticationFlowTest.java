@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class AuthenticationFlowTest {
     @Autowired MockMvc mockMvc;
     @MockBean AuthService authService;
+    @MockBean SignupService signupService;
 
     @Test
     void adminCanLoginReadCurrentUserAndLogout() throws Exception {

@@ -1,4 +1,15 @@
 services:
+  neis-stub:
+    image: nginx:1.27.3-alpine
+    volumes:
+      - ./neis-stub.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/hub/schoolInfo >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+
   database:
     image: postgres:16.4-alpine
     environment:
@@ -30,9 +41,12 @@ services:
       PRIVACY_HMAC_KEY: ${PRIVACY_HMAC_KEY:-}
       NEIS_OPEN_API_KEY: ${NEIS_OPEN_API_KEY:-}
       NEIS_TIMEOUT: ${NEIS_TIMEOUT:-PT5S}
+      NEIS_SCHOOL_INFO_ENDPOINT: http://neis-stub:8080/hub/schoolInfo
       TZ: Asia/Seoul
     depends_on:
       database:
+        condition: service_healthy
+      neis-stub:
         condition: service_healthy
     ports:
       - "8080:8080"

@@ -1,3 +1,7 @@
+// Expose the existing public-auth adapters without duplicating their request logic.
+export { signupApi, type SignupRequest } from "../pages/signup/signupApi";
+export { checkUserIdAvailability } from "../pages/availability/availabilityApi";
+
 export type ApiErrorField = {
   field: string;
   message: string;

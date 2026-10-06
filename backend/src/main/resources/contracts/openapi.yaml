@@ -7,6 +7,102 @@ servers:
   - url: /
     description: 상대경로 /api 사용 계약
 paths:
+  /api/v1/auth/check-userid:
+    get:
+      operationId: checkUserIdAvailability
+      summary: 아이디 사용 가능 확인
+      parameters:
+      - name: userId
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9]{3,19}$
+      responses:
+        '200':
+          description: 확인 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/UserIdAvailabilityResponse'
+        '400':
+          description: 요청 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-pagination:
+        paginated: false
+        reason: 단일 userId 결과
+      x-related-requirements:
+      - REQ-1873
+      - REQ-1877
+      - REQ-1878
+  /api/v1/auth/signup:
+    post:
+      operationId: signup
+      summary: 회원가입 계정 생성
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: 가입 성공
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/SignupResponse'
+        '400':
+          description: 입력 검증 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 중복 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      x-related-requirements:
+      - REQ-1867
+      - REQ-1869
+      - REQ-1872
+      - REQ-1873
+      - REQ-1874
+      - REQ-1877
+      - REQ-1879
+      x-business-rules:
+      - 서버 검증 순서를 준수하고 password는 Argon2id hash만 저장한다
+      x-side-effects:
+      - users 행 생성
+      - user_roles R01 행 생성
+      x-state-transitions:
+      - 'users: none -> ACTIVE'
+      - 'user_roles: none -> ACTIVE (R01)'
+      x-required-tests:
+      - 'happy: 유효한 가입 -> users.login_id와 user_roles R01이 후속 조회에 존재한다'
+      - 'auth: anonymous signup 요청 -> 인증 거부 없이 201 또는 입력 오류가 반환된다'
+      - 'validation: passwordConfirm 불일치 -> 400 fields.passwordConfirm과 users 무생성이 반환된다'
+      - 'business: 중복 lowercase email -> 409과 기존 users 무변경이 반환된다'
+      - 'side-effect: 성공 가입 -> users.password_hash Argon2id와 user_roles R01 행이 존재한다'
   /api/health:
     get:
       operationId: getHealth
@@ -5640,6 +5736,50 @@ components:
       name: SESSION
       description: HttpOnly SameSite=Lax session cookie
   schemas:
+    SignupRequest:
+      type: object
+      required:
+      - userId
+      - password
+      - passwordConfirm
+      - email
+      properties:
+        userId:
+          type: string
+          minLength: 4
+          maxLength: 20
+          pattern: ^[a-z][a-z0-9]{3,19}$
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 8
+        passwordConfirm:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 8
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    SignupResponse:
+      type: object
+      required:
+      - userId
+      - message
+      properties:
+        userId:
+          type: string
+        message:
+          type: string
+    UserIdAvailabilityResponse:
+      type: object
+      required:
+      - available
+      properties:
+        available:
+          type: boolean
     BusinessTransitionRequest:
       type: object
       required:

@@ -9,6 +9,40 @@ export type AdminRoute = {
   menuPath: string;
 };
 
+/** Canonical education routes; session menus and operation roles must both allow entry. */
+export const FACULTY_ACHIEVEMENT_ROUTES: (AdminRoute & {
+  roles: readonly string[];
+})[] = [
+  {
+    path: "/faculty/employment-rate-improvement-achievements",
+    label: "취업률 제고 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 제고 실적 관리",
+    roles: ["R01", "R02", "R04"],
+  },
+  {
+    path: "/faculty/course-offering-operation-achievements",
+    label: "강좌 개설·운영 실적 관리",
+    screenId: "SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강좌 개설·운영 실적 관리",
+    roles: ["R01", "R02", "R04"],
+  },
+  {
+    path: "/faculty/teaching-improvement-achievements",
+    label: "강의개선 실적 관리",
+    screenId: "SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의개선 실적 관리",
+    roles: ["R01", "R02", "R04"],
+  },
+  {
+    path: "/faculty/employment-rate-achievements",
+    label: "취업률 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 실적 관리",
+    roles: ["R01", "R02", "R04", "R07"],
+  },
+];
+
 export const ADMIN_ROUTES: AdminRoute[] = [
   {
     path: "/admin/users",
@@ -674,6 +708,12 @@ export function canAccessAdminRoute(
 ): boolean {
   if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
+  }
+  const achievementRoute = FACULTY_ACHIEVEMENT_ROUTES.find(
+    (route) => route.path === path,
+  );
+  if (achievementRoute) {
+    return user.roles.some((role) => achievementRoute.roles.includes(role));
   }
   if (path === "/faculty/course-area-group-grades") {
     return (

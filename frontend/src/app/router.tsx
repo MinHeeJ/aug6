@@ -11,6 +11,7 @@ import {
 import { authApi, type CurrentUser } from "../api/apiClient";
 import {
   ADMIN_ROUTES,
+  FACULTY_ACHIEVEMENT_ROUTES,
   LoginPage,
   canAccessAdminRoute,
 } from "../pages/LoginPage";
@@ -136,11 +137,16 @@ import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECT
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
+import { CourseOperationManagementPage } from "../pages/courseoperations/SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT";
+import { EmploymentRateAchievementPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
+import { EmploymentRateImprovementManagementPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
+import { LectureImprovementManagementPage } from "../pages/lectureimprovements/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
+
 export function AppRouter() {
   const auth = useAuth();
   const path = usePathname();
-  const adminRoute = ADMIN_ROUTES.find((route) =>
-    routeMatchesPath(route.path, path),
+  const adminRoute = [...ADMIN_ROUTES, ...FACULTY_ACHIEVEMENT_ROUTES].find(
+    (route) => routeMatchesPath(route.path, path),
   );
 
   if (auth.status === "loading") {
@@ -245,6 +251,17 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  // Entry is guarded by the canonical route registry before any page makes API requests.
+  switch (path) {
+    case "/faculty/employment-rate-improvement-achievements":
+      return <EmploymentRateImprovementManagementPage />;
+    case "/faculty/course-offering-operation-achievements":
+      return <CourseOperationManagementPage />;
+    case "/faculty/teaching-improvement-achievements":
+      return <LectureImprovementManagementPage />;
+    case "/faculty/employment-rate-achievements":
+      return <EmploymentRateAchievementPage />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

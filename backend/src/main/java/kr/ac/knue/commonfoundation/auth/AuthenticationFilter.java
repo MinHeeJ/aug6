@@ -7,6 +7,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import kr.ac.knue.commonfoundation.basic33.EvaluationRuleFoundationContract;
 import kr.ac.knue.commonfoundation.basic34.EvaluationRuleBusinessFoundationContract;
@@ -14,6 +15,7 @@ import kr.ac.knue.commonfoundation.basic36.Basic36FoundationContract;
 import kr.ac.knue.commonfoundation.businessperiod.BusinessPeriodFoundationContract;
 import kr.ac.knue.commonfoundation.common.api.ApiError;
 import kr.ac.knue.commonfoundation.common.api.ApiResponse;
+import kr.ac.knue.commonfoundation.common.education.EducationAchievementContract;
 import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -59,6 +61,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String pathToUiRoute(String apiPath) {
+        String educationAchievementRoute = EducationAchievementContract.uiRouteForApiPath(apiPath);
+        if (educationAchievementRoute != null) {
+            return educationAchievementRoute;
+        }
         String evaluationRuleRoute = EvaluationRuleFoundationContract.uiRouteForApiPath(apiPath);
         if (evaluationRuleRoute != null) {
             return evaluationRuleRoute;
@@ -188,6 +194,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private void writeError(HttpServletResponse response, int status, ApiError error) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(response.getWriter(), ApiResponse.fail(error));
     }
 }

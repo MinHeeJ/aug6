@@ -14,6 +14,7 @@ import {
   LoginPage,
   canAccessAdminRoute,
 } from "../pages/LoginPage";
+import { SignupPage } from "../pages/signupimplementation/SCR-SIGNUP";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
 import { MenuPermissionManagementPage } from "../pages/admin/SCR-MENU-PERMISSION-MGMT";
@@ -142,6 +143,11 @@ export function AppRouter() {
   const adminRoute = ADMIN_ROUTES.find((route) =>
     routeMatchesPath(route.path, path),
   );
+
+  // Signup is public, including while the existing session lookup is pending or unavailable.
+  if (path === "/signup") {
+    return <SignupPage />;
+  }
 
   if (auth.status === "loading") {
     return (

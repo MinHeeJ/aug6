@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.signupimplementation.SignupMapper">
+    <select id="loginIdExists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM users
+            WHERE login_id = #{userId}
+        )
+    </select>
+    <select id="emailExists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM users
+            WHERE email = #{email}
+        )
+    </select>
+    <!-- A data-affecting SELECT returns the generated parent key, not a scoped joined read. -->
+    <select
+        id="insertAccount"
+        resultType="java.lang.Long"
+        affectData="true"
+        flushCache="true"
+    >
+        INSERT INTO users (login_id, password_hash, email, status, system_use_yn)
+        VALUES (#{userId}, #{passwordHash}, #{email}, 'ACTIVE', 'Y')
+        RETURNING user_id
+    </select>
+    <insert id="insertDefaultRole">
+        INSERT INTO user_roles (
+            user_id, role_code, assignment_type, status, valid_start_date, valid_end_date, approver_user_id
+        )
+        VALUES (
+            #{internalUserId}, 'R01', 'MANUAL', 'ACTIVE', CURRENT_DATE, NULL, NULL
+        )
+    </insert>
+</mapper>

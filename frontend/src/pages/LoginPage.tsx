@@ -788,7 +788,13 @@ export function LoginPage({
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<LoginValidationErrors>({});
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(() => {
+    const message =
+      typeof window !== "undefined" && window.location.pathname === "/login"
+        ? window.history.state?.signupMessage
+        : undefined;
+    return typeof message === "string" ? message : null;
+  });
   const [healthMessage, setHealthMessage] =
     useState<string>("아직 확인하지 않았습니다.");
   const [submitting, setSubmitting] = useState(false);
@@ -906,6 +912,13 @@ export function LoginPage({
             >
               {submitting ? "처리 중" : "로그인"}
             </button>
+            <a
+              data-testid="login-signup-link"
+              href="/signup"
+              className="mt-4 block text-center text-sm text-primary"
+            >
+              회원가입
+            </a>
             <div
               className="mt-4 rounded-md bg-lightprimary p-4 text-sm text-primary"
               role="status"

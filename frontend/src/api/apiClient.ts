@@ -1,3 +1,10 @@
+// Expose the feature-owned client without duplicating its paths, payloads, or error handling.
+export { signupApi } from "../pages/signupimplementation/signupApi";
+export type {
+  SignupRequest,
+  SignupResponse,
+} from "../pages/signupimplementation/signupApi";
+
 export type ApiErrorField = {
   field: string;
   message: string;

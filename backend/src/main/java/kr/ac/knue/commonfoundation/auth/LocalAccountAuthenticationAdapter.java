@@ -11,6 +11,7 @@ import kr.ac.knue.commonfoundation.common.api.UnauthenticatedException;
 import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
 import org.springframework.stereotype.Service;
 
+/** Local credential authentication preserving legacy SHA-256 accounts and accepting new Argon2id accounts. */
 @Service
 public class LocalAccountAuthenticationAdapter implements AuthenticationPort {
     private final AuthMapper authMapper;
@@ -36,6 +37,10 @@ public class LocalAccountAuthenticationAdapter implements AuthenticationPort {
     }
 
     private boolean matches(String rawPassword, String storedHash) {
+        if (storedHash != null && storedHash.startsWith("$argon2id$")) {
+            return new kr.ac.knue.commonfoundation.signupimplementation.SignupPasswordEncoder()
+                    .matches(rawPassword, storedHash);
+        }
         return ("sha256:" + sha256(rawPassword)).equals(storedHash);
     }
 

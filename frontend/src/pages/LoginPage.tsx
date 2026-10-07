@@ -9,7 +9,46 @@ export type AdminRoute = {
   menuPath: string;
 };
 
+export const EDUCATION_ACHIEVEMENT_ALIASES: Record<string, string> = {
+  "/faculty/education/employment-rate-improvements":
+    "/faculty/employment-rate-improvement-achievements",
+  "/faculty/education/course-operations":
+    "/faculty/course-offering-operation-achievements",
+  "/faculty/education/lecture-improvements":
+    "/faculty/teaching-improvement-achievements",
+  "/faculty/education/employment-rate-achievements":
+    "/faculty/employment-rate-achievements",
+};
+
+export function canonicalEducationAchievementPath(path: string): string {
+  return EDUCATION_ACHIEVEMENT_ALIASES[path] ?? path;
+}
+
 export const ADMIN_ROUTES: AdminRoute[] = [
+  {
+    path: "/faculty/employment-rate-improvement-achievements",
+    label: "취업률 제고 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-IMPROVEMENTS",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 제고 실적 관리",
+  },
+  {
+    path: "/faculty/course-offering-operation-achievements",
+    label: "강좌 개설·운영 실적 관리",
+    screenId: "SCR-COURSE-OPERATIONS",
+    menuPath: "업적 입력 관리 > 교육영역 > 강좌 개설·운영 실적 관리",
+  },
+  {
+    path: "/faculty/employment-rate-achievements",
+    label: "취업률 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-ACHIEVEMENTS",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 실적 관리",
+  },
+  {
+    path: "/faculty/teaching-improvement-achievements",
+    label: "강의개선 실적 관리",
+    screenId: "SCR-LECTURE-IMPROVEMENTS",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의개선 실적 관리",
+  },
   {
     path: "/admin/users",
     label: "사용자 관리",
@@ -672,6 +711,19 @@ export function canAccessAdminRoute(
   user: CurrentUser | null | undefined,
   path: string,
 ): boolean {
+  path = canonicalEducationAchievementPath(path);
+  if (Object.values(EDUCATION_ACHIEVEMENT_ALIASES).includes(path)) {
+    if (!user) return false;
+    if (user.roles.includes("R09")) return true;
+    const roles =
+      path === "/faculty/employment-rate-achievements"
+        ? ["R01", "R02", "R04", "R07"]
+        : ["R01", "R02", "R04"];
+    return (
+      hasMenuUrl(user.menus, path) &&
+      user.roles.some((role) => roles.includes(role))
+    );
+  }
   if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
   }

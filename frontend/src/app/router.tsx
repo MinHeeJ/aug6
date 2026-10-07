@@ -133,8 +133,15 @@ import {
 } from "../pages/admin/Basic60OperationalSettingsPages";
 import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { EmploymentRateAchievementPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+
+import { CourseOperationManagementPage } from "../pages/courseoperations/SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT";
+
+import { LectureImprovementPage } from "../pages/lectureimprovements/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
+
+import { EmploymentRateImprovementPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +252,18 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/faculty/education/course-operations") {
+    return <CourseOperationManagementPage user={user} />;
+  }
+  if (path === "/faculty/education/lecture-improvements") {
+    return <LectureImprovementPage user={user} />;
+  }
+  if (path === "/faculty/education/employment-rate-improvements") {
+    return <EmploymentRateImprovementPage user={user} />;
+  }
+  if (path === "/faculty/education/employment-rate-achievements") {
+    return <EmploymentRateAchievementPage user={user} />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

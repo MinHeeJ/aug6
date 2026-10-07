@@ -38,7 +38,9 @@ export async function apiRequest<T>(
     ...init,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(init.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...(init.headers ?? {}),
     },
   });
@@ -4776,5 +4778,190 @@ export const courseAreaGroupGradeApi = {
       );
     }
     return response.blob();
+  },
+};
+
+export type EducationAchievementSearchParams = {
+  page?: number;
+  pageSize?: 20 | 50 | 100;
+  evaluationYear?: string;
+  managementNo?: string;
+  managementItemCode?: string;
+  achievementStatus?: string;
+};
+
+export type EducationAchievementRequest = {
+  managementItemCode: string;
+  achievementDate: string;
+  attachmentIds?: string[];
+};
+export type EmploymentRateImprovementRequest = EducationAchievementRequest & {
+  specialLectureStartDate?: string | null;
+  specialLectureEndDate?: string | null;
+  mockExamQuestionPeriod?: string | null;
+};
+export type CourseOperationRequest = EducationAchievementRequest & {
+  performanceDetails: string;
+};
+export type LectureImprovementRequest = EducationAchievementRequest & {
+  achievementContent: string;
+  academicYear: number;
+  semester: 1 | 2;
+};
+export type EmploymentRateAchievementRequest = EducationAchievementRequest & {
+  achievementName?: string;
+};
+export type EmploymentRateBulkJobRequest = {
+  evaluationYear: string;
+  actionType: "GENERATE" | "DELETE";
+  targetCondition?: Record<string, unknown>;
+};
+
+function educationSearchPath(
+  base: `/api/${string}`,
+  params: EducationAchievementSearchParams = {},
+) {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page ?? 0));
+  query.set("pageSize", String(params.pageSize ?? 20));
+  for (const key of [
+    "evaluationYear",
+    "managementNo",
+    "managementItemCode",
+    "achievementStatus",
+  ] as const) {
+    if (params[key]?.trim()) query.set(key, params[key]!.trim());
+  }
+  return `${base}?${query}` as `/api/${string}`;
+}
+
+function educationCrudApi<Request>(base: `/api/${string}`) {
+  return {
+    list<T = unknown>(params: EducationAchievementSearchParams = {}) {
+      return apiRequest<T>(educationSearchPath(base, params));
+    },
+    get<T = unknown>(achievementId: number) {
+      return apiRequest<T>(`${base}/${achievementId}`);
+    },
+    create<T = unknown>(payload: Request) {
+      return apiRequest<T>(base, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    update<T = unknown>(achievementId: number, payload: Request) {
+      return apiRequest<T>(`${base}/${achievementId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    },
+  };
+}
+
+const improvementCrud = educationCrudApi<EmploymentRateImprovementRequest>(
+  "/api/business/employment-rate-improvements",
+);
+export const employmentRateImprovementApi = {
+  listEmploymentRateImprovements: improvementCrud.list,
+  getEmploymentRateImprovement: improvementCrud.get,
+  createEmploymentRateImprovement: improvementCrud.create,
+  updateEmploymentRateImprovement: improvementCrud.update,
+};
+const courseCrud = educationCrudApi<CourseOperationRequest>(
+  "/api/business/course-operations",
+);
+export const courseOperationApi = {
+  listCourseOperations: courseCrud.list,
+  getCourseOperation: courseCrud.get,
+  createCourseOperation: courseCrud.create,
+  updateCourseOperation: courseCrud.update,
+};
+const lectureCrud = educationCrudApi<LectureImprovementRequest>(
+  "/api/business/lecture-improvements",
+);
+export const lectureImprovementApi = {
+  listLectureImprovements: lectureCrud.list,
+  getLectureImprovement: lectureCrud.get,
+  createLectureImprovement: lectureCrud.create,
+  updateLectureImprovement: lectureCrud.update,
+};
+
+const employmentRateBase = "/api/business/employment-rate-achievements";
+const employmentCrud =
+  educationCrudApi<EmploymentRateAchievementRequest>(employmentRateBase);
+
+async function educationWorkbook(path: `/api/${string}`): Promise<Blob> {
+  const response = await fetch(path, { credentials: "include" });
+  if (!response.ok) {
+    const body = response.headers
+      .get("content-type")
+      ?.includes("application/json")
+      ? ((await response.json()) as ApiResponse<unknown>)
+      : undefined;
+    throw new ApiClientError(
+      response.status,
+      body?.error?.message ?? "Excel 다운로드 실패",
+      body?.error,
+    );
+  }
+  return response.blob();
+}
+
+export const employmentRateAchievementApi = {
+  listEmploymentRateAchievements: employmentCrud.list,
+  getEmploymentRateAchievement: employmentCrud.get,
+  createEmploymentRateAchievement: employmentCrud.create,
+  updateEmploymentRateAchievement: employmentCrud.update,
+  downloadEmploymentRateAchievements(
+    params: EducationAchievementSearchParams = {},
+  ) {
+    return educationWorkbook(
+      educationSearchPath(`${employmentRateBase}/download`, params),
+    );
+  },
+  uploadEmploymentRateAchievementsExcel<T = unknown>(file: File) {
+    const body = new FormData();
+    body.append("file", file);
+    return apiRequest<T>(`${employmentRateBase}/excel-uploads`, {
+      method: "POST",
+      body,
+    });
+  },
+  createEmploymentRateBulkJob<T = unknown>(
+    payload: EmploymentRateBulkJobRequest,
+  ) {
+    return apiRequest<T>(`${employmentRateBase}/bulk-jobs`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  getEmploymentRateBulkJob<T = unknown>(jobId: string) {
+    return apiRequest<T>(
+      `${employmentRateBase}/bulk-jobs/${encodeURIComponent(jobId)}`,
+    );
+  },
+  downloadTemplate() {
+    return educationWorkbook(`${employmentRateBase}/excel-uploads/template`);
+  },
+  commitUpload<T = unknown>(uploadId: string) {
+    return apiRequest<T>(
+      `${employmentRateBase}/excel-uploads/${encodeURIComponent(uploadId)}/commit`,
+      {
+        method: "POST",
+      },
+    );
+  },
+  listUploadHistories<T = unknown>() {
+    return apiRequest<T>(`${employmentRateBase}/excel-uploads/histories`);
+  },
+  getUploadErrors<T = unknown>(uploadId: string) {
+    return apiRequest<T>(
+      `${employmentRateBase}/excel-uploads/${encodeURIComponent(uploadId)}/errors`,
+    );
+  },
+  downloadUploadErrors(uploadId: string) {
+    return educationWorkbook(
+      `${employmentRateBase}/excel-uploads/${encodeURIComponent(uploadId)}/errors/download`,
+    );
   },
 };

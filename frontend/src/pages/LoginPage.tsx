@@ -631,6 +631,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-UNCONFIRMED-RESEARCH-ACHIEVEMENT",
     menuPath: "업적 평가 관리 > 연구실적 관리 > 미확인 연구실적 목록",
   },
+  {
+    path: "/faculty/education/employment-rate-improvements",
+    label: "취업률 제고 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-IMPROVEMENTS",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 제고 실적 관리",
+  },
+  {
+    path: "/faculty/education/course-operations",
+    label: "강좌 개설·운영 실적 관리",
+    screenId: "SCR-COURSE-OPERATIONS",
+    menuPath: "업적 입력 관리 > 교육영역 > 강좌 개설·운영 실적 관리",
+  },
+  {
+    path: "/faculty/education/lecture-improvements",
+    label: "강의개선 실적 관리",
+    screenId: "SCR-LECTURE-IMPROVEMENTS",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의개선 실적 관리",
+  },
+  {
+    path: "/faculty/education/employment-rate-achievements",
+    label: "취업률 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-ACHIEVEMENTS",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 실적 관리",
+  },
 ];
 
 export type LoginValidationErrors = Partial<
@@ -674,6 +698,21 @@ export function canAccessAdminRoute(
 ): boolean {
   if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
+  }
+  // A session menu grants reachability, not an exemption from business roles.
+  if (
+    [
+      "/faculty/education/employment-rate-improvements",
+      "/faculty/education/course-operations",
+      "/faculty/education/lecture-improvements",
+      "/faculty/education/employment-rate-achievements",
+    ].includes(path)
+  ) {
+    const allowedRoles =
+      path === "/faculty/education/employment-rate-achievements"
+        ? ["R01", "R02", "R04", "R07"]
+        : ["R01", "R02", "R04"];
+    return user.roles.some((role) => allowedRoles.includes(role));
   }
   if (path === "/faculty/course-area-group-grades") {
     return (

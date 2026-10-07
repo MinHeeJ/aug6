@@ -61,7 +61,7 @@ describe("LoginPage", () => {
     );
   });
 
-  it("allows seed R09 administrator to access all configured admin routes after login", () => {
+  it("allows seed R09 admin routes while denying education routes that require business roles", () => {
     const adminUser: CurrentUser = {
       userId: 1,
       loginId: "admin",
@@ -80,10 +80,22 @@ describe("LoginPage", () => {
       })),
     };
 
+    const businessRoleRoutes = [
+      "/faculty/education/employment-rate-improvements",
+      "/faculty/education/course-operations",
+      "/faculty/education/lecture-improvements",
+      "/faculty/education/employment-rate-achievements",
+    ];
+
     expect(ADMIN_ROUTES.length).toBeGreaterThan(0);
-    expect(
-      ADMIN_ROUTES.every((route) => canAccessAdminRoute(adminUser, route.path)),
-    ).toBe(true);
+    for (const path of businessRoleRoutes) {
+      expect(ADMIN_ROUTES.some((route) => route.path === path)).toBe(true);
+    }
+    for (const route of ADMIN_ROUTES) {
+      expect(canAccessAdminRoute(adminUser, route.path), route.path).toBe(
+        !businessRoleRoutes.includes(route.path),
+      );
+    }
   });
 
   it("registers BASIC-36 business route placeholders without replacing the existing shell", () => {

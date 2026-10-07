@@ -34,13 +34,21 @@ export async function apiRequest<T>(
   if (!path.startsWith("/api/")) {
     throw new Error("API 요청은 /api/ 상대경로만 허용됩니다.");
   }
+  const headers = new Headers(init.headers);
+  // Let the browser supply the multipart boundary for Excel uploads.
+  const multipart =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  if (!multipart && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  const requestHeaders: Record<string, string> = {};
+  headers.forEach((value, name) => {
+    requestHeaders[name === "content-type" ? "Content-Type" : name] = value;
+  });
   const response = await fetch(path, {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
+    headers: requestHeaders,
   });
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("application/json")

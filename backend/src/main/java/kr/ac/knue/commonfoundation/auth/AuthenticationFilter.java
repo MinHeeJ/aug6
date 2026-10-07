@@ -41,17 +41,53 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
             return;
         }
-        try {
-            CurrentUser user = authService.currentUser(sessionId);
-            request.setAttribute("currentUser", user);
-            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
-                writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+        CurrentUser user;
+        if (kr.ac.knue.commonfoundation.common.api.EducationAchievementRoutes.supports(path)) {
+            CurrentUser user;
+            try {
+                user = authService.currentUser(sessionId);
+            } catch (RuntimeException exception) {
+                writeError(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
                 return;
             }
+            request.setAttribute("currentUser", user);
+            String menu = kr.ac.knue.commonfoundation.common.api.EducationAchievementRoutes.uiRouteForApiPath(path);
+            if (!permissionService.canAccess(user.userId(), user.roles(), menu)) {
+                writeError(response, HttpServletResponse.SC_FORBIDDEN,
+                        ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+                return;
+            }
+            // Business failures on the new routes must reach exception advice, not the auth catch.
             filterChain.doFilter(request, response);
+            return;
+        }
+        try {
+            user = authService.currentUser(sessionId);
         } catch (RuntimeException exception) {
             writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ApiError.of("UNAUTHENTICATED", "인증이 필요합니다."));
+            return;
         }
+        request.setAttribute("currentUser", user);
+        if (requiresMenuPermission(path)
+                && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+            return;
+        }
+        filterChain.doFilter(request, response);
+        request.setAttribute("currentUser", user);
+        if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+            return;
+        }
+        filterChain.doFilter(request, response);
+        request.setAttribute("currentUser", user);
+        if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
+            return;
+        }
+        // Authentication failures alone are 401; downstream business conflicts keep their own translation.
+        filterChain.doFilter(request, response);
     }
 
     private boolean requiresMenuPermission(String path) {
@@ -59,6 +95,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String pathToUiRoute(String apiPath) {
+        String educationRoute = kr.ac.knue.commonfoundation.common.api.EducationAchievementRoutes
+                .uiRouteForApiPath(apiPath);
+        if (educationRoute != null) {
+            return educationRoute;
+        }
+        if (apiPath.equals("/api/business/employment-rate-improvements")
+                || apiPath.startsWith("/api/business/employment-rate-improvements/")) {
+            return kr.ac.knue.commonfoundation.common.api.EducationAchievementRoutes.uiRouteForApiPath(apiPath);
+        }
         String evaluationRuleRoute = EvaluationRuleFoundationContract.uiRouteForApiPath(apiPath);
         if (evaluationRuleRoute != null) {
             return evaluationRuleRoute;
@@ -188,6 +233,22 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private void writeError(HttpServletResponse response, int status, ApiError error) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), ApiResponse.fail(error));
+        ApiResponse<Void> envelope = ApiResponse.fail(error);
+        if (kr.ac.knue.commonfoundation.common.api.EducationAchievementRequestFilter.currentRequestId() != null) {
+            // Servlet filter errors do not pass through MVC ResponseBodyAdvice.
+            var fields = new java.util.LinkedHashMap<String, String>();
+            if (error.fields() != null) {
+                for (var field : error.fields()) {
+                    fields.merge(field.field(), field.message(), (first, next) -> first + "; " + next);
+                }
+            }
+            objectMapper.writeValue(response.getWriter(),
+                    new kr.ac.knue.commonfoundation.common.api.EducationAchievementResponseAdvice.EducationErrorEnvelope(
+                            false, null,
+                            new kr.ac.knue.commonfoundation.common.api.EducationAchievementResponseAdvice.EducationError(
+                                    error.code(), error.message(), fields), envelope.meta()));
+            return;
+        }
+        objectMapper.writeValue(response.getWriter(), envelope);
     }
 }

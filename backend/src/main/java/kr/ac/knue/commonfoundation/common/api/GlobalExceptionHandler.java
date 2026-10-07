@@ -1,6 +1,9 @@
 package kr.ac.knue.commonfoundation.common.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Comparator;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.util.List;
 import kr.ac.knue.commonfoundation.schoolinfo.ExternalIntegrationException;
 import org.slf4j.Logger;
@@ -17,6 +20,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+/** Translates application failures, preserving legacy envelopes outside the new education paths. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
@@ -91,6 +95,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException exception) {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(ApiResponse.fail(ApiError.of("UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다.")));
+    }
+
+    /** Reject malformed education input without exposing parser details; legacy translation stays unchanged. */
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiResponse<Void>> handleEducationInputSyntax(
+            Exception exception,
+            HttpServletRequest request) {
+        if (!EducationAchievementRoutes.supports(request.getRequestURI())) {
+            return handleUnexpectedError(exception);
+        }
+        String field = exception instanceof MethodArgumentTypeMismatchException mismatch
+                ? mismatch.getName() : "body";
+        return ResponseEntity.badRequest().body(ApiResponse.fail(ApiError.validation(
+                List.of(new ValidationError(field, "입력 형식이 올바르지 않습니다.")))));
     }
 
     @ExceptionHandler(Exception.class)

@@ -1,3 +1,4 @@
+import { CourseOperationsPage } from "../pages/courseoperations/SCR-COURSE-OPERATIONS";
 import { useEffect, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { AdminShell } from "../components/layout/AdminShell";
@@ -13,6 +14,7 @@ import {
   ADMIN_ROUTES,
   LoginPage,
   canAccessAdminRoute,
+  canonicalEducationAchievementPath,
 } from "../pages/LoginPage";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
@@ -136,9 +138,15 @@ import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECT
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
 
+import { LectureImprovementPage } from "../pages/lectureimprovements/SCR-LECTURE-IMPROVEMENTS";
+
+import { EmploymentRateImprovementsPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENTS";
+
+import { EmploymentRateAchievementsPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENTS";
+
 export function AppRouter() {
   const auth = useAuth();
-  const path = usePathname();
+  const path = canonicalEducationAchievementPath(usePathname());
   const adminRoute = ADMIN_ROUTES.find((route) =>
     routeMatchesPath(route.path, path),
   );
@@ -245,6 +253,27 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/faculty/teaching-improvement-achievements") {
+    return <LectureImprovementPage user={user} />;
+  }
+  if (
+    path === "/faculty/course-offering-operation-achievements" ||
+    path === "/faculty/education/course-operations"
+  ) {
+    return <CourseOperationsPage user={user} />;
+  }
+  if (
+    path === "/faculty/employment-rate-improvement-achievements" ||
+    path === "/faculty/education/employment-rate-improvements"
+  ) {
+    return <EmploymentRateImprovementsPage user={user} />;
+  }
+  if (
+    path === "/faculty/employment-rate-achievements" ||
+    path === "/faculty/education/employment-rate-achievements"
+  ) {
+    return <EmploymentRateAchievementsPage user={user} />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

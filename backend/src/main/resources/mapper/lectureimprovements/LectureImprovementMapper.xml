@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementMapper">
+    <sql id="columns">
+        a.achievement_id AS "achievementId",
+        a.management_no AS "managementNo",
+        a.teacher_user_id AS "teacherUserId",
+        u.login_id AS "teacherName",
+        a.organization_code AS "organizationCode",
+        a.evaluation_year AS "evaluationYear",
+        a.management_item_code AS "managementItemCode",
+        a.achievement_date::text AS "achievementDate",
+        a.achievement_name AS "achievementName",
+        a.achievement_status AS "achievementStatus",
+        a.attachment_ids::text AS "attachmentIds",
+        a.created_at::text AS "createdAt",
+        a.updated_at::text AS "updatedAt",
+        a.created_by AS "createdBy",
+        a.updated_by AS "updatedBy",
+        a.request_id AS "requestId",
+        d.performance_content AS "achievementContent",
+        d.academic_year AS "academicYear",
+        d.semester_code::integer AS "semester"
+    </sql>
+    <sql id="joins">
+        FROM education_achievements a
+        JOIN lecture_improvement_achievement_details d ON d.achievement_id = a.achievement_id
+        JOIN users u ON u.user_id = a.teacher_user_id
+    </sql>
+    <sql id="where">
+        WHERE a.achievement_type = 'lecture-improvements'
+          AND a.deleted_yn = 'N'
+        <if test="criteria.managementNo != null">
+            AND a.management_no = #{criteria.managementNo}
+        </if>
+        <if test="criteria.teacherName != null">
+            AND u.login_id ILIKE CONCAT('%', #{criteria.teacherName}, '%')
+        </if>
+        <if test="criteria.managementItemCode != null">
+            AND a.management_item_code = #{criteria.managementItemCode}
+        </if>
+        <if test="criteria.achievementStatus != null">
+            AND a.achievement_status = #{criteria.achievementStatus}
+        </if>
+        AND (
+            FALSE
+            <if test="roles.contains('R09')">OR TRUE</if>
+            <if test="roles.contains('R01')">OR a.teacher_user_id = #{userId}</if>
+            <if test="roles.contains('R02')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings rm
+                    JOIN organization_user_mappings tm ON tm.organization_code = rm.organization_code
+                    WHERE rm.user_id = #{userId}
+                      AND rm.status = 'ACTIVE'
+                      AND tm.user_id = a.teacher_user_id
+                      AND tm.status = 'ACTIVE'
+                )
+            </if>
+            <if test="roles.contains('R04')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings pm
+                    JOIN organization_user_mappings tm ON tm.organization_code = pm.organization_code
+                    WHERE pm.user_id = #{userId}
+                      AND pm.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND pm.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND tm.user_id = a.teacher_user_id
+                      AND tm.status = 'ACTIVE'
+                )
+            </if>
+        )
+    </sql>
+    <select id="list" resultType="map">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="where"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{criteria.pageSize}
+        OFFSET #{criteria.offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        <include refid="joins"/>
+        <include refid="where"/>
+    </select>
+    <select id="find" resultType="map">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        WHERE a.achievement_id = #{id}
+          AND a.achievement_type = 'lecture-improvements'
+          AND a.deleted_yn = 'N'
+        <if test="lock">FOR UPDATE OF a</if>
+    </select>
+    <select id="organization" resultType="string">
+        SELECT m.organization_code
+        FROM organization_user_mappings m
+        WHERE m.user_id = #{userId}
+          AND m.status = 'ACTIVE'
+        ORDER BY m.mapping_id
+        LIMIT 1
+    </select>
+    <select id="managementItems" resultType="map">
+        SELECT DISTINCT m.management_item_id AS "managementItemId",
+               m.management_item_code AS "managementItemCode",
+               m.management_item_name AS "managementItemName",
+               s.evaluation_year AS "evaluationYear"
+        FROM evaluation_management_items m
+        JOIN evaluation_elements e ON e.element_id = m.element_id
+        JOIN evaluation_items i ON i.item_id = e.item_id
+        JOIN evaluation_areas a ON a.area_id = i.area_id
+        JOIN evaluation_element_management_item_settings s
+            ON s.rule_version_id = a.rule_version_id
+            AND s.area_code = a.area_code
+            AND s.item_code = i.item_code
+            AND s.element_code = e.element_code
+            AND s.management_item_code = m.management_item_code
+            AND s.evaluation_year = e.evaluation_year
+        WHERE m.active_yn = 'Y'
+          AND m.teacher_editable_yn = 'Y'
+          AND s.active_yn = 'Y'
+          AND s.teacher_editable_yn = 'Y'
+          AND a.area_code = 'EDUCATION'
+          AND s.evaluation_year = #{year}
+          AND CURRENT_DATE BETWEEN s.effective_start_date AND s.effective_end_date
+          AND (s.target_scope = 'ALL' OR EXISTS (
+              SELECT 1
+              FROM organization_user_mappings om
+              WHERE om.user_id = #{userId}
+                AND om.status = 'ACTIVE'
+                AND om.organization_code = s.target_scope
+          ))
+        ORDER BY m.management_item_code, m.management_item_id
+    </select>
+    <!-- The generated header key is used directly; detail-dependent readback occurs only after insertDetail. -->
+    <insert id="insertHeader" useGeneratedKeys="true" keyProperty="id" keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            management_no, achievement_type, teacher_user_id, organization_code,
+            evaluation_year, management_item_code, achievement_date, attachment_ids,
+            created_by, updated_by, request_id
+        )
+        VALUES (
+            #{managementNo}, 'lecture-improvements', #{owner}, #{organization},
+            #{year}, #{body.managementItemCode}, #{body.achievementDate}, CAST(#{attachments} AS jsonb),
+            #{actor}, #{actor}, #{requestId}
+        )
+    </insert>
+    <insert id="insertDetail">
+        INSERT INTO lecture_improvement_achievement_details (
+            achievement_id, performance_content, academic_year, semester_code
+        )
+        VALUES (#{id}, #{body.achievementContent}, #{body.academicYear}, CAST(#{body.semester} AS varchar))
+    </insert>
+    <update id="updateHeader">
+        UPDATE education_achievements
+        SET management_item_code = #{body.managementItemCode},
+            achievement_date = #{body.achievementDate},
+            attachment_ids = CAST(#{attachments} AS jsonb),
+            updated_by = #{actor}, updated_at = CURRENT_TIMESTAMP, request_id = #{requestId}
+        WHERE achievement_id = #{id}
+          AND achievement_type = 'lecture-improvements'
+          AND achievement_status = 'DRAFT'
+          AND deleted_yn = 'N'
+    </update>
+    <update id="updateDetail">
+        UPDATE lecture_improvement_achievement_details
+        SET performance_content = #{body.achievementContent},
+            academic_year = #{body.academicYear},
+            semester_code = CAST(#{body.semester} AS varchar)
+        WHERE achievement_id = #{id}
+    </update>
+    <insert id="insertStatus">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, next_status, action_type, processed_by, request_id
+        )
+        VALUES ('lecture-improvements', #{id}, 'DRAFT', 'CREATE', #{actor}, #{requestId})
+    </insert>
+    <insert id="insertHistory">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name,
+            before_value, after_value, changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', CAST(#{id} AS varchar), #{changeType}, 'snapshot',
+            #{before,jdbcType=VARCHAR}, #{after}, #{actor}, '강의개선 실적 저장', #{requestId}
+        )
+    </insert>
+</mapper>

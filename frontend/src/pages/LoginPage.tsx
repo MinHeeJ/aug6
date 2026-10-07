@@ -11,6 +11,30 @@ export type AdminRoute = {
 
 export const ADMIN_ROUTES: AdminRoute[] = [
   {
+    path: "/faculty/education/lecture-improvements",
+    label: "강의개선 실적 관리",
+    screenId: "SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의개선 실적 관리",
+  },
+  {
+    path: "/faculty/education/employment-rate-achievements",
+    label: "취업률 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 실적 관리",
+  },
+  {
+    path: "/faculty/education/course-operations",
+    label: "강좌 개설·운영 실적 관리",
+    screenId: "SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강좌 개설·운영 실적 관리",
+  },
+  {
+    path: "/faculty/education/employment-rate-improvements",
+    label: "취업률 제고 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 제고 실적 관리",
+  },
+  {
     path: "/admin/users",
     label: "사용자 관리",
     screenId: "SCR-USER-MGMT",
@@ -674,6 +698,22 @@ export function canAccessAdminRoute(
 ): boolean {
   if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
+  }
+  if (path === "/faculty/education/employment-rate-achievements") {
+    return user.roles.some((role) =>
+      ["R01", "R02", "R04", "R07", "R09"].includes(role),
+    );
+  }
+  if (
+    [
+      "/faculty/education/course-operations",
+      "/faculty/education/employment-rate-improvements",
+      "/faculty/education/lecture-improvements",
+    ].includes(path)
+  ) {
+    return user.roles.some((role) =>
+      ["R01", "R02", "R04", "R09"].includes(role),
+    );
   }
   if (path === "/faculty/course-area-group-grades") {
     return (

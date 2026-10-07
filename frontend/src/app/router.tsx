@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CourseOperationsPage } from "../pages/courseoperations/SCR-COURSE-OPERATIONS";
 import { useAuth } from "./AuthProvider";
 import { AdminShell } from "../components/layout/AdminShell";
 import {
@@ -13,6 +14,7 @@ import {
   ADMIN_ROUTES,
   LoginPage,
   canAccessAdminRoute,
+  getLoginLandingPath,
 } from "../pages/LoginPage";
 import { OrganizationManagementPage } from "../pages/admin/SCR-ORG-MGMT";
 import { RoleManagementPage } from "../pages/admin/SCR-ROLE-MGMT";
@@ -133,8 +135,11 @@ import {
 } from "../pages/admin/Basic60OperationalSettingsPages";
 import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { TeachingImprovementAchievementPage } from "../pages/lectureimprovements/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+import { EmploymentRateImprovementAchievementPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
+import { EmploymentRateAchievementPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -142,6 +147,13 @@ export function AppRouter() {
   const adminRoute = ADMIN_ROUTES.find((route) =>
     routeMatchesPath(route.path, path),
   );
+
+  useEffect(() => {
+    if (auth.status === "authenticated" && path === "/login") {
+      window.history.replaceState({}, "", getLoginLandingPath(auth.user));
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  }, [auth.status, auth.user, path]);
 
   if (auth.status === "loading") {
     return (
@@ -159,14 +171,6 @@ export function AppRouter() {
       <LoginPage
         onLogin={auth.login}
         onHealth={async () => (await authApi.health()).data ?? { status: "UP" }}
-        onLoginSuccess={() => {
-          if (
-            typeof window !== "undefined" &&
-            window.location.pathname === "/login"
-          ) {
-            window.history.replaceState({}, "", "/admin/users");
-          }
-        }}
       />
     );
   }
@@ -245,6 +249,18 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/faculty/course-offering-operation-achievements") {
+    return <CourseOperationsPage user={user} />;
+  }
+  if (path === "/faculty/teaching-improvement-achievements") {
+    return <TeachingImprovementAchievementPage user={user} />;
+  }
+  if (path === "/faculty/employment-rate-improvement-achievements") {
+    return <EmploymentRateImprovementAchievementPage />;
+  }
+  if (path === "/faculty/employment-rate-achievements") {
+    return <EmploymentRateAchievementPage />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

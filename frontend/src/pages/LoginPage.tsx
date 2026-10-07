@@ -631,6 +631,30 @@ export const ADMIN_ROUTES: AdminRoute[] = [
     screenId: "SCR-UNCONFIRMED-RESEARCH-ACHIEVEMENT",
     menuPath: "업적 평가 관리 > 연구실적 관리 > 미확인 연구실적 목록",
   },
+  {
+    path: "/faculty/employment-rate-improvement-achievements",
+    label: "취업률 제고 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 제고 실적 관리",
+  },
+  {
+    path: "/faculty/course-offering-operation-achievements",
+    label: "강좌 개설·운영 실적 관리",
+    screenId: "SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강좌 개설·운영 실적 관리",
+  },
+  {
+    path: "/faculty/employment-rate-achievements",
+    label: "취업률 실적 관리",
+    screenId: "SCR-EMPLOYMENT-RATE-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 취업률 실적 관리",
+  },
+  {
+    path: "/faculty/teaching-improvement-achievements",
+    label: "강의개선 실적 관리",
+    screenId: "SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT",
+    menuPath: "업적 입력 관리 > 교육영역 > 강의개선 실적 관리",
+  },
 ];
 
 export type LoginValidationErrors = Partial<
@@ -668,10 +692,47 @@ export function describeLoginFailure(caught: unknown): string {
     : "로그인 중 오류가 발생했습니다.";
 }
 
+const achievementRouteRoles: Record<string, readonly string[]> = {
+  "/faculty/employment-rate-improvement-achievements": ["R01", "R02", "R04"],
+  "/faculty/course-offering-operation-achievements": ["R01", "R02", "R04"],
+  "/faculty/teaching-improvement-achievements": ["R01", "R02", "R04"],
+  "/faculty/employment-rate-achievements": ["R01", "R02", "R04", "R07"],
+};
+
+/** Pick an authorized session-menu entry without sending faculty to an administrator-only page. */
+export function getLoginLandingPath(user: CurrentUser | null): string {
+  if (canAccessAdminRoute(user, "/admin/users")) return "/admin/users";
+  function findEntry(menus: CurrentUser["menus"]): string | undefined {
+    for (const menu of menus) {
+      if (
+        menu.url?.startsWith("/") &&
+        !menu.url.startsWith("//") &&
+        !menu.url.includes("{") &&
+        canAccessAdminRoute(user, menu.url)
+      )
+        return menu.url;
+      const child = findEntry(menu.children);
+      if (child) return child;
+    }
+    return undefined;
+  }
+  return findEntry(user?.menus ?? []) ?? "/";
+}
+
 export function canAccessAdminRoute(
   user: CurrentUser | null | undefined,
   path: string,
 ): boolean {
+  const achievementRoles = achievementRouteRoles[path];
+  if (achievementRoles) {
+    // The requested administrator bypass is local to these new surfaces.
+    if (user?.roles.includes("R09")) return true;
+    return (
+      !!user &&
+      hasMenuUrl(user.menus, path) &&
+      user.roles.some((role) => achievementRoles.includes(role))
+    );
+  }
   if (!user || !hasMenuUrl(user.menus, path)) {
     return false;
   }

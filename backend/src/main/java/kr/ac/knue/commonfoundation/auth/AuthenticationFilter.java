@@ -44,7 +44,13 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         try {
             CurrentUser user = authService.currentUser(sessionId);
             request.setAttribute("currentUser", user);
-            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), pathToUiRoute(path))) {
+            String menuRoute = pathToUiRoute(path);
+            // Common Excel controllers re-check business type and upload ownership. R07 uses its faculty menu,
+            // never the administrator menu; unrelated Excel operations remain denied by the controller.
+            if (user.roles().contains("R07") && employmentExcelReadOrCommit(request)) {
+                menuRoute = "/faculty/employment-rate-achievements";
+            }
+            if (requiresMenuPermission(path) && !permissionService.canAccess(user.userId(), user.roles(), menuRoute)) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN, ApiError.of("FORBIDDEN", "접근 권한이 없습니다."));
                 return;
             }
@@ -54,11 +60,44 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
+    /** Only the employment workflow's common read and commit entrypoints share the faculty menu. */
+    private boolean employmentExcelReadOrCommit(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if ("POST".equals(request.getMethod())) {
+            return path.matches("/api/admin/excel-uploads/ER-UP-[^/]+/commit");
+        }
+        if (!"GET".equals(request.getMethod())) return false;
+        return (path.equals("/api/admin/excel-upload-templates")
+                    && "EMPLOYMENT_RATE_ACHIEVEMENT".equals(request.getParameter("businessType")))
+                || path.matches("/api/admin/excel-upload-templates/[^/]+/file")
+                || path.equals("/api/admin/excel-upload-histories")
+                || ((path.equals("/api/admin/excel-upload-errors")
+                    || path.equals("/api/admin/excel-upload-errors/download"))
+                    && java.util.Objects.toString(request.getParameter("uploadId"), "").startsWith("ER-UP-"));
+    }
+
     private boolean requiresMenuPermission(String path) {
         return path.startsWith("/api/admin/") || path.startsWith("/api/business/");
     }
 
     private String pathToUiRoute(String apiPath) {
+        String educationRoute = kr.ac.knue.commonfoundation.common.education
+                .EducationAchievementFoundationContract.uiRouteForApiPath(apiPath);
+        if (educationRoute != null) {
+            return educationRoute;
+        }
+        if (apiPath.equals("/api/business/lecture-improvements")
+                || apiPath.startsWith("/api/business/lecture-improvements/")) {
+            return "/faculty/teaching-improvement-achievements";
+        }
+        if (apiPath.equals("/api/business/employment-rate-improvements")
+                || apiPath.startsWith("/api/business/employment-rate-improvements/")) {
+            return "/faculty/employment-rate-improvement-achievements";
+        }
+        if (apiPath.equals("/api/business/employment-rate-achievements")
+                || apiPath.startsWith("/api/business/employment-rate-achievements/")) {
+            return "/faculty/employment-rate-achievements";
+        }
         String evaluationRuleRoute = EvaluationRuleFoundationContract.uiRouteForApiPath(apiPath);
         if (evaluationRuleRoute != null) {
             return evaluationRuleRoute;

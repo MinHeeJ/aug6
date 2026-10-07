@@ -129,6 +129,11 @@
         select count(*) from excel_upload_files where upload_id = #{uploadId} and status != 'DELETED'
     </select>
 
+    <select id="findUploadBusinessType" resultType="string">
+        SELECT f.business_type FROM excel_upload_files f
+        WHERE f.upload_id = #{uploadId} AND f.status != 'DELETED'
+    </select>
+
     <update id="markUploadCommitted">
         update excel_upload_files set validation_status = 'COMMITTED' where upload_id = #{uploadId}
     </update>

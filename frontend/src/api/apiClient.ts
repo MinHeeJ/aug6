@@ -4706,6 +4706,98 @@ async function downloadBasic60Workbook(
   return response.blob();
 }
 
+/** The employment workflow stays owned by its slice; expose it through the shared client registry. */
+export { employmentRateApi } from "../pages/employmentrateachievements/employmentRateApi";
+
+export type EducationAchievementInput = {
+  managementItemCode: string;
+  achievementDate: string;
+  attachmentIds?: string[];
+};
+export type EmploymentRateImprovementInput = EducationAchievementInput & {
+  specialLectureStartDate?: string | null;
+  specialLectureEndDate?: string | null;
+  mockExamQuestionPeriod?: string | null;
+};
+export type CourseOperationInput = EducationAchievementInput & {
+  performanceDetails: string;
+};
+export type LectureImprovementInput = EducationAchievementInput & {
+  achievementContent: string;
+  academicYear: number;
+  semester: 1 | 2;
+};
+export type EducationAchievementRow<T> = T & {
+  achievementId: number;
+  teacherUserId: number;
+  managementNo: string;
+  organizationCode: string;
+  evaluationYear: string;
+  teacherName?: string;
+  attachmentIds: string[];
+};
+export type EducationAchievementList<T> = {
+  achievements: T[];
+  page: number;
+  pageSize: number;
+  totalElements: number;
+};
+export type EducationAchievementSaveResult<T> = {
+  achievement: T;
+  occurredDateWarning: boolean;
+  warningMessage?: string | null;
+};
+
+/** POST always creates; updates carry the selected domain identity in the URL, never the payload. */
+function educationAchievementClient<T extends EducationAchievementInput, R>(
+  base: `/api/${string}`,
+) {
+  return {
+    list(page = 0, pageSize: 20 | 50 | 100 = 20) {
+      const query = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      return apiRequest<EducationAchievementList<R>>(`${base}?${query}`);
+    },
+    detail(achievementId: number) {
+      return apiRequest<R>(`${base}/${achievementId}`);
+    },
+    create(input: T) {
+      return apiRequest<EducationAchievementSaveResult<R>>(base, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    },
+    update(achievementId: number, input: T) {
+      return apiRequest<EducationAchievementSaveResult<R>>(
+        `${base}/${achievementId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(input),
+        },
+      );
+    },
+  };
+}
+
+export const employmentRateImprovementApi = educationAchievementClient<
+  EmploymentRateImprovementInput,
+  EducationAchievementRow<EmploymentRateImprovementInput> & {
+    certificationStatus: string;
+  }
+>("/api/business/employment-rate-improvements");
+export const courseOperationApi = educationAchievementClient<
+  CourseOperationInput,
+  EducationAchievementRow<CourseOperationInput> & { achievementStatus: string }
+>("/api/business/course-operations");
+export const lectureImprovementApi = educationAchievementClient<
+  LectureImprovementInput,
+  EducationAchievementRow<LectureImprovementInput> & {
+    achievementStatus: string;
+  }
+>("/api/business/lecture-improvements");
+
 export type CourseAreaGroupGrade = {
   resultId: number;
   facultyUserId: number;

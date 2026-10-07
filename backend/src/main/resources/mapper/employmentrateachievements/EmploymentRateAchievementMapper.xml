@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateachievements.EmploymentRateAchievementMapper">
+    <sql id="columns">
+        a.achievement_id AS "achievementId", a.management_no AS "managementNo",
+        a.teacher_user_id AS "teacherUserId",
+        COALESCE(p.name, u.login_id) AS "teacherName",
+        u.employee_no AS "employeeNo",
+        a.organization_code AS "organizationCode", a.evaluation_year AS "evaluationYear",
+        a.management_item_code AS "managementItemCode", a.achievement_date::text AS "achievementDate",
+        a.achievement_name AS "achievementName", a.achievement_status AS "achievementStatus",
+        a.achievement_status AS "certificationStatus", a.attachment_ref AS "attachmentRef",
+        a.achievement_type AS "achievementType", a.deleted_yn AS "deletedYn"
+    </sql>
+    <sql id="scope">
+        a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT' AND a.deleted_yn = 'N'
+        AND (
+            #{admin} = TRUE
+            OR (#{self} = TRUE AND a.teacher_user_id = #{userId})
+            OR (#{department} = TRUE AND EXISTS (
+                SELECT 1 FROM organization_user_mappings requester
+                JOIN organization_user_mappings target
+                    ON target.organization_code = requester.organization_code
+                WHERE requester.user_id = #{userId} AND requester.status = 'ACTIVE'
+                    AND target.user_id = a.teacher_user_id AND target.status = 'ACTIVE'
+            ))
+            OR (#{certification} = TRUE AND EXISTS (
+                SELECT 1 FROM evaluation_organization_mappings permission
+                JOIN organization_user_mappings target
+                    ON target.organization_code = permission.organization_code
+                WHERE permission.user_id = #{userId}
+                    AND permission.business_type = 'FACULTY_ACHIEVEMENT'
+                    AND permission.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                    AND target.user_id = a.teacher_user_id AND target.status = 'ACTIVE'
+            ))
+        )
+    </sql>
+    <select id="list" resultType="map">
+        SELECT <include refid="columns"/>
+        FROM education_achievements a JOIN users u ON u.user_id = a.teacher_user_id
+        LEFT JOIN korus_personnel_snapshots p ON p.employee_no = u.employee_no
+        WHERE <include refid="scope"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM education_achievements a WHERE <include refid="scope"/>
+    </select>
+    <select id="find" resultType="map">
+        SELECT <include refid="columns"/>
+        FROM education_achievements a JOIN users u ON u.user_id = a.teacher_user_id
+        LEFT JOIN korus_personnel_snapshots p ON p.employee_no = u.employee_no
+        WHERE a.achievement_id = #{id} AND a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+            AND a.deleted_yn = 'N'
+        <if test="lock">FOR UPDATE OF a</if>
+    </select>
+    <select id="organizations" resultType="string">
+        SELECT DISTINCT m.organization_code FROM organization_user_mappings m
+        WHERE m.user_id = #{teacher} AND m.status = 'ACTIVE'
+            AND m.effective_start_date &lt;= #{date}
+            AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= #{date})
+    </select>
+    <select id="countActiveItems" resultType="int">
+        SELECT COUNT(*) FROM evaluation_element_management_item_settings m
+        WHERE m.management_item_code = #{code} AND m.area_code = 'EDUCATION' AND m.active_yn = 'Y'
+    </select>
+    <select id="countMappedOrganizations" resultType="int">
+        SELECT COUNT(*) FROM evaluation_organization_mappings p
+        WHERE p.user_id = #{userId} AND p.business_type = 'FACULTY_ACHIEVEMENT'
+            AND p.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+    </select>
+    <insert id="insert"
+            useGeneratedKeys="true"
+            keyProperty="achievementId"
+            keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            management_no, achievement_type, teacher_user_id, organization_code, evaluation_year,
+            management_item_code, achievement_date, achievement_name, attachment_ref,
+            achievement_status, deleted_yn, created_by, updated_by
+        ) VALUES (
+            #{managementNo}, 'EMPLOYMENT_RATE_ACHIEVEMENT', #{teacherUserId}, #{organizationCode}, #{evaluationYear},
+            #{managementItemCode}, CAST(#{achievementDate} AS date), #{achievementName}, #{attachmentRef},
+            'DRAFT', 'N', #{updatedBy}, #{updatedBy}
+        )
+    </insert>
+    <update id="update">
+        UPDATE education_achievements a SET management_item_code = #{managementItemCode},
+            achievement_date = CAST(#{achievementDate} AS date), achievement_name = #{achievementName},
+            attachment_ref = #{attachmentRef}, updated_by = #{updatedBy}, updated_at = CURRENT_TIMESTAMP
+        WHERE a.achievement_id = #{achievementId} AND a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+            AND a.deleted_yn = 'N'
+            AND a.achievement_status IN ('DRAFT', 'DEPARTMENT_REJECTED', 'CERTIFICATION_REJECTED')
+    </update>
+    <insert id="history">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id
+        ) VALUES (
+            'EMPLOYMENT_RATE_ACHIEVEMENT', #{targetKey}, #{changeType}, #{fieldName},
+            #{beforeValue}, #{afterValue}, #{changedBy}, #{changeReason}, #{requestId}
+        )
+    </insert>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type,
+            achievement_id,
+            previous_status,
+            next_status,
+            action_type,
+            opinion,
+            processed_by
+        )
+        VALUES (
+            'EMPLOYMENT_RATE_ACHIEVEMENT',
+            #{achievementId},
+            NULL,
+            'DRAFT',
+            'CREATE',
+            '취업률 실적 최초 입력',
+            #{updatedBy}
+        )
+    </insert>
+    <select id="job" resultType="map">
+        SELECT j.batch_job_id AS "jobId", j.evaluation_year AS "evaluationYear",
+            j.action_type AS "actionType", j.target_condition_json::text AS "targetConditionJson",
+            j.job_status AS "status", j.total_count AS "totalCount", j.success_count AS "successCount",
+            j.failure_count AS "failureCount", j.excluded_count AS "excludedCount",
+            j.success_count AS "processedCount", (j.total_count - j.success_count) AS "unprocessedCount",
+            j.requested_by AS "requestedBy", j.requested_at AS "requestedAt"
+        FROM employment_rate_batch_jobs j WHERE j.batch_job_id = #{id}
+    </select>
+    <select id="jobItems" resultType="map">
+        SELECT i.batch_job_item_id AS "jobItemId", i.target_user_id AS "targetUserId",
+            i.processed_yn AS "processedYn", i.unprocessed_reason AS "unprocessedReason",
+            i.processed_at AS "processedAt"
+        FROM employment_rate_batch_job_items i WHERE i.batch_job_id = #{id}
+        ORDER BY i.batch_job_item_id
+    </select>
+</mapper>

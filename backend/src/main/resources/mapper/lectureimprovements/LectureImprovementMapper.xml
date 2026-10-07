@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="organization_code" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="performance_content" javaType="java.lang.String"/>
+            <arg column="academic_year" javaType="java.lang.Integer"/>
+            <arg column="semester" javaType="java.lang.Integer"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="attachment_ref" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <sql id="columns">
+        a.achievement_id,
+        a.management_no,
+        a.teacher_user_id,
+        a.organization_code,
+        a.evaluation_year,
+        a.management_item_code,
+        a.achievement_date,
+        d.performance_content,
+        d.academic_year,
+        d.semester_code::integer AS semester,
+        a.achievement_status,
+        a.attachment_ref
+    </sql>
+    <sql id="from">
+        FROM education_achievements a
+        JOIN lecture_improvement_achievement_details d
+            ON d.achievement_id = a.achievement_id
+    </sql>
+    <sql id="base">
+        WHERE a.achievement_type = 'LECTURE_IMPROVEMENT'
+          AND a.deleted_yn = 'N'
+    </sql>
+    <!-- OR branches deliberately preserve the union for users with several roles. -->
+    <sql id="scope">
+        AND (
+            1 = 0
+            <if test="roles.contains('R09')">
+                OR 1 = 1
+            </if>
+            <if test="roles.contains('R01')">
+                OR a.teacher_user_id = #{userId}
+            </if>
+            <if test="roles.contains('R02')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings m
+                    WHERE m.user_id = #{userId}
+                      AND m.organization_code = a.organization_code
+                      AND m.status = 'ACTIVE'
+                      AND m.effective_start_date &lt;= CURRENT_DATE
+                      AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= CURRENT_DATE)
+                )
+            </if>
+            <if test="roles.contains('R04')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings m
+                    WHERE m.user_id = #{userId}
+                      AND m.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND m.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND m.organization_code = a.organization_code
+                )
+            </if>
+        )
+    </sql>
+    <sql id="filters">
+        <if test="search.managementItemCode != null">
+            AND a.management_item_code = #{search.managementItemCode}
+        </if>
+        <if test="search.academicYear != null">
+            AND d.academic_year = #{search.academicYear}
+        </if>
+        <if test="search.semester != null">
+            AND d.semester_code::integer = #{search.semester}
+        </if>
+    </sql>
+    <select id="list" resultMap="row">
+        SELECT
+            <include refid="columns"/>
+        <include refid="from"/>
+        <include refid="base"/>
+        <include refid="scope"/>
+        <include refid="filters"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{search.pageSize}
+        OFFSET #{search.offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        <include refid="from"/>
+        <include refid="base"/>
+        <include refid="scope"/>
+        <include refid="filters"/>
+    </select>
+    <select id="find" resultMap="row">
+        SELECT
+            <include refid="columns"/>
+        <include refid="from"/>
+        <include refid="base"/>
+          AND a.achievement_id = #{id}
+    </select>
+    <select id="lock" resultMap="row">
+        SELECT
+            <include refid="columns"/>
+        <include refid="from"/>
+        <include refid="base"/>
+          AND a.achievement_id = #{id}
+        FOR UPDATE OF a
+    </select>
+    <select id="visible" resultType="int">
+        SELECT COUNT(*)
+        <include refid="from"/>
+        <include refid="base"/>
+        <include refid="scope"/>
+          AND a.achievement_id = #{id}
+    </select>
+    <select id="organizations" resultType="string">
+        SELECT DISTINCT organization_code
+        FROM organization_user_mappings
+        WHERE user_id = #{userId}
+          AND status = 'ACTIVE'
+          AND effective_start_date &lt;= #{date}
+          AND (effective_end_date IS NULL OR effective_end_date &gt;= #{date})
+    </select>
+    <select id="managementItems" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_element_management_item_settings
+        WHERE management_item_code = #{code}
+          AND active_yn = 'Y'
+          AND area_code = 'EDUCATION'
+    </select>
+    <insert id="insertHeader"
+        useGeneratedKeys="true"
+        keyProperty="id"
+        keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            management_no, achievement_type, teacher_user_id, organization_code,
+            evaluation_year, management_item_code, achievement_date, attachment_ref, created_by, updated_by
+        )
+        VALUES (
+            #{managementNo}, 'LECTURE_IMPROVEMENT', #{owner}, #{organization},
+            #{year}, #{code}, #{date}, #{attachments}, #{userId}, #{userId}
+        )
+    </insert>
+    <update id="updateHeader">
+        UPDATE education_achievements
+        SET management_item_code = #{code},
+            achievement_date = #{date},
+            attachment_ref = #{attachments},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{userId}
+        WHERE achievement_id = #{id}
+          AND achievement_type = 'LECTURE_IMPROVEMENT'
+          AND deleted_yn = 'N'
+    </update>
+    <insert id="insertDetail">
+        INSERT INTO lecture_improvement_achievement_details (
+            achievement_id, performance_content, academic_year, semester_code
+        )
+        VALUES (
+            #{id}, #{body.achievementContent}, #{body.academicYear}, #{semesterCode}
+        )
+    </insert>
+    <update id="updateDetail">
+        UPDATE lecture_improvement_achievement_details
+        SET performance_content = #{body.achievementContent},
+            academic_year = #{body.academicYear},
+            semester_code = #{semesterCode}
+        WHERE achievement_id = #{id}
+    </update>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, next_status, action_type, processed_by
+        )
+        VALUES (
+            'LECTURE_IMPROVEMENT', #{id}, 'DRAFT', 'CREATE', #{userId}
+        )
+    </insert>
+    <insert id="history">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name,
+            before_value, after_value, changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', #{id}::text, #{action}, #{field},
+            #{before}, #{after}, #{userId}, '강의개선 실적 저장', #{requestId}
+        )
+    </insert>
+</mapper>

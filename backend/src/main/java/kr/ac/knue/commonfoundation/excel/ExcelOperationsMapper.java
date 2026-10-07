@@ -33,6 +33,7 @@ public interface ExcelOperationsMapper {
     void markUploadCommitted(@Param("uploadId") String uploadId);
     void deleteNormalStagingRows(@Param("uploadId") String uploadId);
     int existsUpload(@Param("uploadId") String uploadId);
+    String findUploadBusinessType(@Param("uploadId") String uploadId);
 
     List<ExcelUploadHistoryRow> listExcelUploadHistories(@Param("uploadId") String uploadId, @Param("originalFileName") String originalFileName,
             @Param("limit") int limit, @Param("offset") int offset);

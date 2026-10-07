@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateachievements.EmploymentRateExcelMapper">
+    <select id="findTemplateId" resultType="string">
+        SELECT t.template_id FROM excel_upload_templates t
+        WHERE t.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+          AND t.template_version = 'v1.0'
+          AND t.status = 'ACTIVE' AND t.system_use_yn = 'Y'
+          AND t.effective_date &lt;= CURRENT_DATE
+        ORDER BY t.effective_date DESC LIMIT 1
+    </select>
+    <select id="findUpload" resultType="map">
+        SELECT f.uploader_user_id AS "uploaderUserId", f.validation_status AS "validationStatus"
+        FROM excel_upload_files f
+        WHERE f.upload_id = #{uploadId} AND f.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+          AND f.status = 'ACTIVE'
+        <if test="lock">FOR UPDATE</if>
+    </select>
+    <select id="stagedRows" resultType="map">
+        SELECT s.row_number AS "rowNumber", s.row_payload::text AS "payload"
+        FROM excel_upload_staging_rows s WHERE s.upload_id = #{uploadId}
+        ORDER BY s.row_number FOR UPDATE
+    </select>
+    <update id="reject">
+        UPDATE excel_upload_files SET validation_status = 'REJECTED' WHERE upload_id = #{uploadId}
+    </update>
+    <select id="lockTeacher" resultType="long">
+        SELECT u.user_id FROM users u WHERE u.user_id = #{teacherId} FOR UPDATE
+    </select>
+    <select id="histories" resultType="kr.ac.knue.commonfoundation.excel.ExcelUploadHistoryRow">
+        SELECT h.upload_id AS "uploadId", f.original_file_name AS "originalFileName",
+               f.uploader_user_id AS "uploaderUserId", h.total_count AS "totalCount",
+               h.success_count AS "successCount", h.error_count AS "errorCount",
+               h.excluded_count AS "excludedCount", h.saved_count AS "savedCount",
+               h.processing_time_millis AS "processingTimeMillis", h.processed_at AS "processedAt"
+        FROM excel_upload_histories h JOIN excel_upload_files f ON f.upload_id = h.upload_id
+        WHERE f.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT' AND f.status = 'ACTIVE'
+          AND h.status != 'DELETED' AND (#{admin} = TRUE OR f.uploader_user_id = #{userId})
+        <if test="uploadId != null">AND f.upload_id = #{uploadId}</if>
+        <if test="name != null">AND f.original_file_name ILIKE CONCAT('%', #{name}, '%')</if>
+        ORDER BY h.processed_at DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="countHistories" resultType="long">
+        SELECT COUNT(*) FROM excel_upload_histories h
+        JOIN excel_upload_files f ON f.upload_id = h.upload_id
+        WHERE f.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT' AND f.status = 'ACTIVE'
+          AND h.status != 'DELETED' AND (#{admin} = TRUE OR f.uploader_user_id = #{userId})
+        <if test="uploadId != null">AND f.upload_id = #{uploadId}</if>
+        <if test="name != null">AND f.original_file_name ILIKE CONCAT('%', #{name}, '%')</if>
+    </select>
+    <select id="findActiveTeacher" resultType="long">
+        SELECT u.user_id FROM users u
+        WHERE u.employee_no = #{employeeNo}
+          AND u.status = 'ACTIVE' AND u.system_use_yn = 'Y'
+    </select>
+    <select id="countActiveItems" resultType="int">
+        SELECT COUNT(*) FROM evaluation_element_management_item_settings item
+        WHERE item.management_item_code = #{code}
+          AND item.area_code = 'EDUCATION' AND item.active_yn = 'Y'
+    </select>
+    <select id="countDuplicates" resultType="int">
+        SELECT COUNT(*) FROM education_achievements a
+        WHERE a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+          AND a.deleted_yn = 'N'
+          AND a.teacher_user_id = #{teacherId}
+          AND a.evaluation_year = #{year}
+          AND a.management_item_code = #{code}
+          AND a.achievement_date = CAST(#{date} AS date)
+          AND COALESCE(a.achievement_name, '') = #{name}
+    </select>
+</mapper>

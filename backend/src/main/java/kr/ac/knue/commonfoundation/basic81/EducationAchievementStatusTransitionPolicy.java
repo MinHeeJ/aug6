@@ -17,11 +17,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class EducationAchievementStatusTransitionPolicy {
-    private static final Set<String> ACHIEVEMENT_TYPES = Set.of(
-            "LECTURE_EVALUATION",
-            "LECTURE",
-            "STUDENT_GUIDANCE",
-            "DEGREE_COMPLETION");
+    private static final Set<String> ACHIEVEMENT_TYPES =
+            kr.ac.knue.commonfoundation.common.education.EducationAchievementTypes.HISTORY_TYPES;
     private static final Map<EducationAchievementStatus, Set<EducationAchievementStatus>> ALLOWED_TRANSITIONS =
             allowedTransitions();
 

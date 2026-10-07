@@ -78,6 +78,11 @@ public class ExcelOperationsService {
 
     @Transactional
     public ExcelUploadResult createExcelUpload(String businessType, String templateId, MultipartFile file, Long userId) {
+        if ("EMPLOYMENT_RATE_ACHIEVEMENT".equals(blankToNull(businessType))) {
+            throw new BusinessValidationException("취업률 실적 전용 XLSX 검증 경로를 사용하세요.",
+                    List.of(new ValidationError("businessType",
+                            "/api/business/employment-rate-achievements/excel-uploads")));
+        }
         List<ValidationError> fields = new ArrayList<>();
         if (blankToNull(businessType) == null) fields.add(new ValidationError("businessType", "업무구분을 입력하세요."));
         if (file == null || file.isEmpty()) fields.add(new ValidationError("file", "엑셀 파일을 선택하세요."));
@@ -106,6 +111,10 @@ public class ExcelOperationsService {
     @Transactional
     public ExcelUploadCommitResult commitExcelUpload(String uploadId, Long userId) {
         requireUser(userId);
+        // Defense in depth: business-owned uploads must use the controller's workflow port.
+        if ("EMPLOYMENT_RATE_ACHIEVEMENT".equals(mapper.findUploadBusinessType(uploadId))) {
+            throw new ConflictException("취업률 실적은 업무별 원자적 반영 경로를 사용하세요.");
+        }
         if (blankToNull(uploadId) == null || mapper.existsUpload(uploadId) == 0) throw new NotFoundException("업로드 파일을 찾을 수 없습니다.");
         if (mapper.countUploadErrorsForCommit(uploadId) > 0) throw new ConflictException("오류 행이 있어 전체 반영을 차단했습니다.");
         int savedCount = mapper.countNormalStagingRows(uploadId);

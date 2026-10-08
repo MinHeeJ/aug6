@@ -34,18 +34,37 @@ export async function apiRequest<T>(
   if (!path.startsWith("/api/")) {
     throw new Error("API 요청은 /api/ 상대경로만 허용됩니다.");
   }
+  const headers = new Headers(init.headers);
+  if (init.body instanceof FormData) {
+    headers.delete("Content-Type");
+  } else if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   const response = await fetch(path, {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
+    headers,
   });
   const contentType = response.headers.get("content-type") ?? "";
   const body = contentType.includes("application/json")
     ? ((await response.json()) as ApiResponse<T>)
     : ({ success: response.ok, meta: {}, data: undefined } as ApiResponse<T>);
+
+  if (body.error) {
+    const fields = body.error.fields as
+      | ApiErrorField[]
+      | Record<string, string>
+      | undefined;
+    body.error = {
+      ...body.error,
+      fields: Array.isArray(fields)
+        ? fields
+        : Object.entries(fields ?? {}).map(([field, message]) => ({
+            field,
+            message,
+          })),
+    };
+  }
 
   if (!response.ok || body.success === false) {
     throw new ApiClientError(

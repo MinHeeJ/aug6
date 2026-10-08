@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="organization_code" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="academic_year" javaType="java.lang.String"/>
+            <arg column="semester_code" javaType="java.lang.String"/>
+            <arg column="performance_content" javaType="java.lang.String"/>
+            <arg column="attachment_ids"
+                javaType="java.util.List"
+                typeHandler="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementAttachmentIdsTypeHandler"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="option" type="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementInputOption">
+        <constructor>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="management_item_name" javaType="java.lang.String"/>
+            <arg column="teacher_editable_part" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <sql id="columns">
+        a.achievement_id, a.management_no, a.teacher_user_id, a.organization_code,
+        a.evaluation_year, a.management_item_code, a.achievement_date, a.achievement_status,
+        d.academic_year, d.semester_code, d.performance_content, a.achievement_detail ->> 'attachmentIds' AS attachment_ids
+    </sql>
+    <sql id="from">
+        FROM education_achievements a
+        JOIN lecture_improvement_achievement_details d ON d.achievement_id = a.achievement_id
+    </sql>
+    <sql id="base">
+        a.achievement_type = 'LECTURE_IMPROVEMENT' AND a.deleted_yn = 'N'
+    </sql>
+    <!-- OR branches deliberately union all roles rather than taking the first role. -->
+    <sql id="scope">
+        AND (
+            FALSE
+            <if test="roles.contains('R09')">OR TRUE</if>
+            <if test="roles.contains('R01')">OR a.teacher_user_id = #{userId}</if>
+            <if test="roles.contains('R02')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings r
+                    JOIN organization_user_mappings t ON t.organization_code = r.organization_code
+                    WHERE r.user_id = #{userId} AND t.user_id = a.teacher_user_id
+                      AND r.status = 'ACTIVE' AND t.status = 'ACTIVE'
+                      AND r.mapping_type = 'ORGANIZATION' AND t.mapping_type = 'ORGANIZATION'
+                      AND CURRENT_DATE BETWEEN r.effective_start_date
+                          AND COALESCE(r.effective_end_date, 'infinity'::date)
+                      AND CURRENT_DATE BETWEEN t.effective_start_date
+                          AND COALESCE(t.effective_end_date, 'infinity'::date)
+                )
+            </if>
+            <if test="roles.contains('R04')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings p
+                    JOIN organization_user_mappings t ON t.organization_code = p.organization_code
+                    WHERE p.user_id = #{userId} AND t.user_id = a.teacher_user_id
+                      AND p.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND p.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND t.status = 'ACTIVE'
+                )
+            </if>
+        )
+    </sql>
+    <sql id="where">
+        WHERE <include refid="base"/>
+        <include refid="scope"/>
+        <if test="criteria.managementItemCode != null">
+            AND a.management_item_code = #{criteria.managementItemCode}
+        </if>
+        <if test="criteria.academicYear != null">AND d.academic_year = #{criteria.academicYear}</if>
+        <if test="criteria.semester != null">AND d.semester_code = #{criteria.semester}</if>
+    </sql>
+    <select id="list" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="from"/>
+        <include refid="where"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{criteria.pageSize}
+        OFFSET #{criteria.rowOffset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        <include refid="from"/>
+        <include refid="where"/>
+    </select>
+    <select id="find" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="from"/>
+        WHERE <include refid="base"/> AND a.achievement_id = #{id}
+    </select>
+    <select id="lock" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="from"/>
+        WHERE <include refid="base"/> AND a.achievement_id = #{id}
+        FOR UPDATE OF a, d
+    </select>
+    <select id="canRead" resultType="int">
+        SELECT COUNT(*)
+        <include refid="from"/>
+        WHERE <include refid="base"/> AND a.achievement_id = #{id}
+        <include refid="scope"/>
+    </select>
+    <select id="organization" resultType="string">
+        SELECT m.organization_code
+        FROM organization_user_mappings m
+        WHERE m.user_id = #{userId} AND m.status = 'ACTIVE' AND m.mapping_type = 'ORGANIZATION'
+          AND CURRENT_DATE BETWEEN m.effective_start_date AND COALESCE(m.effective_end_date, 'infinity'::date)
+        ORDER BY m.effective_start_date DESC, m.mapping_id DESC
+        LIMIT 1
+    </select>
+    <select id="academicYears" resultType="string">
+        SELECT DISTINCT years.year
+        FROM (
+            SELECT s.evaluation_year AS year FROM evaluation_element_management_item_settings s
+            WHERE s.active_yn = 'Y' AND s.area_code = 'EDUCATION'
+            UNION
+            SELECT d.academic_year AS year FROM lecture_improvement_achievement_details d
+            WHERE d.academic_year IS NOT NULL
+        ) years
+        ORDER BY years.year DESC
+    </select>
+    <!-- Group identifiers are not specified: use existing semantic code names, never invent a group or enum. -->
+    <select id="semesters" resultType="string">
+        SELECT DISTINCT c.code_value
+        FROM detail_codes c
+        JOIN code_groups g ON g.group_id = c.group_id
+        WHERE c.status = 'ACTIVE' AND c.system_use_yn = 'Y'
+          AND g.status = 'ACTIVE' AND g.system_use_yn = 'Y'
+          AND (g.group_name ILIKE '%학기%' OR g.group_name ILIKE '%semester%')
+          AND c.code_value IN ('1', '2')
+          AND (c.valid_start_date IS NULL OR c.valid_start_date &lt;= CURRENT_DATE)
+          AND (c.valid_end_date IS NULL OR c.valid_end_date >= CURRENT_DATE)
+        ORDER BY c.code_value
+    </select>
+    <sql id="inputScope">
+        s.active_yn = 'Y' AND s.teacher_editable_yn = 'Y' AND s.teacher_editable_part = 'SELF_REPORT'
+        AND s.area_code = 'EDUCATION' AND s.item_code = 'LECTURE_IMPROVEMENT'
+        AND s.evaluation_confirmed_yn = 'N'
+        AND EXISTS (
+            SELECT 1 FROM organization_user_mappings m
+            WHERE m.user_id = #{userId} AND m.organization_code = s.target_scope
+              AND m.status = 'ACTIVE' AND m.mapping_type = 'ORGANIZATION'
+        )
+    </sql>
+    <select id="inputOptions" resultMap="option">
+        SELECT DISTINCT s.management_item_code, s.management_item_name, s.teacher_editable_part
+        FROM evaluation_element_management_item_settings s
+        WHERE <include refid="inputScope"/>
+        ORDER BY s.management_item_code
+    </select>
+    <select id="allowedItem" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_element_management_item_settings s
+        WHERE <include refid="inputScope"/>
+          AND s.evaluation_year = #{year} AND s.management_item_code = #{code}
+    </select>
+    <select id="lockFinalizations" resultType="long">
+        SELECT f.finalization_id
+        FROM evaluation_finalizations f
+        WHERE f.target_user_id = #{userId} AND f.evaluation_year = #{year}
+        FOR UPDATE
+    </select>
+    <insert id="insertHeader" useGeneratedKeys="true" keyProperty="id" keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            achievement_type, teacher_user_id, organization_code, evaluation_year,
+            management_item_code, achievement_date, achievement_detail, request_id, created_by, updated_by
+        )
+        VALUES (
+            'LECTURE_IMPROVEMENT', #{owner}, #{organization}, #{year},
+            #{request.managementItemCode}, #{request.achievementDate}, CAST(#{attachments} AS jsonb),
+            #{requestId}, #{actor}, #{actor}
+        )
+    </insert>
+    <insert id="insertDetail">
+        INSERT INTO lecture_improvement_achievement_details (
+            achievement_id, academic_year, semester_code, performance_content
+        )
+        VALUES (#{id}, CAST(#{request.academicYear} AS text), CAST(#{request.semester} AS text), #{request.achievementContent})
+    </insert>
+    <update id="updateHeader">
+        UPDATE education_achievements
+        SET management_item_code = #{request.managementItemCode}, achievement_date = #{request.achievementDate},
+            achievement_detail = achievement_detail || CAST(#{attachments} AS jsonb), request_id = #{requestId},
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{actor}
+        WHERE achievement_id = #{id} AND achievement_type = 'LECTURE_IMPROVEMENT' AND deleted_yn = 'N'
+          AND achievement_status IN ('DRAFT', 'DEPARTMENT_REJECTED', 'CERTIFICATION_REJECTED')
+    </update>
+    <update id="updateDetail">
+        UPDATE lecture_improvement_achievement_details
+        SET academic_year = CAST(#{request.academicYear} AS text), semester_code = CAST(#{request.semester} AS text),
+            performance_content = #{request.achievementContent}
+        WHERE achievement_id = #{id}
+    </update>
+    <insert id="history">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', CAST(#{id} AS text), #{changeType}, 'lecture_improvement',
+            #{before}, #{after}, #{actor}, '강의개선 실적 저장', #{requestId}
+        )
+    </insert>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, previous_status, next_status, action_type, processed_by, request_id
+        )
+        VALUES ('LECTURE_IMPROVEMENT', #{id}, NULL, 'DRAFT', 'CREATE', #{actor}, #{requestId})
+    </insert>
+</mapper>

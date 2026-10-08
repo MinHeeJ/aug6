@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 /**
  * Defines the only permitted education-achievement lifecycle transitions and
  * requires rejection context before a status-history record is created.
+ * The new header-backed achievement types share the unchanged legacy lifecycle graph.
  */
 @Service
 public class EducationAchievementStatusTransitionPolicy {
@@ -21,7 +22,11 @@ public class EducationAchievementStatusTransitionPolicy {
             "LECTURE_EVALUATION",
             "LECTURE",
             "STUDENT_GUIDANCE",
-            "DEGREE_COMPLETION");
+            "DEGREE_COMPLETION",
+            "EMPLOYMENT_RATE_IMPROVEMENT",
+            "COURSE_OPERATION",
+            "LECTURE_IMPROVEMENT",
+            "EMPLOYMENT_RATE_ACHIEVEMENT");
     private static final Map<EducationAchievementStatus, Set<EducationAchievementStatus>> ALLOWED_TRANSITIONS =
             allowedTransitions();
 

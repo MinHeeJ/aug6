@@ -59,6 +59,22 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String pathToUiRoute(String apiPath) {
+        if (apiPath.equals("/api/business/employment-rate-improvements")
+                || apiPath.startsWith("/api/business/employment-rate-improvements/")) {
+            return "/faculty/employment-rate-improvement-achievements";
+        }
+        if (apiPath.equals("/api/business/employment-rate-achievements")
+                || apiPath.startsWith("/api/business/employment-rate-achievements/")) {
+            return "/faculty/employment-rate-achievements";
+        }
+        if (apiPath.equals("/api/business/course-operations")
+                || apiPath.startsWith("/api/business/course-operations/")) {
+            return "/faculty/course-offering-operation-achievements";
+        }
+        if (apiPath.equals("/api/business/lecture-improvements")
+                || apiPath.startsWith("/api/business/lecture-improvements/")) {
+            return "/faculty/teaching-improvement-achievements";
+        }
         String evaluationRuleRoute = EvaluationRuleFoundationContract.uiRouteForApiPath(apiPath);
         if (evaluationRuleRoute != null) {
             return evaluationRuleRoute;

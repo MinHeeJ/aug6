@@ -132,9 +132,14 @@ import {
   ParticipationAllocationRateSettingsPage,
 } from "../pages/admin/Basic60OperationalSettingsPages";
 import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
+import { EmploymentRateImprovementsPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENTS";
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { LectureImprovementsPage } from "../pages/lectureimprovements/SCR-LECTURE-IMPROVEMENTS";
+import { CourseOperationsPage } from "../pages/courseoperations/SCR-COURSE-OPERATIONS";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+
+import { EmploymentRateAchievementsPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENTS";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +250,28 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/faculty/education/lecture-improvements") {
+    if (!canAccessAdminRoute(user, path)) {
+      return <PermissionState title="강의개선 실적 관리 권한이 없습니다" />;
+    }
+    return <LectureImprovementsPage />;
+  }
+  if (path === "/faculty/education/course-operations") {
+    return <CourseOperationsPage user={user} />;
+  }
+  if (path === "/faculty/education/employment-rate-improvements") {
+    return <EmploymentRateImprovementsPage user={user} />;
+  }
+  if (path === "/faculty/education/employment-rate-achievements") {
+    if (
+      !user?.roles.some((role) =>
+        ["R01", "R02", "R04", "R07", "R09"].includes(role),
+      )
+    ) {
+      return <PermissionState message="취업률 실적 접근 권한이 없습니다." />;
+    }
+    return <EmploymentRateAchievementsPage />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

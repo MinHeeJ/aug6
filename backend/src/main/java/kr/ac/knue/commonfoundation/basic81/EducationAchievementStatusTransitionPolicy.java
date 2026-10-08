@@ -21,7 +21,11 @@ public class EducationAchievementStatusTransitionPolicy {
             "LECTURE_EVALUATION",
             "LECTURE",
             "STUDENT_GUIDANCE",
-            "DEGREE_COMPLETION");
+            "DEGREE_COMPLETION",
+            "EMPLOYMENT_RATE_IMPROVEMENT",
+            "COURSE_OPERATION",
+            "LECTURE_IMPROVEMENT",
+            "EMPLOYMENT_RATE_ACHIEVEMENT");
     private static final Map<EducationAchievementStatus, Set<EducationAchievementStatus>> ALLOWED_TRANSITIONS =
             allowedTransitions();
 
@@ -32,6 +36,16 @@ public class EducationAchievementStatusTransitionPolicy {
     public EducationAchievementStatusHistory transition(
             EducationAchievementStatusTransitionRequest request) {
         validateRequest(request);
+        // The new resources have no approved finalization-cancellation operation.
+        // Preserve the legacy types' separate cancellation workflow.
+        if (request.currentStatus() == EducationAchievementStatus.EVALUATION_CONFIRMED
+                && Set.of(
+                        "EMPLOYMENT_RATE_IMPROVEMENT",
+                        "COURSE_OPERATION",
+                        "LECTURE_IMPROVEMENT",
+                        "EMPLOYMENT_RATE_ACHIEVEMENT").contains(request.achievementType())) {
+            throw new ConflictException("CONFIRMED_DATA_LOCKED: 평가확정 실적은 변경할 수 없습니다.");
+        }
         if (!ALLOWED_TRANSITIONS.getOrDefault(request.currentStatus(), Set.of()).contains(request.nextStatus())) {
             throw new ConflictException("허용되지 않은 교육영역 실적 상태 전이입니다.");
         }

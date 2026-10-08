@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateimprovements.EmploymentRateImprovementMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.employmentrateimprovements.EmploymentRateImprovementRow">
+        <constructor>
+            <arg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="organization_code" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="special_lecture_start_date" javaType="java.time.LocalDate"/>
+            <arg column="special_lecture_end_date" javaType="java.time.LocalDate"/>
+            <arg column="mock_exam_question_period" javaType="java.lang.String"/>
+            <arg column="attachment_ref" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <sql id="columns">
+        a.achievement_id,
+        a.teacher_user_id,
+        a.organization_code,
+        a.evaluation_year,
+        a.management_item_code,
+        a.achievement_date,
+        a.achievement_status,
+        d.special_lecture_start_date,
+        d.special_lecture_end_date,
+        d.mock_exam_question_period,
+        a.attachment_ref
+    </sql>
+    <sql id="source">
+        FROM education_achievements a
+        JOIN employment_rate_improvement_achievement_details d
+            ON d.achievement_id = a.achievement_id
+    </sql>
+    <sql id="scope">
+        AND (
+            FALSE
+            <if test="roles.contains('R09')">OR TRUE</if>
+            <if test="roles.contains('R01')">OR a.teacher_user_id = #{userId}</if>
+            <if test="roles.contains('R02')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings r
+                    JOIN organization_user_mappings t
+                        ON t.organization_code = r.organization_code
+                    WHERE r.user_id = #{userId}
+                      AND r.status = 'ACTIVE'
+                      AND t.user_id = a.teacher_user_id
+                      AND t.status = 'ACTIVE'
+                )
+            </if>
+            <if test="roles.contains('R04')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings p
+                    JOIN organization_user_mappings t
+                        ON t.organization_code = p.organization_code
+                    WHERE p.user_id = #{userId}
+                      AND p.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND p.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND t.user_id = a.teacher_user_id
+                      AND t.status = 'ACTIVE'
+                )
+            </if>
+        )
+    </sql>
+    <sql id="filters">
+        WHERE a.achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND a.deleted_yn = 'N'
+        <if test="criteria.managementItemCode != null">
+            AND a.management_item_code = #{criteria.managementItemCode}
+        </if>
+        <if test="criteria.achievementStatus != null">
+            AND a.achievement_status = #{criteria.achievementStatus}
+        </if>
+        <include refid="scope"/>
+    </sql>
+    <select id="list" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="source"/>
+        <include refid="filters"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{criteria.pageSize}
+        OFFSET #{criteria.pageOffset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        <include refid="source"/>
+        <include refid="filters"/>
+    </select>
+    <select id="find" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="source"/>
+        WHERE a.achievement_id = #{id}
+          AND a.achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND a.deleted_yn = 'N'
+        <if test="lock">FOR UPDATE OF a, d</if>
+    </select>
+    <select id="organization" resultType="string">
+        SELECT m.organization_code
+        FROM organization_user_mappings m
+        WHERE m.user_id = #{userId}
+          AND m.mapping_type = 'ORGANIZATION'
+          AND m.status = 'ACTIVE'
+          AND CURRENT_DATE BETWEEN m.effective_start_date AND COALESCE(m.effective_end_date, DATE '9999-12-31')
+        ORDER BY m.effective_start_date DESC, m.mapping_id DESC
+        LIMIT 1
+    </select>
+    <sql id="itemFilters">
+        WHERE s.area_code = 'EDUCATION'
+          AND s.item_code = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND s.active_yn = 'Y'
+          AND s.teacher_editable_yn = 'Y'
+          AND s.teacher_editable_part = 'SELF_REPORT'
+          AND s.evaluation_confirmed_yn = 'N'
+          AND EXISTS (
+              SELECT 1
+              FROM organization_user_mappings m
+              WHERE m.user_id = #{userId}
+                AND m.organization_code = s.target_scope
+                AND m.status = 'ACTIVE'
+          )
+        <if test="year != null">AND s.evaluation_year = #{year}</if>
+    </sql>
+    <select id="managementItems" resultType="string">
+        SELECT DISTINCT s.management_item_code
+        FROM evaluation_element_management_item_settings s
+        <include refid="itemFilters"/>
+        ORDER BY s.management_item_code
+    </select>
+    <select id="allowedItem" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_element_management_item_settings s
+        <include refid="itemFilters"/>
+          AND s.management_item_code = #{code}
+    </select>
+    <select id="lockTeacher" resultType="java.lang.Long">
+        SELECT u.user_id
+        FROM users u
+        WHERE u.user_id = #{userId}
+        FOR UPDATE
+    </select>
+    <select id="lockFinalizations" resultType="java.lang.Long">
+        SELECT f.finalization_id
+        FROM evaluation_finalizations f
+        WHERE f.target_user_id = #{userId}
+          AND f.evaluation_year = #{year}
+        FOR UPDATE
+    </select>
+    <insert id="insertHeader" useGeneratedKeys="true" keyProperty="id" keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            achievement_type, teacher_user_id, organization_code, evaluation_year,
+            management_item_code, achievement_date, attachment_ref, created_by, updated_by, request_id
+        )
+        VALUES (
+            'EMPLOYMENT_RATE_IMPROVEMENT', #{owner}, #{organization}, #{year},
+            #{body.managementItemCode}, #{body.achievementDate}, #{body.attachmentRef}, #{actor}, #{actor}, #{trace}
+        )
+    </insert>
+    <update id="updateHeader">
+        UPDATE education_achievements
+        SET management_item_code = #{body.managementItemCode},
+            achievement_date = #{body.achievementDate},
+            attachment_ref = #{body.attachmentRef},
+            updated_by = #{actor},
+            updated_at = CURRENT_TIMESTAMP,
+            request_id = #{trace}
+        WHERE achievement_id = #{id}
+          AND achievement_type = 'EMPLOYMENT_RATE_IMPROVEMENT'
+          AND deleted_yn = 'N'
+          AND achievement_status IN ('DRAFT', 'DEPARTMENT_REJECTED', 'CERTIFICATION_REJECTED')
+    </update>
+    <insert id="insertDetail">
+        INSERT INTO employment_rate_improvement_achievement_details (
+            achievement_id, special_lecture_start_date, special_lecture_end_date, mock_exam_question_period
+        )
+        VALUES (
+            #{id}, #{body.specialLectureStartDate}, #{body.specialLectureEndDate}, #{body.mockExamQuestionPeriod}
+        )
+    </insert>
+    <update id="updateDetail">
+        UPDATE employment_rate_improvement_achievement_details
+        SET special_lecture_start_date = #{body.specialLectureStartDate},
+            special_lecture_end_date = #{body.specialLectureEndDate},
+            mock_exam_question_period = #{body.mockExamQuestionPeriod}
+        WHERE achievement_id = #{id}
+    </update>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, previous_status, next_status, action_type, processed_by, request_id
+        )
+        VALUES ('EMPLOYMENT_RATE_IMPROVEMENT', #{id}, NULL, 'DRAFT', 'CREATE', #{actor}, #{trace})
+    </insert>
+    <insert id="changeHistory">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', #{id}::text, #{action}, #{field}, #{before}, #{after},
+            #{actor}, '취업률 제고 실적 저장', #{trace}
+        )
+    </insert>
+</mapper>

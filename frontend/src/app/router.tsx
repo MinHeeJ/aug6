@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CourseOperationManagementPage } from "../pages/courseoperations/SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT";
 import { useAuth } from "./AuthProvider";
 import { AdminShell } from "../components/layout/AdminShell";
 import {
@@ -133,8 +134,13 @@ import {
 } from "../pages/admin/Basic60OperationalSettingsPages";
 import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { LectureImprovementPage } from "../pages/lectureimprovements/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+
+import { EmploymentRateImprovementPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
+
+import { EmploymentRateAchievementPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +251,46 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  const educationRoutes: Record<
+    string,
+    { roles: string[]; deniedTitle: string }
+  > = {
+    "/faculty/employment-rate-improvement-achievements": {
+      roles: ["R01", "R02", "R04"],
+      deniedTitle: "취업률 제고 실적 권한이 없습니다",
+    },
+    "/faculty/course-offering-operation-achievements": {
+      roles: ["R01", "R02", "R04"],
+      deniedTitle: "강좌 운영 실적 접근 권한이 없습니다",
+    },
+    "/faculty/teaching-improvement-achievements": {
+      roles: ["R01", "R02", "R04"],
+      deniedTitle: "강의개선 실적 관리 권한이 없습니다",
+    },
+    "/faculty/employment-rate-achievements": {
+      roles: ["R01", "R02", "R04", "R07"],
+      deniedTitle: "취업률 실적 관리 권한이 없습니다",
+    },
+  };
+  const route = educationRoutes[path];
+  if (
+    route &&
+    !user?.roles.some((role) => role === "R09" || route.roles.includes(role))
+  ) {
+    return <PermissionState title={route.deniedTitle} />;
+  }
+  if (path === "/faculty/employment-rate-improvement-achievements") {
+    return <EmploymentRateImprovementPage user={user} />;
+  }
+  if (path === "/faculty/employment-rate-achievements") {
+    return <EmploymentRateAchievementPage user={user} />;
+  }
+  if (path === "/faculty/course-offering-operation-achievements") {
+    return <CourseOperationManagementPage user={user} />;
+  }
+  if (path === "/faculty/teaching-improvement-achievements") {
+    return <LectureImprovementPage user={user} />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

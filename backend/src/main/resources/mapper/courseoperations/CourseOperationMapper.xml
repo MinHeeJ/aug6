@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.courseoperations.CourseOperationMapper">
+    <resultMap id="row" type="kr.ac.knue.commonfoundation.courseoperations.CourseOperationRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="organization_code" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="performance_detail" javaType="java.lang.String"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="attachment_ids"
+                javaType="java.util.List"
+                typeHandler="kr.ac.knue.commonfoundation.courseoperations.CourseOperationAttachmentIdsTypeHandler"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+    <sql id="columns">
+        a.achievement_id, a.teacher_user_id, u.login_id AS teacher_name,
+        a.organization_code, a.evaluation_year, a.management_item_code,
+        a.achievement_date, d.performance_detail, a.achievement_status,
+        a.attachment_ids::text AS attachment_ids, a.created_at, a.updated_at
+    </sql>
+    <sql id="joins">
+        FROM education_achievements a
+        JOIN course_operation_achievement_details d ON d.achievement_id = a.achievement_id
+        JOIN users u ON u.user_id = a.teacher_user_id
+    </sql>
+    <sql id="identity">
+        a.achievement_type = 'COURSE_OPERATION'
+        AND a.deleted_yn = 'N'
+    </sql>
+    <!-- The union, not a choose branch, keeps multi-role scopes identical for list and count. -->
+    <sql id="where">
+        WHERE <include refid="identity"/>
+        <if test="criteria.managementItemCode != null">
+            AND a.management_item_code = #{criteria.managementItemCode}
+        </if>
+        <if test="criteria.evaluationYear != null">
+            AND a.evaluation_year = #{criteria.evaluationYear}
+        </if>
+        <if test="criteria.achievementStatus != null">
+            AND a.achievement_status = #{criteria.achievementStatus}
+        </if>
+        <if test="criteria.teacherName != null">
+            AND u.login_id ILIKE CONCAT('%', #{criteria.teacherName}, '%')
+        </if>
+        <if test="!roles.contains('R09')">
+            AND (FALSE
+            <if test="roles.contains('R01')">
+                OR a.teacher_user_id = #{userId}
+            </if>
+            <if test="roles.contains('R02')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings r
+                    JOIN organization_user_mappings t ON t.organization_code = r.organization_code
+                    WHERE r.user_id = #{userId}
+                      AND r.status = 'ACTIVE'
+                      AND t.user_id = a.teacher_user_id
+                      AND t.status = 'ACTIVE'
+                )
+            </if>
+            <if test="roles.contains('R04')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings p
+                    JOIN organization_user_mappings t ON t.organization_code = p.organization_code
+                    WHERE p.user_id = #{userId}
+                      AND p.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND p.data_scope IN ('DEPARTMENT', 'COLLEGE', 'BUSINESS', 'ALL')
+                      AND t.user_id = a.teacher_user_id
+                      AND t.status = 'ACTIVE'
+                )
+            </if>
+            )
+        </if>
+    </sql>
+    <select id="list" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="where"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{criteria.pageSize}
+        OFFSET #{criteria.offset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        <include refid="joins"/>
+        <include refid="where"/>
+    </select>
+    <select id="find" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        WHERE a.achievement_id = #{achievementId}
+          AND <include refid="identity"/>
+    </select>
+    <select id="lock" resultMap="row">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        WHERE a.achievement_id = #{achievementId}
+          AND <include refid="identity"/>
+        FOR UPDATE OF a
+    </select>
+    <select id="organization" resultType="string">
+        SELECT m.organization_code
+        FROM organization_user_mappings m
+        WHERE m.user_id = #{userId}
+          AND m.mapping_type = 'ORGANIZATION'
+          AND m.status = 'ACTIVE'
+          AND m.effective_start_date &lt;= CURRENT_DATE
+          AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= CURRENT_DATE)
+        ORDER BY m.mapping_id
+        LIMIT 1
+    </select>
+    <select id="activeYear" resultType="string">
+        SELECT p.evaluation_year
+        FROM input_period_settings p
+        WHERE p.area_code = 'EDUCATION'
+          AND p.active_yn = 'Y'
+          AND CURRENT_TIMESTAMP BETWEEN p.start_at AND p.end_at
+          AND (p.organization_code IS NULL OR EXISTS (
+              SELECT 1
+              FROM organization_user_mappings m
+              WHERE m.user_id = #{userId}
+                AND m.organization_code = p.organization_code
+                AND m.status = 'ACTIVE'
+          ))
+        ORDER BY p.evaluation_year DESC
+        LIMIT 1
+    </select>
+    <select id="editableItem" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_element_management_item_settings s
+        WHERE s.management_item_code = #{code}
+          AND s.evaluation_year = #{year}
+          AND s.area_code = 'EDUCATION'
+          AND s.target_scope IN (#{organization}, 'ALL')
+          AND s.active_yn = 'Y'
+          AND s.teacher_editable_yn = 'Y'
+    </select>
+    <select id="duplicate" resultType="int">
+        SELECT COUNT(*)
+        FROM education_achievements a
+        WHERE a.teacher_user_id = #{userId}
+          AND a.evaluation_year = #{year}
+          AND a.achievement_type = 'COURSE_OPERATION'
+          AND a.management_item_code = #{body.managementItemCode}
+          AND a.achievement_date = #{body.achievementDate}
+          AND a.deleted_yn = 'N'
+        <if test="excludeId != null">
+          AND a.achievement_id != #{excludeId}
+        </if>
+    </select>
+    <insert id="insertHeader" useGeneratedKeys="true" keyProperty="id" keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            achievement_type, teacher_user_id, organization_code, evaluation_year,
+            management_item_code, achievement_date, attachment_ids, created_by, updated_by, request_id
+        )
+        VALUES (
+            'COURSE_OPERATION', #{owner}, #{organization}, #{year},
+            #{body.managementItemCode}, #{body.achievementDate}, CAST(#{attachments} AS jsonb),
+            #{actor}, #{actor}, #{requestId}
+        )
+    </insert>
+    <update id="updateHeader">
+        UPDATE education_achievements
+        SET management_item_code = #{body.managementItemCode},
+            achievement_date = #{body.achievementDate},
+            attachment_ids = CAST(#{attachments} AS jsonb),
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{actor},
+            request_id = #{requestId}
+        WHERE achievement_id = #{id}
+          AND achievement_type = 'COURSE_OPERATION'
+          AND deleted_yn = 'N'
+          AND achievement_status IN ('DRAFT', 'DEPARTMENT_REJECTED', 'CERTIFICATION_REJECTED')
+    </update>
+    <insert id="insertDetail">
+        INSERT INTO course_operation_achievement_details (achievement_id, performance_detail)
+        VALUES (#{id}, #{details})
+    </insert>
+    <update id="updateDetail">
+        UPDATE course_operation_achievement_details
+        SET performance_detail = #{details}
+        WHERE achievement_id = #{id}
+    </update>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, next_status, action_type, opinion, processed_by, request_id
+        )
+        VALUES ('COURSE_OPERATION', #{id}, 'DRAFT', 'CREATE', '강좌 개설·운영 최초 입력', #{userId}, #{requestId})
+    </insert>
+    <insert id="changeHistory">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name,
+            before_value, after_value, changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', CAST(#{id} AS text), #{operation}, 'course_operation',
+            #{before}, #{after}, #{userId}, '강좌 개설·운영 실적 저장', #{requestId}
+        )
+    </insert>
+</mapper>

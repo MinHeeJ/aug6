@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.employmentrateachievements.EmploymentRateAchievementMapper">
+    <sql id="columns">
+        a.achievement_id AS "achievementId", a.management_no AS "managementNo",
+        a.teacher_user_id AS "teacherUserId", u.employee_no AS "employeeNo", u.login_id AS "teacherName",
+        a.organization_code AS "organizationCode", a.evaluation_year AS "evaluationYear",
+        a.management_item_code AS "managementItemCode", a.achievement_date AS "achievementDate",
+        a.title, a.attachment_ref AS "attachmentRef", a.achievement_status AS "achievementStatus",
+        a.created_at AS "createdAt", a.updated_at AS "updatedAt", a.created_by AS "createdBy",
+        a.updated_by AS "updatedBy"
+    </sql>
+    <!-- Scope branches are ORed; a multi-role principal receives their union. -->
+    <sql id="scope">
+        AND (
+            FALSE
+            <if test="roles.contains('R09')">OR TRUE</if>
+            <if test="roles.contains('R01')">OR a.teacher_user_id = #{userId}</if>
+            <if test="roles.contains('R02')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM organization_user_mappings m
+                    WHERE m.user_id = #{userId}
+                      AND m.organization_code = a.organization_code
+                      AND m.status = 'ACTIVE'
+                      AND m.effective_start_date &lt;= CURRENT_DATE
+                      AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= CURRENT_DATE)
+                )
+            </if>
+            <if test="roles.contains('R04') or roles.contains('R07')">
+                OR EXISTS (
+                    SELECT 1
+                    FROM evaluation_organization_mappings m
+                    WHERE m.user_id = #{userId}
+                      AND m.business_type = 'FACULTY_ACHIEVEMENT'
+                      AND (m.data_scope = 'ALL' OR m.organization_code = a.organization_code)
+                )
+            </if>
+        )
+    </sql>
+    <sql id="where">
+        WHERE a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+          AND a.deleted_yn = 'N'
+        <include refid="scope"/>
+        <if test="managementNo != null">AND a.management_no = #{managementNo}</if>
+        <if test="managementItemCode != null">AND a.management_item_code = #{managementItemCode}</if>
+        <if test="achievementStatus != null">AND a.achievement_status = #{achievementStatus}</if>
+        <if test="teacherName != null">AND u.login_id ILIKE CONCAT('%', #{teacherName}, '%')</if>
+        <if test="evaluationYear != null">AND a.evaluation_year = #{evaluationYear}</if>
+    </sql>
+    <select id="list" resultType="map">
+        SELECT <include refid="columns"/>
+        FROM education_achievements a
+        JOIN users u ON u.user_id = a.teacher_user_id
+        <include refid="where"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        <if test="pageSize != null">LIMIT #{pageSize} OFFSET #{pageOffset}</if>
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM education_achievements a
+        JOIN users u ON u.user_id = a.teacher_user_id
+        <include refid="where"/>
+    </select>
+    <select id="find" resultType="map">
+        SELECT <include refid="columns"/>
+        FROM education_achievements a
+        JOIN users u ON u.user_id = a.teacher_user_id
+        WHERE a.achievement_id = #{achievementId}
+          AND a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+          AND a.deleted_yn = 'N'
+        <if test="lock">FOR UPDATE OF a</if>
+    </select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="achievementId" keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            achievement_type, management_no, teacher_user_id, organization_code, evaluation_year,
+            management_item_code, achievement_date, title, attachment_ref, achievement_status, created_by, updated_by
+        )
+        VALUES (
+            'EMPLOYMENT_RATE_ACHIEVEMENT', #{managementNo}, #{teacherUserId}, #{organizationCode}, #{evaluationYear},
+            #{managementItemCode}, #{achievementDate}, #{title}, #{attachmentRef}, 'DRAFT', #{actorId}, #{actorId}
+        )
+    </insert>
+    <update id="update">
+        UPDATE education_achievements
+        SET management_item_code = #{managementItemCode},
+            achievement_date = #{achievementDate}, title = #{title}, attachment_ref = #{attachmentRef},
+            achievement_status = #{achievementStatus}, updated_by = #{actorId}, updated_at = CURRENT_TIMESTAMP
+        WHERE achievement_id = #{achievementId}
+          AND deleted_yn = 'N'
+          AND achievement_status IN ('DRAFT', 'DEPARTMENT_REJECTED', 'CERTIFICATION_REJECTED')
+    </update>
+    <insert id="history">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', #{achievementId}, #{changeType}, 'snapshot', #{before}, #{after},
+            #{actorId}, '취업률 실적 저장', #{requestId}
+        )
+    </insert>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, previous_status, next_status, action_type, processed_by, request_id
+        )
+        VALUES (
+            'EMPLOYMENT_RATE_ACHIEVEMENT', #{achievementId}, #{previousStatus}, #{achievementStatus},
+            #{changeType}, #{actorId}, #{requestId}
+        )
+    </insert>
+    <select id="managementItems" resultType="map">
+        SELECT DISTINCT m.management_item_code AS "code", m.management_item_name AS "name",
+            e.evaluation_year AS "evaluationYear"
+        FROM evaluation_management_items m
+        JOIN evaluation_elements e ON e.element_id = m.element_id
+        JOIN evaluation_items i ON i.item_id = e.item_id
+        JOIN evaluation_areas a ON a.area_id = i.area_id
+        WHERE a.area_code = 'EDUCATION'
+          AND m.active_yn = 'Y' AND e.active_yn = 'Y' AND i.active_yn = 'Y' AND a.active_yn = 'Y'
+        ORDER BY e.evaluation_year DESC, m.management_item_code
+    </select>
+    <select id="organization" resultType="string">
+        SELECT m.organization_code
+        FROM organization_user_mappings m
+        WHERE m.user_id = #{userId}
+          AND m.mapping_type = 'ORGANIZATION' AND m.status = 'ACTIVE'
+          AND m.effective_start_date &lt;= CURRENT_DATE
+          AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= CURRENT_DATE)
+        ORDER BY m.effective_start_date DESC, m.mapping_id DESC
+        LIMIT 1
+    </select>
+    <select id="teacher" resultType="java.lang.Long">
+        SELECT u.user_id
+        FROM users u
+        WHERE u.employee_no = #{employeeNo}
+          AND u.status = 'ACTIVE' AND u.system_use_yn = 'Y'
+          AND EXISTS (
+              SELECT 1
+              FROM user_roles r
+              WHERE r.user_id = u.user_id AND r.role_code = 'R01' AND r.status = 'ACTIVE'
+                AND r.valid_start_date &lt;= CURRENT_DATE
+                AND (r.valid_end_date IS NULL OR r.valid_end_date &gt;= CURRENT_DATE)
+          )
+    </select>
+    <select id="scope" resultType="int">
+        SELECT COUNT(*)
+        FROM users u
+        CROSS JOIN (SELECT #{teacherUserId}::bigint AS teacher_user_id, #{organizationCode}::text AS organization_code) a
+        WHERE u.user_id = a.teacher_user_id
+        <include refid="scope"/>
+    </select>
+    <select id="function" resultType="int">
+        SELECT COUNT(*)
+        FROM function_permissions p
+        WHERE p.screen_id = 'SCR-EMPLOYMENT-RATE-ACHIEVEMENT'
+          AND p.function_type = #{functionType} AND p.permission_allowed = 'ALLOW'
+          AND p.role_code IN
+        <foreach collection="roles" item="role" open="(" close=")" separator=",">#{role}</foreach>
+    </select>
+    <select id="managementItem" resultType="int">
+        SELECT COUNT(*)
+        FROM evaluation_management_items m
+        JOIN evaluation_elements e ON e.element_id = m.element_id
+        JOIN evaluation_items i ON i.item_id = e.item_id
+        JOIN evaluation_areas a ON a.area_id = i.area_id
+        WHERE m.management_item_code = #{managementItemCode}
+          AND e.evaluation_year = #{evaluationYear} AND a.area_code = 'EDUCATION'
+          AND m.active_yn = 'Y' AND e.active_yn = 'Y' AND i.active_yn = 'Y' AND a.active_yn = 'Y'
+    </select>
+    <select id="attachment" resultType="int">
+        SELECT COUNT(*)
+        FROM excel_upload_files f
+        WHERE f.file_token = #{attachmentRef} AND f.uploader_user_id = #{teacherUserId} AND f.status = 'ACTIVE'
+    </select>
+    <select id="duplicate" resultType="int">
+        SELECT COUNT(*)
+        FROM education_achievements a
+        WHERE a.achievement_type = 'EMPLOYMENT_RATE_ACHIEVEMENT' AND a.deleted_yn = 'N'
+          AND a.teacher_user_id = #{teacherUserId} AND a.evaluation_year = #{evaluationYear}
+          AND a.management_item_code = #{managementItemCode} AND a.achievement_date = #{achievementDate}
+          AND a.title = #{title}
+        <if test="achievementId != null">AND a.achievement_id != #{achievementId}</if>
+    </select>
+    <select id="job" resultType="map">
+        SELECT j.batch_job_id AS "jobId", j.evaluation_year AS "evaluationYear",
+            j.requester_user_id AS "requesterUserId", j.job_status AS "jobStatus", j.action_type AS "actionType",
+            j.total_count AS "totalCount", j.processed_count AS "processedCount",
+            j.unprocessed_count AS "unprocessedCount", j.target_condition_json::text AS "targetConditionJson"
+        FROM employment_rate_batch_jobs j
+        WHERE j.batch_job_id = #{jobId}
+    </select>
+    <select id="jobItems" resultType="map">
+        SELECT i.target_user_id AS "targetUserId", i.achievement_id AS "achievementId",
+            i.processed_yn AS "processedYn", i.unprocessed_reason AS "unprocessedReason"
+        FROM employment_rate_batch_job_items i
+        WHERE i.batch_job_id = #{jobId}
+        ORDER BY i.batch_job_item_id
+    </select>
+    <select id="template" resultType="string">
+        SELECT t.template_id
+        FROM excel_upload_templates t
+        WHERE t.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT' AND t.status = 'ACTIVE'
+          AND t.system_use_yn = 'Y' AND t.effective_date &lt;= CURRENT_DATE
+        ORDER BY t.effective_date DESC, t.template_version DESC
+        LIMIT 1
+    </select>
+    <select id="templateColumns" resultType="string">
+        SELECT r.required_column
+        FROM excel_upload_template_rules r
+        WHERE r.template_id = #{templateId}
+        ORDER BY r.column_order
+    </select>
+    <insert id="upload">
+        INSERT INTO excel_upload_files (
+            upload_id, business_type, template_id, file_token, original_file_name, validation_status, uploader_user_id
+        )
+        VALUES (
+            #{uploadId}, 'EMPLOYMENT_RATE_ACHIEVEMENT', #{templateId}, #{fileToken},
+            #{fileName}, #{validationStatus}, #{actorId}
+        )
+    </insert>
+    <insert id="staging">
+        INSERT INTO excel_upload_staging_rows (staging_row_id, upload_id, row_number, row_payload, validation_status)
+        VALUES (#{rowId}, #{uploadId}, #{rowNumber}, CAST(#{payload} AS jsonb), #{validationStatus})
+    </insert>
+    <insert id="error">
+        INSERT INTO excel_upload_errors (
+            error_id, upload_id, row_number, column_name, input_value, error_code, error_reason, correction_guide
+        )
+        VALUES (#{errorId}, #{uploadId}, #{rowNumber}, 'row', #{inputValue}, 'INVALID_ROW', #{reason}, '입력값을 확인하세요.')
+    </insert>
+    <insert id="uploadHistory">
+        INSERT INTO excel_upload_histories (
+            upload_id, total_count, success_count, error_count, saved_count, processor_user_id
+        )
+        VALUES (#{uploadId}, #{totalCount}, #{successCount}, #{errorCount}, 0, #{actorId})
+    </insert>
+    <select id="findUpload" resultType="map">
+        SELECT f.upload_id AS "uploadId", f.uploader_user_id AS "uploaderUserId",
+            f.validation_status AS "validationStatus", f.file_token AS "fileToken"
+        FROM excel_upload_files f
+        WHERE f.upload_id = #{uploadId} AND f.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+        <if test="lock">FOR UPDATE</if>
+    </select>
+    <select id="stagingRows" resultType="map">
+        SELECT s.row_number AS "rowNumber", s.row_payload::text AS "payload", s.validation_status AS "validationStatus"
+        FROM excel_upload_staging_rows s
+        WHERE s.upload_id = #{uploadId}
+        ORDER BY s.row_number
+    </select>
+    <select id="errors" resultType="map">
+        SELECT e.row_number AS "rowNumber", e.column_name AS "columnName", e.error_reason AS "errorReason"
+        FROM excel_upload_errors e
+        WHERE e.upload_id = #{uploadId}
+        ORDER BY e.row_number, e.column_name
+    </select>
+    <select id="histories" resultType="map">
+        SELECT f.upload_id AS "uploadId", f.original_file_name AS "originalFileName", f.uploaded_at AS "uploadedAt",
+            f.validation_status AS "validationStatus", h.total_count AS "totalCount", h.success_count AS "successCount",
+            h.error_count AS "errorCount", h.saved_count AS "savedCount"
+        FROM excel_upload_files f
+        JOIN excel_upload_histories h ON h.upload_id = f.upload_id
+        WHERE f.business_type = 'EMPLOYMENT_RATE_ACHIEVEMENT'
+        <if test="!roles.contains('R09')">AND f.uploader_user_id = #{userId}</if>
+        ORDER BY f.uploaded_at DESC, f.upload_id
+    </select>
+    <update id="committed">
+        UPDATE excel_upload_files
+        SET validation_status = 'COMMITTED'
+        WHERE upload_id = #{uploadId}
+    </update>
+    <update id="savedCount">
+        UPDATE excel_upload_histories
+        SET saved_count = #{savedCount}, processed_at = CURRENT_TIMESTAMP
+        WHERE upload_id = #{uploadId}
+    </update>
+</mapper>

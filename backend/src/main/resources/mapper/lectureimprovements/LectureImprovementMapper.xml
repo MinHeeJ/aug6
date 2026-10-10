@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementMapper">
+    <resultMap id="lectureImprovementRow" type="kr.ac.knue.commonfoundation.lectureimprovements.LectureImprovementRow">
+        <constructor>
+            <idArg column="achievement_id" javaType="java.lang.Long"/>
+            <arg column="management_no" javaType="java.lang.String"/>
+            <arg column="teacher_user_id" javaType="java.lang.Long"/>
+            <arg column="teacher_name" javaType="java.lang.String"/>
+            <arg column="organization_code" javaType="java.lang.String"/>
+            <arg column="evaluation_year" javaType="java.lang.String"/>
+            <arg column="management_item_code" javaType="java.lang.String"/>
+            <arg column="achievement_date" javaType="java.time.LocalDate"/>
+            <arg column="performance_content" javaType="java.lang.String"/>
+            <arg column="academic_year" javaType="java.lang.String"/>
+            <arg column="semester_code" javaType="java.lang.String"/>
+            <arg column="achievement_status" javaType="java.lang.String"/>
+            <arg column="attachment_ref" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="updated_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+    <sql id="fromRows">
+        FROM education_achievements a
+        JOIN lecture_improvement_achievement_details d ON d.achievement_id = a.achievement_id
+        JOIN users u ON u.user_id = a.teacher_user_id
+    </sql>
+    <sql id="columns">
+        a.achievement_id, a.management_no, a.teacher_user_id, u.login_id AS teacher_name,
+        a.organization_code, a.evaluation_year, a.management_item_code, a.achievement_date,
+        d.performance_content, d.academic_year, d.semester_code, a.achievement_status,
+        a.attachment_ref, a.created_at, a.updated_at
+    </sql>
+    <sql id="scope">
+        AND (
+            <choose>
+                <when test="roles.contains('R09')">TRUE</when>
+                <otherwise>
+                    FALSE
+                    <if test="roles.contains('R01')">
+                        OR a.teacher_user_id = #{userId}
+                    </if>
+                    <if test="roles.contains('R02')">
+                        OR EXISTS (
+                            SELECT 1
+                            FROM organization_user_mappings m
+                            WHERE m.user_id = #{userId}
+                              AND m.organization_code = a.organization_code
+                              AND m.status = 'ACTIVE'
+                              AND m.effective_start_date &lt;= CURRENT_DATE
+                              AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= CURRENT_DATE)
+                        )
+                    </if>
+                    <if test="roles.contains('R04')">
+                        OR EXISTS (
+                            SELECT 1
+                            FROM evaluation_organization_mappings p
+                            WHERE p.user_id = #{userId}
+                              AND p.business_type = 'FACULTY_ACHIEVEMENT'
+                              AND (p.data_scope = 'ALL' OR p.organization_code = a.organization_code)
+                        )
+                    </if>
+                </otherwise>
+            </choose>
+        )
+    </sql>
+    <sql id="baseWhere">
+        WHERE a.achievement_type = 'LECTURE_IMPROVEMENT'
+          AND a.deleted_yn = 'N'
+    </sql>
+    <sql id="listWhere">
+        <include refid="baseWhere"/>
+        <include refid="scope"/>
+        <if test="criteria.managementNo != null">AND a.management_no = #{criteria.managementNo}</if>
+        <if test="criteria.teacherName != null">
+            AND u.login_id ILIKE CONCAT('%', #{criteria.teacherName}, '%')
+        </if>
+        <if test="criteria.managementItemCode != null">
+            AND a.management_item_code = #{criteria.managementItemCode}
+        </if>
+        <if test="criteria.achievementStatus != null">AND a.achievement_status = #{criteria.achievementStatus}</if>
+        <if test="criteria.evaluationYear != null">AND a.evaluation_year = #{criteria.evaluationYear}</if>
+    </sql>
+    <select id="list" resultMap="lectureImprovementRow">
+        SELECT <include refid="columns"/>
+        <include refid="fromRows"/>
+        <include refid="listWhere"/>
+        ORDER BY a.achievement_date DESC, a.achievement_id DESC
+        LIMIT #{criteria.pageSize}
+        OFFSET #{criteria.rowOffset}
+    </select>
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        <include refid="fromRows"/>
+        <include refid="listWhere"/>
+    </select>
+    <select id="find" resultMap="lectureImprovementRow">
+        SELECT <include refid="columns"/>
+        <include refid="fromRows"/>
+        <include refid="baseWhere"/>
+          AND a.achievement_id = #{id}
+        <if test="lock">FOR UPDATE OF a</if>
+    </select>
+    <select id="canRead" resultType="int">
+        SELECT COUNT(*)
+        FROM education_achievements a
+        <include refid="baseWhere"/>
+        <include refid="scope"/>
+          AND a.achievement_id = #{id}
+    </select>
+    <select id="organization" resultType="string">
+        SELECT m.organization_code
+        FROM organization_user_mappings m
+        WHERE m.user_id = #{userId}
+          AND m.status = 'ACTIVE'
+          AND m.mapping_type = 'ORGANIZATION'
+          AND m.effective_start_date &lt;= CURRENT_DATE
+          AND (m.effective_end_date IS NULL OR m.effective_end_date &gt;= CURRENT_DATE)
+        ORDER BY m.mapping_id
+        LIMIT 1
+    </select>
+    <sql id="activeSemesters">
+        FROM detail_codes c
+        WHERE c.group_id = 'SEMESTER'
+          AND c.status = 'ACTIVE'
+          AND c.system_use_yn = 'Y'
+          AND (c.valid_start_date IS NULL OR c.valid_start_date &lt;= CURRENT_DATE)
+          AND (c.valid_end_date IS NULL OR c.valid_end_date &gt;= CURRENT_DATE)
+    </sql>
+    <select id="semesters" resultType="map">
+        SELECT c.code_value AS "code", c.code_name AS "name",
+            c.additional_attributes::jsonb -&gt;&gt; 'academicYear' AS "academicYear"
+        <include refid="activeSemesters"/>
+        ORDER BY c.sort_order, c.code_value
+    </select>
+    <select id="validSemester" resultType="int">
+        SELECT COUNT(*)
+        <include refid="activeSemesters"/>
+          AND (c.code_value = #{semester} OR c.code_value = CONCAT(#{academicYear}, '-', #{semester}))
+          AND (c.additional_attributes::jsonb -&gt;&gt; 'academicYear' IS NULL
+            OR c.additional_attributes::jsonb -&gt;&gt; 'academicYear' = #{academicYear})
+    </select>
+    <sql id="educationItems">
+        FROM evaluation_management_items m
+        JOIN evaluation_elements e ON e.element_id = m.element_id
+        JOIN evaluation_items i ON i.item_id = e.item_id
+        JOIN evaluation_areas a ON a.area_id = i.area_id
+        WHERE a.area_code = 'EDUCATION'
+          AND m.active_yn = 'Y' AND e.active_yn = 'Y' AND i.active_yn = 'Y' AND a.active_yn = 'Y'
+          AND m.teacher_editable_yn = 'Y'
+    </sql>
+    <select id="managementItems" resultType="map">
+        SELECT DISTINCT m.management_item_code AS "code", m.management_item_name AS "name",
+            e.evaluation_year AS "evaluationYear"
+        <include refid="educationItems"/>
+        <if test="year != null">AND e.evaluation_year = #{year}</if>
+        ORDER BY e.evaluation_year DESC, m.management_item_code
+    </select>
+    <select id="validManagementItem" resultType="int">
+        SELECT COUNT(*)
+        <include refid="educationItems"/>
+          AND e.evaluation_year = #{year}
+          AND m.management_item_code = #{code}
+    </select>
+    <select id="validAttachment" resultType="int">
+        SELECT COUNT(*)
+        FROM excel_upload_files f
+        WHERE f.file_token = #{token}
+          AND f.uploader_user_id = #{userId}
+          AND f.status = 'ACTIVE'
+    </select>
+    <insert id="insertHeader" useGeneratedKeys="true" keyProperty="row.achievementId" keyColumn="achievement_id">
+        INSERT INTO education_achievements (
+            achievement_type, management_no, teacher_user_id, organization_code, evaluation_year,
+            management_item_code, achievement_date, attachment_ref, achievement_status, created_by, updated_by
+        )
+        VALUES (
+            'LECTURE_IMPROVEMENT', #{row.managementNo}, #{row.owner}, #{row.organization}, #{row.year},
+            #{row.code}, #{row.date}, #{row.attachment}, #{row.status}, #{row.userId}, #{row.userId}
+        )
+    </insert>
+    <update id="updateHeader">
+        UPDATE education_achievements
+        SET management_item_code = #{row.code}, achievement_date = #{row.date},
+            attachment_ref = #{row.attachment}, achievement_status = #{row.status},
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{row.userId}
+        WHERE achievement_id = #{row.achievementId}
+          AND achievement_type = 'LECTURE_IMPROVEMENT'
+          AND deleted_yn = 'N'
+          AND achievement_status IN ('DRAFT', 'DEPARTMENT_REJECTED', 'CERTIFICATION_REJECTED')
+    </update>
+    <sql id="semesterValue">
+        (SELECT c.code_value
+         FROM detail_codes c
+         WHERE c.group_id = 'SEMESTER'
+           AND (c.code_value = #{body.semester} OR c.code_value = CONCAT(#{body.academicYear}, '-', #{body.semester}))
+         ORDER BY CASE WHEN c.code_value = #{body.semester} THEN 0 ELSE 1 END
+         LIMIT 1)
+    </sql>
+    <insert id="insertDetail">
+        INSERT INTO lecture_improvement_achievement_details (
+            achievement_id, performance_content, academic_year, semester_code
+        )
+        VALUES (#{id}, #{body.performanceContent}, #{body.academicYear}, <include refid="semesterValue"/>)
+    </insert>
+    <update id="updateDetail">
+        UPDATE lecture_improvement_achievement_details
+        SET performance_content = #{body.performanceContent}, academic_year = #{body.academicYear},
+            semester_code = <include refid="semesterValue"/>
+        WHERE achievement_id = #{id}
+    </update>
+    <insert id="history">
+        INSERT INTO data_change_histories (
+            target_business, target_key, change_type, field_name, before_value, after_value,
+            changed_by, change_reason, request_id
+        )
+        VALUES (
+            'education_achievements', CAST(#{id} AS text), #{action}, 'lecture_improvement_snapshot',
+            #{before}, #{after}, #{userId}, '강의개선 실적 저장', #{requestId}
+        )
+    </insert>
+    <insert id="statusHistory">
+        INSERT INTO education_achievement_status_histories (
+            achievement_type, achievement_id, previous_status, next_status, action_type,
+            opinion, processed_by, request_id
+        )
+        VALUES (
+            'LECTURE_IMPROVEMENT', #{id}, #{previous}, #{next},
+            <choose>
+                <when test="previous == null">'CREATE'</when>
+                <otherwise>'SUBMIT'</otherwise>
+            </choose>,
+            '강의개선 실적 저장', #{userId}, #{requestId}
+        )
+    </insert>
+</mapper>

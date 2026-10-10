@@ -133,8 +133,15 @@ import {
 } from "../pages/admin/Basic60OperationalSettingsPages";
 import { LectureEvaluationAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-EVALUATION-ACHIEVEMENT-MGMT";
 import { LectureAchievementManagementPage } from "../pages/achievements/SCR-LECTURE-ACHIEVEMENT-MGMT";
+import { EmploymentRateImprovementPage } from "../pages/employmentrateimprovements/SCR-EMPLOYMENT-RATE-IMPROVEMENT-ACHIEVEMENT";
 import { StudentGuidanceExcelUploadPage } from "../pages/achievements/SCR-STUDENT-GUIDANCE-EXCEL-UPLOAD";
 import { MastersDoctoralGraduationAchievementManagementPage } from "../pages/achievements/SCR-MASTERS-DOCTORAL-GRADUATION-ACHIEVEMENT-MGMT";
+
+import { LectureImprovementPage } from "../pages/lectureimprovements/SCR-TEACHING-IMPROVEMENT-ACHIEVEMENT";
+
+import { CourseOperationManagementPage } from "../pages/courseoperations/SCR-COURSE-OFFERING-OPERATION-ACHIEVEMENT";
+
+import { EmploymentRateAchievementPage } from "../pages/employmentrateachievements/SCR-EMPLOYMENT-RATE-ACHIEVEMENT";
 
 export function AppRouter() {
   const auth = useAuth();
@@ -245,6 +252,42 @@ export function AppRouter() {
 }
 
 function renderAchievementPage(path: string, user: CurrentUser | null) {
+  if (path === "/faculty/education/lecture-improvements") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
+    ) {
+      return <PermissionState message="강의개선 실적 조회 권한이 없습니다." />;
+    }
+    return <LectureImprovementPage user={user} />;
+  }
+  if (path === "/faculty/education/employment-rate-improvements") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
+    ) {
+      return <PermissionState title="취업률 제고 실적 권한이 없습니다" />;
+    }
+    return <EmploymentRateImprovementPage user={user} />;
+  }
+  if (path === "/faculty/education/course-operations") {
+    if (
+      !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))
+    ) {
+      return (
+        <PermissionState message="강좌 개설·운영 실적 조회 권한이 없습니다." />
+      );
+    }
+    return <CourseOperationManagementPage />;
+  }
+  if (path === "/faculty/education/employment-rate-achievements") {
+    if (
+      !user?.roles.some((role) =>
+        ["R01", "R02", "R04", "R07", "R09"].includes(role),
+      )
+    ) {
+      return <PermissionState message="취업률 실적 접근 권한이 없습니다." />;
+    }
+    return <EmploymentRateAchievementPage user={user} />;
+  }
   if (path === "/achievements/education/lecture-evaluations") {
     if (
       !user?.roles.some((role) => ["R01", "R02", "R04", "R09"].includes(role))

@@ -18,6 +18,9 @@ import kr.ac.knue.commonfoundation.permissions.EffectivePermissionService;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Applies the shared session-cookie authentication and menu-based authorization boundary to protected APIs.
+ */
 public class AuthenticationFilter extends OncePerRequestFilter {
     private final AuthService authService;
     private final EffectivePermissionService permissionService;
@@ -59,6 +62,22 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String pathToUiRoute(String apiPath) {
+        // BASIC-60 settings share their persisted menu URLs so server authorization matches navigation exposure.
+        String basic60Route = switch (apiPath) {
+            case "/api/admin/evaluation-element-management-item-settings",
+                    "/api/admin/evaluation-element-management-item-settings/save" ->
+                    "/admin/evaluation-element-management-item-settings";
+            case "/api/admin/participation-allocation-rate-settings",
+                    "/api/admin/participation-allocation-rate-settings/save" ->
+                    "/admin/participation-allocation-rate-settings";
+            case "/api/admin/management-item-evaluation-score-settings",
+                    "/api/admin/management-item-evaluation-score-settings/save" ->
+                    "/admin/management-item-evaluation-score-settings";
+            default -> null;
+        };
+        if (basic60Route != null) {
+            return basic60Route;
+        }
         String evaluationRuleRoute = EvaluationRuleFoundationContract.uiRouteForApiPath(apiPath);
         if (evaluationRuleRoute != null) {
             return evaluationRuleRoute;

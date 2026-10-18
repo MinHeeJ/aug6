@@ -33,6 +33,21 @@ class NeisSchoolInfoAdapterTest {
     }
 
     @Test
+    void adapterReturnsAnEmptyResultWithoutCallingNeisForAnUnfilteredRequestWhenNoApiKeyIsConfigured() throws Exception {
+        AtomicReference<String> rawQuery = new AtomicReference<>();
+        try (StubNeisServer server = StubNeisServer.start(rawQuery, """
+                {"schoolInfo":[{"head":[{"list_total_count":1},{"RESULT":{"CODE":"INFO-000","MESSAGE":"정상 처리되었습니다."}}]},{"row":[]}]}
+                """)) {
+            NeisSchoolInfoAdapter adapter = new NeisSchoolInfoAdapter(new ObjectMapper(), server.url(), "", Duration.ofSeconds(2));
+
+            SchoolInfoSearchResponse response = adapter.search(new SchoolInfoQuery(null, null, 1, 100));
+
+            assertThat(response).isEqualTo(new SchoolInfoSearchResponse(1, 100, 0, java.util.List.of()));
+            assertThat(rawQuery.get()).isNull();
+        }
+    }
+
+    @Test
     void adapterTreatsInfo200AsEmptyResult() throws Exception {
         AtomicReference<String> rawQuery = new AtomicReference<>();
         try (StubNeisServer server = StubNeisServer.start(rawQuery, """

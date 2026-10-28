@@ -8,8 +8,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class PrivacyCryptoServiceTest {
-    private static final String AES_KEY = "0123456789abcdef0123456789abcdef";
-    private static final String HMAC_KEY = "abcdef0123456789abcdef0123456789";
+    private static final String AES_KEY = "01234567".repeat(4);
+    private static final String HMAC_KEY = "89abcdef".repeat(4);
 
     @Test
     void encryptDoesNotExposePlaintextAndDecryptRecordsSuccessfulAuditForReq194() {

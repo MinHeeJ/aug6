@@ -27,7 +27,7 @@ public class EffectivePermissionService {
         if (path != null && path.startsWith("/admin/") && permissionMapper.countVisibleMenuForPath(path) == 0) {
             return false;
         }
-        return resolveAllowed(permissionMapper.findRulesForPath(userId, path, roleCsv(roles)));
+        return resolveAllowed(permissionMapper.findRulesForPath(userId, path, roleCodes(roles)));
     }
 
     public boolean resolveAllowed(List<PermissionRule> rules) {
@@ -57,7 +57,8 @@ public class EffectivePermissionService {
         }
         List<MenuRow> allMenus = permissionMapper.findActiveMenus();
         Set<Long> visibleIds = allMenus.stream()
-                .filter(row -> row.url() == null || (roles != null && roles.contains("R09")) || resolveAllowed(permissionMapper.findRulesForMenu(userId, row.menuId(), roleCsv(roles))))
+                .filter(row -> row.url() == null || (roles != null && roles.contains("R09"))
+                        || resolveAllowed(permissionMapper.findRulesForMenu(userId, row.menuId(), roleCodes(roles))))
                 .map(MenuRow::menuId)
                 .collect(Collectors.toSet());
         Map<Long, MenuItem> byId = new LinkedHashMap<>();
@@ -85,10 +86,10 @@ public class EffectivePermissionService {
                 .toList();
     }
 
-    private String roleCsv(List<String> roles) {
+    private List<String> roleCodes(List<String> roles) {
         if (roles == null || roles.isEmpty()) {
-            return "''";
+            return List.of("");
         }
-        return roles.stream().map(role -> "'" + role.replace("'", "''") + "'").collect(Collectors.joining(","));
+        return roles;
     }
 }

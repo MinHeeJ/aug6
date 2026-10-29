@@ -31,6 +31,7 @@ public interface PermissionMapper {
     int countVisibleMenuForPath(@Param("path") String path);
 
     @Select("""
+            <script>
             select mp.target_type as "targetType", mp.access_allowed as "accessAllowed"
             from menu_permissions mp
             join menus m on m.menu_id = mp.menu_id
@@ -44,12 +45,21 @@ public interface PermissionMapper {
                     where u.user_id = #{userId}
                       and k.organization_code = mp.target_id
                 ))
-                or (mp.target_type = 'ROLE' and mp.target_id in (${roleCodesCsv}))
+                or (mp.target_type = 'ROLE' and mp.target_id in
+                    <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+                        #{roleCode}
+                    </foreach>
+                )
               )
+            </script>
             """)
-    List<PermissionRule> findRulesForPath(@Param("userId") Long userId, @Param("path") String path, @Param("roleCodesCsv") String roleCodesCsv);
+    List<PermissionRule> findRulesForPath(
+            @Param("userId") Long userId,
+            @Param("path") String path,
+            @Param("roleCodes") List<String> roleCodes);
 
     @Select("""
+            <script>
             select mp.target_type as "targetType", mp.access_allowed as "accessAllowed"
             from menu_permissions mp
             where mp.menu_id = #{menuId} and mp.status = 'ACTIVE'
@@ -62,8 +72,16 @@ public interface PermissionMapper {
                     where u.user_id = #{userId}
                       and k.organization_code = mp.target_id
                 ))
-                or (mp.target_type = 'ROLE' and mp.target_id in (${roleCodesCsv}))
+                or (mp.target_type = 'ROLE' and mp.target_id in
+                    <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+                        #{roleCode}
+                    </foreach>
+                )
               )
+            </script>
             """)
-    List<PermissionRule> findRulesForMenu(@Param("userId") Long userId, @Param("menuId") Long menuId, @Param("roleCodesCsv") String roleCodesCsv);
+    List<PermissionRule> findRulesForMenu(
+            @Param("userId") Long userId,
+            @Param("menuId") Long menuId,
+            @Param("roleCodes") List<String> roleCodes);
 }

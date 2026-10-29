@@ -36,7 +36,9 @@ public class LocalAccountAuthenticationAdapter implements AuthenticationPort {
     }
 
     private boolean matches(String rawPassword, String storedHash) {
-        return ("sha256:" + sha256(rawPassword)).equals(storedHash);
+        return MessageDigest.isEqual(
+                ("sha256:" + sha256(rawPassword)).getBytes(StandardCharsets.UTF_8),
+                storedHash.getBytes(StandardCharsets.UTF_8));
     }
 
     private String sha256(String value) {

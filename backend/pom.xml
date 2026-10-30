@@ -21,6 +21,7 @@
         <java.version>17</java.version>
         <mybatis-spring-boot.version>3.0.3</mybatis-spring-boot.version>
         <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
+        <tomcat.version>10.1.61</tomcat.version>
     </properties>
 
     <dependencies>
